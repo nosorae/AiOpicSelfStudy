@@ -31,6 +31,7 @@ import io.github.nosorae.aiopic.engine.answer.route.AnswerRouter
 import io.github.nosorae.aiopic.engine.answer.store.OpicDatabase
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.engine.question.model.Question
+import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
@@ -44,6 +45,7 @@ import io.github.nosorae.aiopic.libs.workqueue.api.WorkHandler
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
 import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.packs.opicen.OpicPrompt
+import io.github.nosorae.aiopic.packs.opicen.OpicQuestionType
 import io.github.nosorae.aiopic.ui.featureexam.ExamContent
 import io.github.nosorae.aiopic.ui.featureexam.ExamRepository
 import io.github.nosorae.aiopic.ui.featureexam.ExamViewModel
@@ -145,7 +147,22 @@ interface AppGraph {
 
     @Provides fun examSpec(): ExamSpec = OpicEn.examSpec
 
-    @Provides fun examContent(spec: ExamSpec): ExamContent = ExamContent(spec, OpicEn.surveyTopics)
+    /** 기록과 리포트에 보일 문항 유형 이름. 시험 팩의 유형 id 를 한국어로 옮긴다. */
+    @Provides
+    fun questionTypeNames(): Map<QuestionType, String> = mapOf(
+        OpicQuestionType.SelfIntro to "자기소개",
+        OpicQuestionType.Description to "묘사",
+        OpicQuestionType.Routine to "습관",
+        OpicQuestionType.PastExperience to "과거 경험",
+        OpicQuestionType.RoleplayAsk to "롤플레이 질문",
+        OpicQuestionType.RoleplaySolve to "롤플레이 해결",
+        OpicQuestionType.RoleplayExperience to "롤플레이 경험",
+        OpicQuestionType.Comparison to "비교",
+        OpicQuestionType.SocialIssue to "사회 이슈",
+    ).mapKeys { it.key.type }
+
+    // ponytail: 시험 팩에 서베이 Part 1~3 질문이 아직 없어 주제 고르기만 보인다. 팩이 Part 질문을 내면 여기서 넘긴다
+    @Provides fun examContent(spec: ExamSpec): ExamContent = ExamContent(spec, OpicEn.surveyTopics, surveyParts = emptyList())
 
     @Provides
     fun examRepository(store: OpicStore, queue: WorkQueue, spec: ExamSpec, @Named(RECORDINGS) recordingsRoot: String): ExamRepository = StoreExamRepository(store, queue, spec, OpicEn::questionPool, recordingsRoot)
