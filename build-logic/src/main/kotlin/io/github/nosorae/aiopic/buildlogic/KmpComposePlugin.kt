@@ -35,5 +35,6 @@ class KmpComposePlugin : Plugin<Project> {
                 packageOfResClass = namespaceOf(path)
             }
         }
+        configureRoborazzi()
     }
 }

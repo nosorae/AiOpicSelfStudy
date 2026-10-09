@@ -6,8 +6,7 @@ import kotlin.test.assertTrue
 
 class LayerRulesTest {
 
-    private fun violations(from: String, vararg to: String) =
-        layerViolations(mapOf(from to to.toList()))
+    private fun violations(from: String, vararg to: String) = layerViolations(mapOf(from to to.toList()))
 
     @Test
     fun libsCannotDependOnAnyProjectModule() {
