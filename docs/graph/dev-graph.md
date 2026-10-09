@@ -2,7 +2,7 @@
 
 `scripts/graph/render.py` 가 `dev-graph.json` 에서 만든다. 손으로 고치지 않는다.
 
-노드 41개: todo 7, doing 2, done 32, blocked 0. 색은 회색 todo, 노랑 doing, 초록 done, 빨강 blocked 이다.
+노드 41개: todo 7, doing 1, done 33, blocked 0. 색은 회색 todo, 노랑 doing, 초록 done, 빨강 blocked 이다.
 
 ```mermaid
 flowchart TD
@@ -129,9 +129,9 @@ flowchart TD
   classDef todo fill:#eeeeee,stroke:#999999,color:#000
   class u_single,u_flag,g3,e2e,docs,store,g4 todo
   classDef doing fill:#fff3b0,stroke:#d4a017,color:#000
-  class u_exam,u_model doing
+  class u_exam doing
   classDef done fill:#c8f7c5,stroke:#2e7d32,color:#000
-  class h0,h1,h2,h3,h4,g0,s1,s2,s3,s4,g1,c1,c2,c3,c5,c4,g2,n_state,n_db,n_gemini,n_route,n_key,n_tts,n_rec_a,n_rec_i,n_queue,n_quest,n_weak,n_eval,u_onb,u_shell,u_report done
+  class h0,h1,h2,h3,h4,g0,s1,s2,s3,s4,g1,c1,c2,c3,c5,c4,g2,n_state,n_db,n_gemini,n_route,n_key,n_tts,n_rec_a,n_rec_i,n_queue,n_quest,n_weak,n_eval,u_onb,u_shell,u_report,u_model done
   classDef blocked fill:#ffcdd2,stroke:#c62828,color:#000
 ```
 
