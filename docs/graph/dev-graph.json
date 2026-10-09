@@ -375,8 +375,10 @@
       ],
       "done": "./gradlew :packs:opic-en:allTests",
       "done_desc": "ExamSpec 으로 오픽 순서 표현, 프롬프트 3개 파일과 응답 스키마 검증 테스트, 파일마다 promptVersion",
-      "status": "todo",
-      "issue": 15
+      "status": "done",
+      "issue": 15,
+      "start": "2026-10-09",
+      "end": "2026-10-09"
     },
     {
       "id": "c5",
