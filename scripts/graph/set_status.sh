@@ -43,6 +43,15 @@ PY
 
 python3 "$dir/render.py" >/dev/null
 log="${GRAPH_SYNC_LOG:-${TMPDIR:-/tmp}/aiopic-graph-sync.log}"
+# 동기화는 GitHub GraphQL 한도(시간당 5000)를 많이 쓴다. done, blocked 때만, 15분에 한 번까지 돌린다.
+# ponytail: 시간 간격으로만 거른다. 놓친 상태는 다음 동기화 때 그래프 전체로 맞춰진다.
+stamp="${TMPDIR:-/tmp}/aiopic-graph-sync.stamp"
+case "$2" in done | blocked) ;; *) exit 0 ;; esac
+if [ -f "$stamp" ] && [ -z "$(find "$stamp" -mmin +15)" ]; then
+  echo "동기화는 15분 안에 이미 돌았다. 다음 done, blocked 때 맞춘다."
+  exit 0
+fi
+touch "$stamp"
 (
   echo "== $(date '+%F %T') $1 $2"
   python3 "$dir/sync_issues.py" || echo "이슈 동기화 실패(다음 갱신 때 맞춘다)"

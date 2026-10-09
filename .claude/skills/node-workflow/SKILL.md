@@ -36,7 +36,7 @@ description: 개발 그래프 노드 하나를 이슈에서 병합까지 진행�
 
 노드 하나에 PR 하나다. base 는 `main` 이고 본문은 `.github/pull_request_template.md` 를 따른다. UI 가 바뀌는 PR 은 바뀌기 전과 후 스크린샷을 나란히 붙인다(`scripts/screenshots/compare.py <PR 번호>`).
 
-병합 전에 `git fetch origin main && git rebase origin/main` 으로 최신화하고 `gh pr merge --squash --delete-branch` 로 바로 병합한다. CI 는 기다리지 않는다. CI 가 깨지면 고치는 이슈를 새로 만든다. pre-push 훅(`scripts/setup-hooks.sh` 로 설치)은 main 으로 가는 push 를 거부하고, 다른 브랜치 push 에서는 `./gradlew check` 를 돈다.
+병합 전에 `git fetch origin main && git rebase origin/main` 으로 최신화하고 `gh pr merge --squash --delete-branch` 로 바로 병합한다. GitHub CI 는 자동으로 돌지 않는다(ADR 0026). 병합 전 로컬 `./gradlew check` 통과가 기준이다. pre-push 훅(`scripts/setup-hooks.sh` 로 설치)은 main 으로 가는 push 를 거부하고, 다른 브랜치 push 에서는 `./gradlew check` 를 돈다.
 
 ## 민감 정보
 
