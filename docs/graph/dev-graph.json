@@ -808,8 +808,9 @@
       ],
       "done": "./gradlew :ui:feature-exam:allTests :ui:feature-exam:verifyRoborazziAndroidHostTest",
       "done_desc": "화면마다 스크린샷, 다시 듣기 5초와 Next 10초 테스트",
-      "status": "todo",
-      "issue": 30
+      "status": "doing",
+      "issue": 30,
+      "start": "2026-10-10"
     },
     {
       "id": "u-single",
