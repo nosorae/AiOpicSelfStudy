@@ -14,6 +14,8 @@ class KmpLibraryPlugin : Plugin<Project> {
     override fun apply(target: Project): Unit = with(target) {
         pluginManager.apply("org.jetbrains.kotlin.multiplatform")
         pluginManager.apply("com.android.kotlin.multiplatform.library")
+        // KMP Android 라이브러리는 이 플러그인을 걸어야 lint 태스크가 생기고 check 에 들어간다.
+        pluginManager.apply("com.android.lint")
 
         extensions.configure<KotlinMultiplatformExtension> {
             iosArm64()
@@ -25,6 +27,11 @@ class KmpLibraryPlugin : Plugin<Project> {
                 minSdk = requiredIntVersion("android-minSdk")
                 // Robolectric 스크린샷 테스트가 Android 리소스를 읽을 수 있게 넣는다. 리소스 없는 모듈에는 영향이 없다.
                 withHostTest { isIncludeAndroidResources = true }
+                // 오류는 빌드를 멈추고 경고는 보고서에만 남긴다.
+                lint {
+                    abortOnError = true
+                    warningsAsErrors = false
+                }
             }
 
             sourceSets.commonTest.dependencies {

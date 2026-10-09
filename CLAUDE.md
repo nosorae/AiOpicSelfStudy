@@ -38,7 +38,9 @@ Android namespace 와 Compose 리소스 패키지는 모듈 경로로 만든다.
 
 | 목적 | 명령 |
 |---|---|
-| 전체 확인 (층 검사, 테스트, build-logic 테스트) | `./gradlew check` |
+| 전체 확인 (층 검사, ktlint, Android Lint, 테스트, build-logic 테스트) | `./gradlew check` |
+| 포맷 자동 고침 (ktlint 가 고칠 수 있는 것) | `./gradlew spotlessApply` |
+| Android Lint 만 (보고서: 모듈의 `build/reports/lint-results*.html`) | `./gradlew lint` |
 | 모듈 하나 테스트 | `./gradlew :engine:session:allTests` |
 | Android 호스트 테스트만 | `./gradlew :engine:session:testAndroidHostTest` |
 | iOS 시뮬레이터 테스트만 | `./gradlew :engine:session:iosSimulatorArm64Test` |

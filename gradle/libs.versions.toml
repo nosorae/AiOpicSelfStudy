@@ -16,11 +16,13 @@ kotlinx-coroutines = "1.11.0"
 kotlin = "2.4.20"
 material3 = "1.12.0-alpha03"
 ktlint = "1.8.0"
+composeRules-ktlint = "0.6.8"
 robolectric = "4.17"
 roborazzi = "1.76.0"
 spotless = "8.10.4"
 
 [libraries]
+composeRules-ktlint = { module = "io.nlopez.compose.rules:ktlint", version.ref = "composeRules-ktlint" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
