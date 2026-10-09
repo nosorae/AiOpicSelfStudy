@@ -28,6 +28,6 @@ class SettingsScreenshotTest {
     @Test fun fellBack() = shot(SettingsSamples.fellBack)
 
     private fun shot(state: SettingsUiState, dark: Boolean = false) = captureRoboImage {
-        MontageTheme(darkTheme = dark) { SettingsScreen(state, onIntent = {}, onOpenKeyEntry = {}, onOpenFreeTierNotice = {}) }
+        MontageTheme(darkTheme = dark) { SettingsScreen(state, onIntent = {}, onOpenKeyEntry = {}, onOpenFreeTierNotice = {}, onOpenFlagExport = {}) }
     }
 }

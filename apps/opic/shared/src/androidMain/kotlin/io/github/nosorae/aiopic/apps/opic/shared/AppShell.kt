@@ -25,15 +25,29 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.Res
 import io.github.nosorae.aiopic.ui.design.icon_normal_calendar
 import io.github.nosorae.aiopic.ui.design.icon_normal_home
 import io.github.nosorae.aiopic.ui.design.icon_normal_setting
+import io.github.nosorae.aiopic.ui.featureonboarding.start.StartUiState
+import io.github.nosorae.aiopic.ui.featureonboarding.start.StartViewModel
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.painterResource
+
+/**
+ * 시작 분기(S0, F1.0)를 마친 Android 앱. [start] 가 첫 화면을 정하기 전에는 아무것도 그리지 않는다.
+ * 그동안 MainActivity 가 같은 [start] 의 [StartUiState.keepSplash] 로 시스템 스플래시를 잡아 둔다.
+ */
+@Composable
+fun OpicApp(graph: AppGraph, start: StartViewModel) {
+    val state by start.uiState.collectAsState()
+    state.destination?.let { AppShell(graph, startStack = listOf(AppRoute.start(it))) }
+}
 
 /**
  * Android 앱 틀. 하단 탭(Material 3 Expressive ShortNavigationBar)과 예측 뒤로가기(Navigation 3)를 그린다.
@@ -79,6 +93,7 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
                 backStack = backStack,
                 onBack = { backStack.removeAt(backStack.lastIndex) },
                 modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+                entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
                 entryProvider = { route ->
                     NavEntry(route) {
                         // 시험 중에는 시스템 뒤로가기(예측 뒤로가기 포함)가 시험을 벗어나지 않게 받아서 버린다.
@@ -89,6 +104,7 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
                             onOpen = { backStack.add(it) },
                             onExit = { backStack.retainAll { it == AppRoute.Home } },
                             onBack = { backStack.removeAt(backStack.lastIndex) },
+                            onRestart = { first -> backStack.replaceAll(listOf(first)) },
                         )
                     }
                 },
@@ -97,8 +113,9 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
     }
 }
 
-private fun SnapshotStateList<AppRoute>.selectTab(tab: AppRoute) {
-    val next = listOfNotNull(AppRoute.Home, tab.takeIf { it != AppRoute.Home })
+private fun SnapshotStateList<AppRoute>.selectTab(tab: AppRoute) = replaceAll(listOfNotNull(AppRoute.Home, tab.takeIf { it != AppRoute.Home }))
+
+private fun SnapshotStateList<AppRoute>.replaceAll(next: List<AppRoute>) {
     clear()
     addAll(next)
 }

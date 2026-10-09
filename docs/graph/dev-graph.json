@@ -1069,8 +1069,9 @@
       ],
       "done": "./gradlew :apps:opic:shared:allTests :apps:opic:shared:verifyRoborazziAndroidHostTest :apps:opic:androidApp:assembleDebug && ./gradlew :apps:opic:shared:testAndroidHostTest --tests '*RouteContentTest*' --tests '*StartDestinationTest*'",
       "done_desc": "RouteContent 의 PendingScreen 을 지우고 기록, 회차 리포트, 모의시험, 한 문항 연습, 내보내기(새 경로)를 각 화면 Route 로 그린다. 시작 분기 S0(F1.0): 저장된 키와 동의만 읽어 키가 없으면 키 입력, 동의 전이면 동의, 둘 다 있으면 홈으로 간다. Android 는 SplashScreen 의 setKeepOnScreenCondition 으로 결정이 날 때까지 시스템 스플래시를 잡아 두고, iOS 는 결정 전에는 실행 화면만 보인다. RouteContentTest: AppRoute 의 모든 경로가 PendingScreen 이 아닌 화면을 그리는지. StartDestinationTest: 키 없음, 동의 전, 둘 다 있음 세 경우의 첫 화면과 결정 전 스플래시 유지",
-      "status": "todo",
-      "issue": 106
+      "status": "doing",
+      "issue": 106,
+      "start": "2026-10-10"
     },
     {
       "id": "u-settings2",

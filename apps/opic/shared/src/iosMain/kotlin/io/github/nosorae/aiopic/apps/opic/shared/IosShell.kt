@@ -14,6 +14,7 @@ import io.github.nosorae.aiopic.libs.workqueue.api.ForegroundWorkQueue
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import platform.Foundation.NSUserDefaults
 import platform.UIKit.UIApplication
 import platform.UIKit.UIUserInterfaceStyle
@@ -40,11 +41,16 @@ class IosShell {
         workQueue = ForegroundWorkQueue(handler = { graph.analysisHandler.handle(it) }, scope = MainScope()),
     )
 
-    fun controller(route: AppRoute, onOpen: (AppRoute) -> Unit, onExit: () -> Unit, onBack: () -> Unit): UIViewController = ComposeUIViewController {
+    /** 시작 분기(S0, F1.0). 저장된 키와 동의만 읽어 첫 화면을 [onDecided] 로 넘긴다. 그 전까지 Swift 는 실행 화면과 같은 빈 화면만 둔다. */
+    fun decideStart(onDecided: (AppRoute) -> Unit) {
+        MainScope().launch { onDecided(AppRoute.start(graph.decideStartUseCase())) }
+    }
+
+    fun controller(route: AppRoute, onOpen: (AppRoute) -> Unit, onExit: () -> Unit, onBack: () -> Unit, onRestart: (AppRoute) -> Unit): UIViewController = ComposeUIViewController {
         val themeMode by graph.themeModeStore.themeMode.collectAsState()
         // SwiftUI 가 그리는 탭 바와 내비게이션 바도 같은 모드를 따르게 창의 모드를 바꾼다(F9.1).
         LaunchedEffect(themeMode) { applyToWindows(themeMode) }
-        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) { RouteContent(route, graph, onOpen, onExit, onBack) }
+        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) { RouteContent(route, graph, onOpen, onExit, onBack, onRestart) }
     }
 
     fun showsTabBar(route: AppRoute): Boolean = route.showsTabBar(Platform.Ios)
