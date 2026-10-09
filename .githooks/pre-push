@@ -1,11 +1,18 @@
 #!/bin/sh
-# 푸시하는 커밋이 이슈나 작업 노드와 이어져 있는지, 민감 정보가 없는지 확인한다.
+# main 으로 가는 push 를 막고, 푸시하는 커밋이 이슈나 작업 노드와 이어져 있는지, 민감 정보가 없는지 확인한 뒤 ./gradlew check 를 돌린다.
+# main 은 PR squash merge 로만 바뀐다. 병합은 GitHub 서버에서 일어나므로 이 훅에 걸리지 않는다.
 # 설치: scripts/setup-hooks.sh
 root=$(git rev-parse --show-toplevel)
 zero=0000000000000000000000000000000000000000
 status=0
 
-while read -r _ local_sha _ _; do
+while read -r _ local_sha remote_ref _; do
+    if [ "$remote_ref" = "refs/heads/main" ]; then
+        echo "[main push 거부] main 에 직접 push 하지 않는다." >&2
+        echo "  고칠 방법: node/<노드id> 브랜치에 push 하고 PR 을 만들어 squash merge 한다." >&2
+        status=1
+        continue
+    fi
     [ "$local_sha" = "$zero" ] && continue # 브랜치 삭제
     range="origin/main..$local_sha"
 
@@ -16,13 +23,21 @@ while read -r _ local_sha _ _; do
             echo "[커밋 메시지] $(git log -1 --format='%h %s' "$commit")" >&2
             echo "  메시지에 작업 노드 [노드id] 나 이슈 번호 #숫자 가 없다." >&2
             status=1
+            bad_message=1
         fi
     done
-    if [ $status -ne 0 ]; then
+    if [ "${bad_message:-0}" -eq 1 ]; then
         echo "고칠 방법: git rebase -i origin/main 에서 그 커밋을 reword 로 바꿔 '[h3] 무엇을 했다 (#4)' 형식으로 고친다." >&2
     fi
 
     python3 "$root/scripts/check-secrets.py" "$range" || status=1
 done
 
-exit $status
+[ $status -ne 0 ] && exit $status
+
+# 작업 트리 기준으로 돈다. 커밋하지 않은 변경이 있으면 그것까지 포함해 검사한다.
+echo "pre-push: ./gradlew check 를 돌린다." >&2
+(cd "$root" && ./gradlew check -q </dev/null) || {
+    echo "pre-push: ./gradlew check 실패. 고친 뒤 다시 push 한다." >&2
+    exit 1
+}
