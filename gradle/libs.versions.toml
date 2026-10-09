@@ -1,8 +1,8 @@
 [versions]
 agp = "9.1.1"
 android-compileSdk = "37"
-android-minSdk = "24"
-android-targetSdk = "37"
+android-minSdk = "28"
+android-targetSdk = "36"
 androidx-activity = "1.13.0"
 androidx-appcompat = "1.8.0"
 androidx-core = "1.19.1"
@@ -10,7 +10,9 @@ androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.11.0"
 androidx-testExt = "1.3.0"
 composeMultiplatform = "1.12.1"
+jvm = "17"
 junit = "4.13.2"
+kotlinx-coroutines = "1.11.0"
 kotlin = "2.4.20"
 material3 = "1.12.0-alpha03"
 
@@ -31,7 +33,14 @@ compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", v
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
+
+# build-logic 의 convention 플러그인이 컴파일할 때 쓰는 Gradle 플러그인
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradlePlugin = { module = "org.jetbrains.compose:compose-gradle-plugin", version.ref = "composeMultiplatform" }
+composeCompiler-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
@@ -39,3 +48,9 @@ androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library",
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+aiopicKmpLibrary = { id = "aiopic.kmp.library" }
+aiopicKmpLibraryExplicit = { id = "aiopic.kmp.library.explicit" }
+aiopicKmpCompose = { id = "aiopic.kmp.compose" }
+aiopicUiFeature = { id = "aiopic.ui.feature" }
+aiopicAndroidApplication = { id = "aiopic.android.application" }
+aiopicLayerCheck = { id = "aiopic.layer-check" }

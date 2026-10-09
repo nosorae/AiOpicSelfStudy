@@ -1,6 +1,7 @@
 rootProject.name = "AiOpicSelfStudy"
 
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             mavenContent {
@@ -27,5 +28,26 @@ dependencyResolutionManagement {
     }
 }
 
-include(":androidApp")
-include(":shared")
+include(
+    ":apps:opic:shared",
+    ":apps:opic:androidApp",
+    ":ui:design",
+    ":ui:navigation",
+    ":ui:feature-onboarding",
+    ":ui:feature-exam",
+    ":ui:feature-practice",
+    ":ui:feature-report",
+    ":ui:feature-history",
+    ":ui:feature-settings",
+    ":packs:opic-en",
+    ":engine:session",
+    ":engine:answer",
+    ":engine:question",
+    ":libs:recorder",
+    ":libs:llm-gemini",
+    ":libs:work-queue",
+    ":libs:keyvault",
+    ":libs:tts",
+    ":libs:timer",
+    ":tools:eval",
+)
