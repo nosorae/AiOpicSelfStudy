@@ -85,18 +85,16 @@
       "id": "h2",
       "phase": "P0",
       "kind": "harness",
-      "title": "AGENTS.md, CLAUDE.md, 소스셋별 규칙",
+      "title": "CLAUDE.md, 소스셋별 규칙",
       "dependsOn": [
         "h1"
       ],
       "owns": [
-        "AGENTS.md",
         "CLAUDE.md",
-        "apps/opic/shared/src/*/AGENTS.md",
         ".claude/rules/"
       ],
       "reqs": [],
-      "done": "AGENTS.md 200줄 이하, 빌드·테스트 명령이 실제로 돈다",
+      "done": "CLAUDE.md 200줄 이하, 빌드·테스트 명령이 실제로 돈다",
       "status": "done",
       "issue": 3,
       "start": "2026-10-09",
@@ -154,7 +152,7 @@
       ],
       "owns": [],
       "reqs": [],
-      "done": "사람이 AGENTS.md, CI 결과를 보고 승인. 이후 끝까지 자동",
+      "done": "사람이 CLAUDE.md, CI 결과를 보고 승인. 이후 끝까지 자동",
       "status": "todo",
       "issue": 6
     },

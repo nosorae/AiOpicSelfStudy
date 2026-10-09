@@ -9,7 +9,7 @@ flowchart TD
   subgraph P0["P0 작업 환경 깔기"]
     h0["h0 #1<br/>사람: 초기 프로젝트 셋업"]
     h1["h1 #2<br/>뼈대 정리와 GitHub 올리기"]
-    h2["h2 #3<br/>AGENTS.md, CLAUDE.md, 소스셋별 규칙"]
+    h2["h2 #3<br/>CLAUDE.md, 소스셋별 규칙"]
     h3["h3 #4<br/>검증 명령 하나, 훅, CI"]
     h4["h4 #5<br/>그래프, 이슈, 프로젝트 로드맵"]
     g0["g0 #6<br/>사람: 하네스 확인"]
