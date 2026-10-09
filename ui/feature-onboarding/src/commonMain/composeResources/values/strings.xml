@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="key_entry_title">API 키 넣기</string>
+    <string name="key_entry_provider">AI 제공사</string>
+    <string name="key_entry_key">API 키</string>
+    <string name="key_entry_key_placeholder">키를 붙여 넣으세요</string>
+    <string name="key_entry_key_description">키는 이 기기에만 저장합니다.</string>
+    <string name="key_entry_submit">키 확인하고 저장</string>
+    <string name="key_entry_checking">키 확인 중</string>
+    <string name="key_entry_error_invalid">키가 맞지 않습니다. 복사한 키를 다시 확인하세요.</string>
+    <string name="key_entry_error_retryable">키를 확인하지 못했습니다. 연결을 확인하고 잠시 뒤 다시 시도하세요.</string>
+</resources>

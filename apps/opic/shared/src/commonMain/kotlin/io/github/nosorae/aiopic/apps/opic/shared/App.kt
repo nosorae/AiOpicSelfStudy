@@ -1,48 +1,16 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.painterResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.nosorae.aiopic.ui.design.MontageTheme
+import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyEntryRoute
 
 @Composable
-fun App(modifier: Modifier = Modifier) {
-    MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
-                }
-            }
-        }
+fun App(graph: AppGraph, modifier: Modifier = Modifier) {
+    MontageTheme {
+        // ponytail: 화면이 키 입력 하나뿐이라 백스택 없이 바로 그린다. 앱 틀(u-shell)이 Navigation 3 로 바꾼다.
+        val viewModel = viewModel { graph.keyEntryViewModelFactory.create(null) }
+        KeyEntryRoute(viewModel = viewModel, onDone = {}, modifier = modifier)
     }
 }

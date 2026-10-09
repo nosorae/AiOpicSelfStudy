@@ -9,6 +9,7 @@ dependencies {
     implementation(libs.composeCompiler.gradlePlugin)
     implementation(libs.spotless.gradlePlugin)
     implementation(libs.roborazzi.gradlePlugin)
+    implementation(libs.metro.gradlePlugin)
     testImplementation(libs.kotlin.testJunit)
 }
 
