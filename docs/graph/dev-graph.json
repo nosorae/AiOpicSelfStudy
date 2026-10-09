@@ -858,9 +858,10 @@
       ],
       "done": "./gradlew :ui:feature-report:allTests :ui:feature-history:allTests :ui:feature-report:verifyRoborazziAndroidHostTest :ui:feature-history:verifyRoborazziAndroidHostTest",
       "done_desc": "평가 불가, 시간 부족, 등급 범위, 발음 평가 안 함 상태 스크린샷. 답변마다 분석 모델 표시, 한 회차 안에서 모델이 섞이면 회차 등급 옆 표시",
-      "status": "doing",
+      "status": "done",
       "issue": 32,
-      "start": "2026-10-10"
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "u-flag",
