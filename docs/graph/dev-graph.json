@@ -641,8 +641,10 @@
       ],
       "done": "./gradlew :libs:recorder:iosSimulatorArm64Test",
       "done_desc": "시뮬레이터 테스트: 인터럽션 뒤 새 조각, 조각 목록 복구",
-      "status": "todo",
-      "issue": 24
+      "status": "done",
+      "issue": 24,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-queue",
