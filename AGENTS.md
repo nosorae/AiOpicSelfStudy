@@ -48,6 +48,8 @@ Android namespace 와 Compose 리소스 패키지는 모듈 경로로 만든다.
 
 iOS 시뮬레이터는 iPhone 17 하나로 맞춘다. 스크린샷과 시험 결과를 기기마다 다르게 만들지 않기 위해서다.
 
+실기기에서 iOS 앱을 돌리려면 `apps/opic/iosApp/Configuration/Local.xcconfig.example` 을 같은 폴더의 `Local.xcconfig` 로 복사해 자기 Apple 개발 팀 ID 를 `TEAM_ID` 에 넣는다. `Config.xcconfig` 가 이 파일을 불러온다. `Local.xcconfig` 는 커밋하지 않는다.
+
 ## 3. 작업 규칙
 
 ### 이슈와 브랜치
@@ -61,7 +63,9 @@ iOS 시뮬레이터는 iPhone 17 하나로 맞춘다. 스크린샷과 시험 결
 
 - 형식: `[노드id] 무엇을 했다 (#이슈번호)`. 예: `[n-state] 40분 타이머가 앱 종료 중에 멈추게 했다 (#12)`
 - 한 커밋에 한 가지 변경. 이미 만든 커밋을 고치지 않고 새 커밋을 쌓는다
-- 커밋, 이슈, PR, 코드 어디에도 개인 PC 절대경로를 쓰지 않는다
+- 공개될 오픈소스라 민감 정보를 커밋하지 않는다. API 키, 토큰, 서명 팀 ID, 인증서, 개인 이메일과 기기 이름, 개인 PC 절대경로가 그렇다. 커밋, 이슈, PR, 코드 어디에도 쓰지 않는다
+- 기기마다 다른 값은 커밋하지 않는 파일(`local.properties`, `apps/opic/iosApp/Configuration/Local.xcconfig`)에 둔다
+- Gemini API 키는 사용자가 앱 설정 화면에서 넣는 값이다. 코드와 테스트 고정값에도 실제 키를 넣지 않는다. 테스트는 `"test-key"` 같은 가짜 문자열을 쓴다
 
 ### PR
 
