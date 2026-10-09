@@ -8,4 +8,7 @@ interface ModelSelectionStore {
     suspend fun selectedModelId(): String?
 
     suspend fun selectModel(id: String)
+
+    /** 분석 중에 고른 모델이 내려가 기본 모델로 돌렸으면 원래 모델 id 를 한 번 돌려주고 지운다(F5.8). 없으면 null 이다. */
+    suspend fun takeFellBackFrom(): String? = null
 }

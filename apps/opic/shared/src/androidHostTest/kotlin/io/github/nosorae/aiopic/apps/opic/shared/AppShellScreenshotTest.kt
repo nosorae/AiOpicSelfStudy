@@ -31,6 +31,6 @@ class AppShellScreenshotTest {
     private fun darkSettings() = AppSettings.inMemory().also { runBlocking { it.setThemeMode(ThemeMode.Dark) } }
 
     private fun shot(vararg stack: AppRoute, settings: AppSettings = AppSettings.inMemory()) = captureRoboImage {
-        AppShell(createAppGraph(settings), startStack = stack.toList())
+        AppShell(testAppGraph(settings), startStack = stack.toList())
     }
 }

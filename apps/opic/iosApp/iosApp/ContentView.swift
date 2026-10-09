@@ -43,7 +43,7 @@ struct TabRoot: View {
 }
 
 struct ContentView: View {
-    @State private var shell = IosShell()
+    let shell: IosShell
     @State private var tab: AppRoute = AppRoute.Home.shared
     @State private var paths: [AppRoute: [AppRoute]] = [:]
 

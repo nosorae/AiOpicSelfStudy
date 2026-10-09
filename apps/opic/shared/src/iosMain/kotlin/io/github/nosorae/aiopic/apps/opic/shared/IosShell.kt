@@ -5,8 +5,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
+import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
+import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
+import io.github.nosorae.aiopic.libs.keyvault.api.KeychainKeyVault
+import io.github.nosorae.aiopic.libs.recorder.api.IosRecorder
+import io.github.nosorae.aiopic.libs.tts.IosTts
+import io.github.nosorae.aiopic.libs.workqueue.api.ForegroundWorkQueue
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
+import kotlinx.coroutines.MainScope
 import platform.Foundation.NSUserDefaults
 import platform.UIKit.UIApplication
 import platform.UIKit.UIUserInterfaceStyle
@@ -19,11 +26,18 @@ import platform.UIKit.UIWindowScene
  * 탭 표시와 뒤로 버튼은 Swift 가 [AppRoute] 표를 읽어 정한다. 그래프는 앱에 하나다.
  */
 class IosShell {
-    private val graph = createAppGraph(
-        AppSettings(
+    private val graph: AppGraph = createAppGraph(
+        settings = AppSettings(
             read = { NSUserDefaults.standardUserDefaults.stringForKey(it) },
             write = { key, value -> NSUserDefaults.standardUserDefaults.setObject(value, forKey = key) },
         ),
+        keyVault = KeychainKeyVault(),
+        database = opicDatabase(),
+        recordingsRoot = recordingsRoot(),
+        recorder = IosRecorder(),
+        tts = IosTts(),
+        // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다. 앱이 떠 있는 동안만 보낸다(F5.1).
+        workQueue = ForegroundWorkQueue(handler = { graph.analysisHandler.handle(it) }, scope = MainScope()),
     )
 
     fun controller(route: AppRoute, onOpen: (AppRoute) -> Unit, onExit: () -> Unit, onBack: () -> Unit): UIViewController = ComposeUIViewController {

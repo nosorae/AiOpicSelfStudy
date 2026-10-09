@@ -26,6 +26,12 @@ kotlin {
         implementation(project(":engine:answer"))
         implementation(project(":engine:ai-gemini"))
         implementation(project(":libs:keyvault"))
+        // 그래프가 플랫폼 인자(녹음기, 기기 음성)를 받고 Gemini 클라이언트, 시험 팩, 시계를 만든다.
+        implementation(project(":libs:recorder"))
+        implementation(project(":libs:tts"))
+        implementation(project(":libs:timer"))
+        implementation(project(":libs:llm-gemini"))
+        implementation(project(":packs:opic-en"))
         implementation(libs.androidx.lifecycle.viewmodelCompose)
         implementation(libs.kotlinx.serialization.json)
     }
@@ -33,6 +39,10 @@ kotlin {
     sourceSets.androidMain.dependencies {
         implementation(libs.androidx.navigation3.ui)
         implementation(libs.androidx.activity.compose)
+    }
+    // 분석 처리기 테스트가 Gemini 응답을 가짜 HTTP 엔진으로 돌려준다.
+    sourceSets.commonTest.dependencies {
+        implementation(libs.ktor.client.mock)
     }
     sourceSets.getByName("androidHostTest").dependencies {
         implementation(libs.compose.uiTestJunit4)

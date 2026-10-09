@@ -1001,8 +1001,14 @@
       ],
       "done": "./gradlew :apps:opic:shared:allTests :apps:opic:androidApp:assembleDebug :apps:opic:shared:linkDebugFrameworkIosSimulatorArm64 && ./gradlew :apps:opic:shared:testAndroidHostTest --tests '*AppGraphTest*' && plutil -extract NSMicrophoneUsageDescription raw apps/opic/iosApp/iosApp/Info.plist && plutil -extract UIBackgroundModes json -o - apps/opic/iosApp/iosApp/Info.plist | grep -q audio",
       "done_desc": "AppGraph 의 메모리 자리표시(키 보관소, 늘 통과하는 키 확인기, 메모리 동의, 빈 회차 목록)를 실제 구현으로 바꾼다. Keystore, Keychain 키 보관소, Gemini 키 확인, 동의는 AppSettings 에 저장, Room 저장소(n-data), 녹음기(n-rec-a, n-rec-i), 기기 음성, 분석 대기열과 그 처리기(AnswerAnalysisHandler), Gemini 분석기를 그래프에 넣는다. 플랫폼 객체는 그래프 팩토리 인자로 받는다. iOS Info.plist 에 NSMicrophoneUsageDescription 과 UIBackgroundModes audio 를 넣는다. AppGraphTest: 가짜 플랫폼 인자로 그래프를 만들고 모든 ViewModel 과 저장소를 꺼낼 수 있는지, 동의 값이 다시 만든 그래프에서도 남는지",
-      "status": "todo",
-      "issue": 104
+      "status": "done",
+      "issue": 104,
+      "start": "2026-10-10",
+      "attempts": {
+        "done": 2,
+        "review": 2
+      },
+      "end": "2026-10-10"
     },
     {
       "id": "u-copy",
