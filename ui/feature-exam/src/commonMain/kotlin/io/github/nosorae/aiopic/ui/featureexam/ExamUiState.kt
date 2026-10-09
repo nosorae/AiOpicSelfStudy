@@ -31,6 +31,8 @@ data class ExamUiState(
     val phase: QuestionPhase = QuestionPhase.Ready,
     /** 지금 녹음이 시작된 뒤 흐른 시간. */
     val recorded: Duration = Duration.ZERO,
+    /** 문항 화면에 [recorded] 를 보일지(F2.7). 기본은 꺼짐이고 설정에서 켠다. */
+    val answerTimer: Boolean = false,
     val error: ExamError? = null,
     val navigation: ExamDestination? = null,
 ) {

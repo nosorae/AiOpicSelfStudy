@@ -32,6 +32,7 @@ import io.github.nosorae.aiopic.engine.answer.store.OpicDatabase
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
@@ -71,6 +72,8 @@ import io.github.nosorae.aiopic.ui.featuresettings.SettingsViewModel
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportStore
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportViewModel
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
+import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
+import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
 import org.jetbrains.compose.resources.MissingResourceException
 import kotlin.time.DurationUnit
@@ -122,6 +125,10 @@ interface AppGraph {
 
     @Provides fun provideModelSelectionStore(settings: AppSettings): ModelSelectionStore = settings
 
+    @Provides fun answerTimerStore(settings: AppSettings): AnswerTimerStore = settings
+
+    @Provides fun questionFileStore(settings: AppSettings): QuestionFileStore = settings
+
     // ponytail: 첫 버전은 제공사가 Gemini 하나라 목록도 하나다.
     @Provides fun modelCatalog(): ModelCatalog = GeminiModels
 
@@ -170,13 +177,16 @@ interface AppGraph {
     ).mapKeys { it.key.type }
 
     // ponytail: 시험 팩에 서베이 Part 1~3 질문이 아직 없어 주제 고르기만 보인다. 팩이 Part 질문을 내면 여기서 넘긴다
-    @Provides fun examContent(spec: ExamSpec): ExamContent = ExamContent(spec, OpicEn.surveyTopics, surveyParts = emptyList())
+
+    /** 시험 화면을 열 때마다 만들어서 설정의 답변 타이머(F2.7)를 그때 값으로 읽는다. */
+    @Provides
+    fun examContent(spec: ExamSpec, settings: AppSettings): ExamContent = ExamContent(spec, OpicEn.surveyTopics, surveyParts = emptyList(), answerTimer = settings.answerTimer)
 
     @Provides
     fun examRepository(store: OpicStore, queue: WorkQueue, spec: ExamSpec, @Named(RECORDINGS) recordingsRoot: String): ExamRepository = StoreExamRepository(store, queue, spec, OpicEn::questionPool, recordingsRoot)
 
     @Provides
-    fun practiceRepository(store: OpicStore, queue: WorkQueue, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, ::practicePool, recordingsRoot)
+    fun practiceRepository(store: OpicStore, queue: WorkQueue, settings: AppSettings, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, { practicePool(settings) }, recordingsRoot)
 
     @Provides fun timer(): MonotonicTimer = deviceMonotonicTimer()
 
@@ -199,11 +209,18 @@ interface AppGraph {
 
 private const val RECORDINGS = "recordingsRoot"
 
-/** 시험 팩의 문항 파일을 못 읽으면 빈 풀로 둔다. 연습 화면이 죽지 않고 "낼 질문이 없습니다" 오류 화면을 보인다. */
-private suspend fun practicePool(): List<Question> = try {
-    OpicEn.questionPool()
-} catch (_: MissingResourceException) {
-    emptyList()
+/**
+ * 한 문항 연습의 풀. 시험 팩의 내장 문항에 사용자가 설정에서 불러온 문항(F6.3)을 더한다. 모의시험 출제에는 넣지 않는다.
+ * 시험 팩의 문항 파일을 못 읽으면 불러온 문항만 쓰고, 둘 다 없으면 연습 화면이 죽지 않고 "낼 질문이 없습니다" 오류 화면을 보인다.
+ */
+internal suspend fun practicePool(settings: AppSettings, builtIn: suspend () -> List<Question> = OpicEn::questionPool): List<Question> {
+    val pack = try {
+        builtIn()
+    } catch (_: MissingResourceException) {
+        emptyList()
+    }
+    // 저장할 때 검사를 마친 파일이다.
+    return pack + settings.questionFile()?.let(::parseQuestions).orEmpty()
 }
 
 /** 플랫폼 진입점이 Metro 컴파일러 플러그인 없이 그래프를 만들 수 있게 여기서 만든다. 인자는 [AppGraph.Factory] 와 같다. */

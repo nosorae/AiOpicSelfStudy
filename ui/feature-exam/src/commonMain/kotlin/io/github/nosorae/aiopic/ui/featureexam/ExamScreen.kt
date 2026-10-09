@@ -295,8 +295,14 @@ private fun QuestionStep(
         Text(
             text = when (state.phase) {
                 QuestionPhase.Ready -> stringResource(Res.string.exam_ready)
+
                 QuestionPhase.Speaking -> stringResource(Res.string.exam_speaking)
-                QuestionPhase.Recording -> stringResource(Res.string.exam_recording, state.recorded.clockText())
+
+                QuestionPhase.Recording -> if (state.answerTimer) {
+                    stringResource(Res.string.exam_recording_timer, state.recorded.clockText())
+                } else {
+                    stringResource(Res.string.exam_recording)
+                }
             },
             style = MontageTheme.typography.heading2.bold,
             color = if (state.phase == QuestionPhase.Recording) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralPrimary,
@@ -394,6 +400,7 @@ internal object ExamSamples {
     val questionSpeaking = questionReady.copy(phase = QuestionPhase.Speaking)
     val questionReplayable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 3.seconds)
     val questionNextable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 12.seconds, replayUsed = true)
+    val questionTimer = questionReplayable.copy(answerTimer = true)
     val micError = check.copy(error = ExamError.MicUnavailable)
     val recalibrate = ExamUiState(step = ExamStep.Recalibrate, remaining = 21.minutes, selectedRecalibration = Recalibration.Same)
 }

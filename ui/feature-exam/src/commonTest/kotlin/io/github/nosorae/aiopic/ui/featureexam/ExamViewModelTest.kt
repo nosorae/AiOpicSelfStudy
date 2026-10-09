@@ -37,11 +37,11 @@ class ExamViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(): ExamViewModel {
-        val apply = ApplyExamEventUseCase(repository, testContent)
+    private fun viewModel(content: ExamContent = testContent): ExamViewModel {
+        val apply = ApplyExamEventUseCase(repository, content)
         return ExamViewModel(
             sessionId = "s1",
-            loadExamUseCase = LoadExamUseCase(repository, testContent),
+            loadExamUseCase = LoadExamUseCase(repository, content),
             applyExamEventUseCase = apply,
             playQuestionUseCase = PlayQuestionUseCase(repository, tts, recorder),
             submitAnswerUseCase = SubmitAnswerUseCase(repository, recorder, apply),
@@ -73,6 +73,21 @@ class ExamViewModelTest {
     private fun TestScope.advance(duration: Duration) {
         advanceTimeBy(duration)
         runCurrent()
+    }
+
+    @Test
+    fun `F2_7 답변 타이머는 기본으로 꺼져 있고 설정에서 켰으면 문항 화면에 보인다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        val off = viewModel()
+        runCurrent()
+        assertFalse(off.uiState.value.answerTimer)
+
+        val on = viewModel(testContent.copy(answerTimer = true))
+        playUntilRecording(on)
+        advance(4.seconds)
+
+        assertTrue(on.uiState.value.answerTimer)
+        assertEquals(4.seconds, on.uiState.value.recorded)
     }
 
     @Test

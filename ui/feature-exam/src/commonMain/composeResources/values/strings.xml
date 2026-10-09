@@ -15,7 +15,8 @@
     <string name="exam_remaining">남은 시간 %1$s</string>
     <string name="exam_ready">Play 를 누르면 질문이 나오고, 끝나면 녹음이 시작됩니다.</string>
     <string name="exam_speaking">질문을 듣는 중</string>
-    <string name="exam_recording">녹음 중 %1$s</string>
+    <string name="exam_recording">녹음 중</string>
+    <string name="exam_recording_timer">녹음 중 %1$s</string>
     <string name="exam_rules">다시 듣기는 녹음 시작 5초 안에 한 번만 됩니다. Next 는 녹음 10초 뒤에 켜집니다.</string>
     <string name="exam_play">Play</string>
     <string name="exam_replay">다시 듣기</string>

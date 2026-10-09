@@ -9,6 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -20,6 +23,7 @@ import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
+import io.github.nosorae.aiopic.ui.design.MontageCheckbox
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
@@ -27,13 +31,16 @@ import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
 import io.github.nosorae.aiopic.ui.featuresettings.key.KeyStatus
+import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionImportResult
+import io.github.nosorae.aiopic.ui.featuresettings.practice.rememberQuestionFilePicker
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * ViewModel 을 관측하는 바깥 겹. 키 입력과 무료 등급 안내(동의 화면)는 단순 이동이라 화면을 등록한 쪽이 람다로 연다.
- * 키 입력에서 돌아오면 화면이 다시 보일 때마다 키 저장 여부를 새로 읽는다.
+ * ViewModel 을 관측하는 바깥 겹. 키 입력, 무료 등급 안내(동의 화면), 내보내기, 앱 정보는 단순 이동이라 화면을 등록한 쪽이 람다로 연다.
+ * 키 입력이나 동의 화면에서 돌아오면 화면이 다시 보일 때마다 키 저장 여부와 동의 상태를 새로 읽는다.
+ * 문항 파일 고르기는 플랫폼 창이라 여기서 열고 고른 내용만 ViewModel 에 넘긴다.
  */
 @Composable
 fun SettingsRoute(
@@ -41,11 +48,22 @@ fun SettingsRoute(
     onOpenKeyEntry: (KeyProvider) -> Unit,
     onOpenFreeTierNotice: () -> Unit,
     onOpenFlagExport: () -> Unit,
+    onOpenAppInfo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onIntent(SettingsIntent.Reload) }
-    SettingsScreen(state, viewModel::onIntent, onOpenKeyEntry, onOpenFreeTierNotice, onOpenFlagExport, modifier)
+    val pickQuestionFile = rememberQuestionFilePicker { viewModel.onIntent(SettingsIntent.ImportQuestions(it)) }
+    SettingsScreen(
+        state = state,
+        onIntent = viewModel::onIntent,
+        onOpenKeyEntry = onOpenKeyEntry,
+        onOpenFreeTierNotice = onOpenFreeTierNotice,
+        onOpenFlagExport = onOpenFlagExport,
+        onOpenAppInfo = onOpenAppInfo,
+        onPickQuestionFile = pickQuestionFile,
+        modifier = modifier,
+    )
 }
 
 /** 상태만 받아 그리는 안쪽 겹. 미리보기와 스크린샷 테스트가 이 함수를 쓴다. */
@@ -56,6 +74,8 @@ fun SettingsScreen(
     onOpenKeyEntry: (KeyProvider) -> Unit,
     onOpenFreeTierNotice: () -> Unit,
     onOpenFlagExport: () -> Unit,
+    onOpenAppInfo: () -> Unit,
+    onPickQuestionFile: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.settings_title)) }) {
@@ -87,6 +107,33 @@ fun SettingsScreen(
                 KeyRow(key, onOpen = { onOpenKeyEntry(key.provider) }, onDelete = { onIntent(SettingsIntent.RequestKeyDeletion(key.provider)) })
             }
 
+            SectionLabel(Res.string.settings_consent_section)
+            ConsentRow(
+                given = state.consentGiven,
+                onRevoke = { onIntent(SettingsIntent.RequestConsentRevoke) },
+                onOpenConsent = onOpenFreeTierNotice,
+            )
+
+            SectionLabel(Res.string.settings_practice_section)
+            MontageListCell(
+                title = stringResource(Res.string.settings_answer_timer),
+                caption = stringResource(Res.string.settings_answer_timer_caption),
+                onClick = { onIntent(SettingsIntent.SetAnswerTimer(!state.answerTimerOn)) },
+            ) {
+                MontageCheckbox(checked = state.answerTimerOn, onCheckedChange = { onIntent(SettingsIntent.SetAnswerTimer(it)) })
+            }
+            MontageListCell(
+                title = stringResource(Res.string.settings_question_file),
+                caption = if (state.importedQuestionCount > 0) {
+                    stringResource(Res.string.settings_question_file_count, state.importedQuestionCount)
+                } else {
+                    stringResource(Res.string.settings_question_file_empty)
+                },
+                chevron = true,
+                onClick = onPickQuestionFile,
+            )
+            state.questionImport?.let { QuestionImportNotice(it) }
+
             SectionLabel(Res.string.settings_theme_section)
             ThemeMode.entries.forEach { mode ->
                 MontageListCell(
@@ -106,6 +153,7 @@ fun SettingsScreen(
             )
             // 리포트에서 "틀림"을 누른 교정을 JSON 으로 복사하는 화면(F8.3).
             MontageListCell(title = stringResource(Res.string.export_title), chevron = true, onClick = onOpenFlagExport)
+            MontageListCell(title = stringResource(Res.string.app_info_title), chevron = true, onClick = onOpenAppInfo)
         }
     }
     state.deletingKey?.let { provider ->
@@ -116,6 +164,17 @@ fun SettingsScreen(
             onConfirm = { onIntent(SettingsIntent.DeleteKey) },
             cancel = stringResource(Res.string.settings_key_delete_cancel),
             onDismissRequest = { onIntent(SettingsIntent.CancelKeyDeletion) },
+            negative = true,
+        )
+    }
+    if (state.revokingConsent) {
+        MontageAlert(
+            title = stringResource(Res.string.settings_consent_revoke_title),
+            message = stringResource(Res.string.settings_consent_revoke_message),
+            confirm = stringResource(Res.string.settings_consent_revoke),
+            onConfirm = { onIntent(SettingsIntent.RevokeConsent) },
+            cancel = stringResource(Res.string.settings_key_delete_cancel),
+            onDismissRequest = { onIntent(SettingsIntent.CancelConsentRevoke) },
             negative = true,
         )
     }
@@ -146,6 +205,45 @@ private fun Notice(text: String) {
         style = MontageTheme.typography.label1.regular,
         color = MontageTheme.colors.foregroundNeutralSecondary,
         modifier = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8),
+    )
+}
+
+/** 동의했으면 철회 버튼을, 철회했으면 다시 동의할 수 있게 동의 화면으로 가는 줄을 보인다(F1.3). */
+@Composable
+private fun ConsentRow(given: Boolean, onRevoke: () -> Unit, onOpenConsent: () -> Unit) {
+    MontageListCell(
+        title = stringResource(Res.string.settings_consent),
+        caption = stringResource(if (given) Res.string.settings_consent_given else Res.string.settings_consent_revoked),
+        chevron = !given,
+        onClick = if (given) null else onOpenConsent,
+    ) {
+        if (given) {
+            MontageButton(
+                text = stringResource(Res.string.settings_consent_revoke),
+                onClick = onRevoke,
+                variant = MontageButtonVariant.Text,
+                type = MontageButtonType.Assistive,
+                size = MontageButtonSize.Medium,
+            )
+        }
+    }
+}
+
+/** 방금 불러온 결과. 틀린 파일이면 무엇이 틀렸는지 검사가 돌려준 이유를 그대로 보인다(F6.3). */
+@Composable
+private fun QuestionImportNotice(result: QuestionImportResult) {
+    val text = when (result) {
+        is QuestionImportResult.Imported -> stringResource(Res.string.settings_question_file_imported, result.count)
+        QuestionImportResult.Unreadable -> stringResource(Res.string.settings_question_file_unreadable)
+        is QuestionImportResult.Invalid -> stringResource(Res.string.settings_question_file_invalid, result.reason)
+    }
+    Text(
+        text = text,
+        style = MontageTheme.typography.label1.regular,
+        color = if (result is QuestionImportResult.Imported) MontageTheme.colors.foregroundNeutralSecondary else MontageTheme.colors.foregroundNegativePrimary,
+        modifier = Modifier
+            .padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8)
+            .semantics { liveRegion = LiveRegionMode.Polite },
     )
 }
 
@@ -196,10 +294,19 @@ internal object SettingsSamples {
     val previewSelected = default.copy(selectedModelId = preview.id)
     val fellBack = default.copy(fellBackFrom = "gemini-2.0-flash", keys = listOf(KeyStatus(KeyProvider.Gemini, saved = false)))
     val dark = default.copy(themeMode = ThemeMode.Dark)
+
+    /** 동의를 철회했고, 타이머를 켰고, 불러온 파일이 있는데 방금 고른 파일은 틀렸다. */
+    val practiceSet = default.copy(
+        consentGiven = false,
+        answerTimerOn = true,
+        importedQuestionCount = 12,
+        questionImport = QuestionImportResult.Invalid("id 가 겹친다: [my-1]"),
+    )
+    val imported = default.copy(answerTimerOn = true, importedQuestionCount = 12, questionImport = QuestionImportResult.Imported(12))
 }
 
 @Preview
 @Composable
 private fun SettingsScreenPreview() {
-    MontageTheme { SettingsScreen(SettingsSamples.previewSelected, onIntent = {}, onOpenKeyEntry = {}, onOpenFreeTierNotice = {}, onOpenFlagExport = {}) }
+    MontageTheme { SettingsScreen(SettingsSamples.practiceSet, onIntent = {}, onOpenKeyEntry = {}, onOpenFreeTierNotice = {}, onOpenFlagExport = {}, onOpenAppInfo = {}, onPickQuestionFile = {}) }
 }

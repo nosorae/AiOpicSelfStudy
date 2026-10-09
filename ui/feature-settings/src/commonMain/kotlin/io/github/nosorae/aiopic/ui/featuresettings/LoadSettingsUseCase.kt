@@ -4,10 +4,14 @@ import dev.zacsweers.metro.Inject
 import io.github.nosorae.aiopic.engine.answer.check.choose
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.port.ModelCatalog
+import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
+import io.github.nosorae.aiopic.ui.featureonboarding.consent.VoiceConsent
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
 import io.github.nosorae.aiopic.ui.featuresettings.key.KeyStatus
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
+import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
+import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
 
@@ -17,6 +21,9 @@ data class LoadedSettings(
     val fellBackFrom: String?,
     val keys: List<KeyStatus>,
     val themeMode: ThemeMode,
+    val consentGiven: Boolean,
+    val answerTimerOn: Boolean,
+    val importedQuestionCount: Int,
 )
 
 /**
@@ -30,6 +37,9 @@ class LoadSettingsUseCase(
     private val modelSelectionStore: ModelSelectionStore,
     private val themeModeStore: ThemeModeStore,
     private val keyVault: KeyVault,
+    private val voiceConsent: VoiceConsent,
+    private val answerTimerStore: AnswerTimerStore,
+    private val questionFileStore: QuestionFileStore,
 ) {
     suspend operator fun invoke(): LoadedSettings {
         val choice = modelCatalog.choose(modelSelectionStore.selectedModelId())
@@ -40,6 +50,10 @@ class LoadSettingsUseCase(
             fellBackFrom = choice.fellBackFrom ?: modelSelectionStore.takeFellBackFrom(),
             keys = KeyProvider.entries.map { KeyStatus(it, saved = keyVault.get(it.id) != null) },
             themeMode = themeModeStore.themeMode.value,
+            consentGiven = voiceConsent.isGiven(),
+            answerTimerOn = answerTimerStore.answerTimerOn(),
+            // 저장할 때 검사를 마친 파일이라 다시 읽어도 통과한다.
+            importedQuestionCount = questionFileStore.questionFile()?.let { parseQuestions(it).size } ?: 0,
         )
     }
 }

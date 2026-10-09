@@ -1,10 +1,7 @@
 package io.github.nosorae.aiopic.ui.featuresettings
 
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
-import io.github.nosorae.aiopic.ui.featuresettings.key.DeleteKeyUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.key.KeyStatus
-import io.github.nosorae.aiopic.ui.featuresettings.model.SelectModelUseCase
-import io.github.nosorae.aiopic.ui.featuresettings.theme.SetThemeModeUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -31,12 +28,7 @@ class SettingsViewModelTest {
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.loaded(): SettingsViewModel {
-        val viewModel = SettingsViewModel(
-            loadSettingsUseCase = LoadSettingsUseCase(FakeCatalog, store, store, vault),
-            selectModelUseCase = SelectModelUseCase(store),
-            deleteKeyUseCase = DeleteKeyUseCase(vault),
-            setThemeModeUseCase = SetThemeModeUseCase(store),
-        )
+        val viewModel = settingsViewModel(store, vault)
         advanceUntilIdle()
         return viewModel
     }
