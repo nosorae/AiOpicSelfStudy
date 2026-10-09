@@ -968,8 +968,12 @@
       ],
       "done": "./gradlew :engine:answer:allTests :apps:opic:shared:allTests && ./gradlew :apps:opic:shared:testAndroidHostTest --tests 'io.github.nosorae.aiopic.apps.opic.shared.data.*'",
       "done_desc": "화면 모듈의 저장소 인터페이스 6개(ExamRepository, PracticeRepository, ReportStore, FlagStore, HistoryStore, FlagExportStore)와 홈의 ExamSessionSource 를 OpicStore 위에 구현한다. 틀림 표시(F8.1)는 지금 OpicStore 에 저장할 곳이 없어 Room 에 표를 더한다. 플랫폼마다 Room 데이터베이스 빌더를 둔다. 녹음 폴더는 Android filesDir/recordings/ 아래, iOS 는 앱 지원 폴더 아래 recordings/ 이고 iOS 는 이 폴더에 백업 제외(isExcludedFromBackup)를 건다. 테스트(data 패키지): 인터페이스마다 저장 뒤 읽기, 같은 단계는 같은 녹음 폴더, 틀림 표시 저장과 해제, Android 녹음 폴더가 filesDir/recordings/ 아래인지, iOS 녹음 폴더에 백업 제외가 걸렸는지",
-      "status": "todo",
-      "issue": 103
+      "status": "doing",
+      "issue": 103,
+      "start": "2026-10-10",
+      "attempts": {
+        "done": 1
+      }
     },
     {
       "id": "n-di",

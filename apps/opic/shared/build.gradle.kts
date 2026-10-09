@@ -17,6 +17,11 @@ kotlin {
         implementation(project(":ui:feature-onboarding"))
         implementation(project(":ui:feature-home"))
         implementation(project(":ui:feature-settings"))
+        // 화면 저장소 인터페이스를 Room 저장소(OpicStore) 위에 구현한다(data/).
+        implementation(project(":ui:feature-exam"))
+        implementation(project(":ui:feature-practice"))
+        implementation(project(":ui:feature-report"))
+        implementation(project(":ui:feature-history"))
         // 설정의 모델 목록으로 앱이 들고 있는 Gemini 목록을 넣는다.
         implementation(project(":engine:answer"))
         implementation(project(":engine:ai-gemini"))
@@ -32,5 +37,12 @@ kotlin {
     sourceSets.getByName("androidHostTest").dependencies {
         implementation(libs.compose.uiTestJunit4)
         implementation(libs.compose.uiTestManifest)
+    }
+}
+
+// 호스트 JVM 테스트에는 Android 용 SQLite 네이티브 라이브러리가 없어서, 같은 API 의 JVM 판으로 바꿔 돌린다.
+configurations.matching { it.name.contains("HostTest") && it.name.endsWith("RuntimeClasspath") }.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("androidx.sqlite:sqlite-bundled")).using(module(libs.sqlite.bundled.jvm.get().toString()))
     }
 }
