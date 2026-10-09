@@ -1,0 +1,172 @@
+{
+  "transcriber": "gemini-3.5-flash-lite",
+  "wer_threshold": 0.05,
+  "samples": [
+    {
+      "file": "android-default-q1.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 215,
+      "pauses_s": [
+        0.24,
+        0.32
+      ],
+      "duration_s": 6.99,
+      "transcripts": [
+        "Let's begin the interview. Please tell me a little about yourself, such as where you live and what you usually do in your free time."
+      ]
+    },
+    {
+      "file": "android-default-q2.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 204,
+      "pauses_s": [
+        0.4,
+        0.39,
+        0.2,
+        0.19
+      ],
+      "duration_s": 9.69,
+      "transcripts": [
+        "You indicated in the survey that you enjoy going to parks. Describe the park you visit most often. Where is it? What does it look like? And why do you like going there?"
+      ]
+    },
+    {
+      "file": "android-default-q3.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 234,
+      "pauses_s": [
+        0.72,
+        0.4
+      ],
+      "duration_s": 10.27,
+      "transcripts": [
+        "I'd like to give you a situation and ask you to act it out. You want to buy a new pair of running shoes. Call the store and ask three or four questions about the shoes you are looking for."
+      ]
+    },
+    {
+      "file": "gemini-kore-q1.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 188,
+      "pauses_s": [
+        0.48,
+        0.22
+      ],
+      "duration_s": 7.97,
+      "transcripts": [
+        "Let's begin the interview. Please tell me a little about yourself, such as where you live and what you usually do in your free time."
+      ]
+    },
+    {
+      "file": "ios-sim-default-q1.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 216,
+      "pauses_s": [
+        0.25,
+        0.27
+      ],
+      "duration_s": 6.95,
+      "transcripts": [
+        "Let's begin the interview. Please tell me a little about yourself, such as where you live and what you usually do in your free time."
+      ]
+    },
+    {
+      "file": "ios-sim-default-q2.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 211,
+      "pauses_s": [
+        0.27,
+        0.25,
+        0.23,
+        0.23
+      ],
+      "duration_s": 9.36,
+      "transcripts": [
+        "You indicated in the survey that you enjoy going to parks. Describe the park you visit most often. Where is it? What does it look like? And why do you like going there?"
+      ]
+    },
+    {
+      "file": "ios-sim-default-q3.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 247,
+      "pauses_s": [
+        0.3,
+        0.27
+      ],
+      "duration_s": 9.71,
+      "transcripts": [
+        "I'd like to give you a situation and ask you to act it out. You want to buy a new pair of running shoes. Call the store and ask three or four questions about the shoes you are looking for."
+      ]
+    },
+    {
+      "file": "macos-default-q1.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 216,
+      "pauses_s": [
+        0.25,
+        0.27
+      ],
+      "duration_s": 6.95,
+      "transcripts": [
+        "Let's begin the interview. Please tell me a little about yourself, such as where you live and what you usually do in your free time."
+      ]
+    },
+    {
+      "file": "macos-default-q2.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 211,
+      "pauses_s": [
+        0.27,
+        0.25,
+        0.29,
+        0.23
+      ],
+      "duration_s": 9.38,
+      "transcripts": [
+        "You indicated in the survey that you enjoy going to parks. Describe the park you visit most often. Where is it? What does it look like? And why do you like going there?"
+      ]
+    },
+    {
+      "file": "macos-default-q3.m4a",
+      "wer": 0.0,
+      "wer_runs": [
+        0.0
+      ],
+      "wpm": 247,
+      "pauses_s": [
+        0.3,
+        0.27
+      ],
+      "duration_s": 9.71,
+      "transcripts": [
+        "I'd like to give you a situation and ask you to act it out. You want to buy a new pair of running shoes. Call the store and ask three or four questions about the shoes you are looking for."
+      ]
+    }
+  ]
+}
