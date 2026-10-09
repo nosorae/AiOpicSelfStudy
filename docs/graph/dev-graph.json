@@ -354,12 +354,13 @@
       ],
       "done": "./gradlew check",
       "done_desc": "라이브러리 공개 API(Recorder, Tts, KeyVault(제공사 이름으로 구분), WorkQueue, LlmClient, MonotonicTimer)와 엔진 포트 시그니처(Transcriber, TranscriptAnalyzer, AudioAnswerAnalyzer, ModelCatalog), 가짜 구현(음성을 못 듣는 가짜 제공사 포함). explicit API 모드 통과",
-      "status": "doing",
+      "status": "done",
       "issue": 14,
       "start": "2026-10-09",
       "attempts": {
         "review": 1
-      }
+      },
+      "end": "2026-10-10"
     },
     {
       "id": "c3",
