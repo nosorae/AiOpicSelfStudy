@@ -739,8 +739,10 @@
       "reqs": [],
       "done": "./gradlew :tools:eval:test",
       "done_desc": "같은 입력 5번, 일부러 틀린 답, 수준 다른 답 셋이 evals/reports/ 에 표로",
-      "status": "todo",
-      "issue": 28
+      "status": "done",
+      "issue": 28,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "u-onb",
