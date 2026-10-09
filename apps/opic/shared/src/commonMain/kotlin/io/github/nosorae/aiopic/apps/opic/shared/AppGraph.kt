@@ -59,6 +59,7 @@ import io.github.nosorae.aiopic.ui.featureonboarding.consent.ConsentViewModel
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.VoiceConsent
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyChecker
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyEntryViewModel
+import io.github.nosorae.aiopic.ui.featureonboarding.start.DecideStartUseCase
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartViewModel
 import io.github.nosorae.aiopic.ui.featurepractice.PracticeRepository
 import io.github.nosorae.aiopic.ui.featurepractice.PracticeViewModel
@@ -71,6 +72,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportStore
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportViewModel
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
+import org.jetbrains.compose.resources.MissingResourceException
 import kotlin.time.DurationUnit
 
 /**
@@ -81,6 +83,12 @@ import kotlin.time.DurationUnit
 @DependencyGraph(AppScope::class)
 interface AppGraph {
     val startViewModel: StartViewModel
+
+    /** 첫 실행 화면(S1, S2)을 마친 뒤 다음 화면을 다시 정한다(F1.0). */
+    val decideStartUseCase: DecideStartUseCase
+
+    /** 홈의 모의시험 버튼이 이어 볼 회차를 찾는다(F3). */
+    val examSessionSource: ExamSessionSource
 
     val keyEntryViewModelFactory: KeyEntryViewModel.Factory
 
@@ -168,7 +176,7 @@ interface AppGraph {
     fun examRepository(store: OpicStore, queue: WorkQueue, spec: ExamSpec, @Named(RECORDINGS) recordingsRoot: String): ExamRepository = StoreExamRepository(store, queue, spec, OpicEn::questionPool, recordingsRoot)
 
     @Provides
-    fun practiceRepository(store: OpicStore, queue: WorkQueue, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, OpicEn::questionPool, recordingsRoot)
+    fun practiceRepository(store: OpicStore, queue: WorkQueue, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, ::practicePool, recordingsRoot)
 
     @Provides fun timer(): MonotonicTimer = deviceMonotonicTimer()
 
@@ -190,6 +198,13 @@ interface AppGraph {
 }
 
 private const val RECORDINGS = "recordingsRoot"
+
+/** 시험 팩의 문항 파일을 못 읽으면 빈 풀로 둔다. 연습 화면이 죽지 않고 "낼 질문이 없습니다" 오류 화면을 보인다. */
+private suspend fun practicePool(): List<Question> = try {
+    OpicEn.questionPool()
+} catch (_: MissingResourceException) {
+    emptyList()
+}
 
 /** 플랫폼 진입점이 Metro 컴파일러 플러그인 없이 그래프를 만들 수 있게 여기서 만든다. 인자는 [AppGraph.Factory] 와 같다. */
 fun createAppGraph(

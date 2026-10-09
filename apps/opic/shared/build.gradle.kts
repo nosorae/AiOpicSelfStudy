@@ -38,6 +38,8 @@ kotlin {
     // Android 앱 틀의 하단 탭은 Material 3, 뒤로가기는 Navigation 3 와 Activity 의 뒤로가기 처리를 쓴다. iOS 는 SwiftUI 가 그린다.
     sourceSets.androidMain.dependencies {
         implementation(libs.androidx.navigation3.ui)
+        // 화면마다 ViewModel 저장소를 따로 두어, 백스택에서 빠진 화면(나간 시험 등)의 ViewModel 이 다음 진입에 다시 쓰이지 않게 한다.
+        implementation(libs.androidx.lifecycle.viewmodelNavigation3)
         implementation(libs.androidx.activity.compose)
     }
     // 분석 처리기 테스트가 Gemini 응답을 가짜 HTTP 엔진으로 돌려준다.

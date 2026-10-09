@@ -5,12 +5,15 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -25,7 +28,12 @@ class AppShellTest {
 
     private val settings = AppSettings.inMemory()
 
-    private fun start(vararg stack: AppRoute) = rule.setContent { AppShell(testAppGraph(settings), startStack = stack.toList()) }
+    private val graph by lazy { testAppGraph(settings) }
+
+    private fun start(vararg stack: AppRoute) = rule.setContent { AppShell(graph, startStack = stack.toList()) }
+
+    /** 시험 화면은 회차를 DB 에서 읽은 뒤에 서베이를 그린다. */
+    private fun waitForExam() = rule.waitUntil(5_000) { rule.onAllNodes(hasText("관심 있는 항목을", substring = true)).fetchSemanticsNodes().isNotEmpty() }
 
     private fun pressBack() = rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
 
@@ -68,6 +76,7 @@ class AppShellTest {
         start(AppRoute.Home)
 
         rule.onNodeWithText("모의시험 시작").performClick()
+        waitForExam()
 
         rule.onNodeWithText("기록").assertDoesNotExist()
         rule.onNodeWithText("나가기").assertIsDisplayed()
@@ -75,7 +84,8 @@ class AppShellTest {
 
     @Test
     fun `시험 중 뒤로가기를 누르면 시험 화면에 머문다`() {
-        start(AppRoute.Home, AppRoute.Exam)
+        start(AppRoute.Home, AppRoute.Exam("s"))
+        waitForExam()
 
         pressBack()
 
@@ -84,11 +94,37 @@ class AppShellTest {
 
     @Test
     fun `시험 화면의 나가기를 누르면 홈으로 돌아간다`() {
-        start(AppRoute.Home, AppRoute.Exam)
+        start(AppRoute.Home, AppRoute.Exam("s"))
+        waitForExam()
 
         rule.onNodeWithText("나가기").performClick()
 
-        rule.onNodeWithText("모의시험 시작").assertIsDisplayed()
+        // 저장하고 나간 회차가 남아 있어 홈의 시작 버튼이 이어 보기가 된다.
+        rule.waitUntil(5_000) { rule.onAllNodes(hasText("이어 보기")).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test
+    fun `F3 나갔던 시험이 있으면 홈의 이어 보기가 같은 회차를 연다`() {
+        start(AppRoute.Home, AppRoute.Exam("s"))
+        waitForExam()
+        rule.onNodeWithText("관심 있는 항목을", substring = true).assertIsDisplayed()
+        rule.onNodeWithText("나가기").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasText("이어 보기")).fetchSemanticsNodes().isNotEmpty() }
+
+        rule.onNodeWithText("이어 보기").performClick()
+        waitForExam()
+
+        rule.onNodeWithText("나가기").assertIsDisplayed()
+        assertEquals(listOf("s"), runBlocking { graph.examSessionSource.sessions().first() }.map { it.id })
+    }
+
+    @Test
+    fun `F8_3 설정의 틀림 표시 내보내기 줄을 누르면 내보내기 화면이 열린다`() {
+        start(AppRoute.Home, AppRoute.Settings)
+
+        rule.onNodeWithText("틀림 표시 내보내기").performScrollTo().performClick()
+
+        rule.onNodeWithText("JSON 복사").assertExists()
     }
 
     @Test

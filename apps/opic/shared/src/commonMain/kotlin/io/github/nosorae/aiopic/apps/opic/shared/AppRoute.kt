@@ -1,11 +1,12 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import io.github.nosorae.aiopic.ui.featureonboarding.start.StartDestination
 import kotlinx.serialization.Serializable
 
 enum class Platform { Android, Ios }
 
-/** 앱 틀이 화면을 어떻게 대우하는지. 화면 모듈은 이 값을 모른다. */
-private enum class Chrome { TopLevel, Sub, FullScreen }
+/** 앱 틀이 화면을 어떻게 대우하는지. 화면 모듈은 이 값을 모른다. [Start] 는 탭도 뒤로 버튼도 없는 첫 실행 화면이다. */
+private enum class Chrome { TopLevel, Sub, FullScreen, Start }
 
 /**
  * 앱 틀의 화면 경로 표. 하단 탭 표시, 뒤로가기 가로채기, iOS 뒤로 버튼이 이 표 한 곳에서만 갈린다(ADR 0018).
@@ -26,10 +27,14 @@ sealed class AppRoute {
 
     @Serializable data class ReportDetail(val sessionId: String) : AppRoute()
 
-    @Serializable data object Exam : AppRoute()
+    /** 답변 하나의 리포트. 회차 리포트의 답변 줄과 한 문항 연습의 Next 가 연다. */
+    @Serializable data class AnswerReport(val answerId: String) : AppRoute()
 
-    /** 한 문항 연습. 녹음하는 화면이라 탭이 없지만 시험이 아니라서 뒤로가기는 막지 않는다. */
-    @Serializable data object Practice : AppRoute()
+    /** 모의시험. 홈이 진행 중인 회차 id 를 넣으면 이어 보기, 새 id 면 새 회차다(F3). */
+    @Serializable data class Exam(val sessionId: String) : AppRoute()
+
+    /** 한 문항 연습. 녹음하는 화면이라 탭이 없지만 시험이 아니라서 뒤로가기는 막지 않는다. [answerId] 는 들어올 때마다 새로 만든다. */
+    @Serializable data class Practice(val answerId: String) : AppRoute()
 
     /** 설정의 제공사별 키 관리에서 여는 키 입력. [provider] 는 제공사 이름(`gemini`)이다. */
     @Serializable data class KeyEntry(val provider: String) : AppRoute()
@@ -37,11 +42,21 @@ sealed class AppRoute {
     /** 설정의 무료 등급 안내. 음성 전송 동의 화면을 그대로 연다(F1.3). */
     @Serializable data object FreeTierNotice : AppRoute()
 
+    /** 설정의 틀림 표시 내보내기(F8.3). */
+    @Serializable data object FlagExport : AppRoute()
+
+    /** 첫 실행의 키 입력(S1). 설정에서 여는 [KeyEntry] 와 달리 홈 위에 쌓지 않고 혼자 뜨며, 끝나면 시작 분기를 다시 한다. */
+    @Serializable data object StartKeyEntry : AppRoute()
+
+    /** 첫 실행의 음성 전송 동의(S2). 동의해야 홈으로 간다(F1.3). */
+    @Serializable data object StartConsent : AppRoute()
+
     private val chrome: Chrome
         get() = when (this) {
             Home, History, Settings -> Chrome.TopLevel
-            is ReportDetail, is KeyEntry, FreeTierNotice -> Chrome.Sub
-            Exam, Practice -> Chrome.FullScreen
+            is ReportDetail, is AnswerReport, is KeyEntry, FreeTierNotice, FlagExport -> Chrome.Sub
+            is Exam, is Practice -> Chrome.FullScreen
+            StartKeyEntry, StartConsent -> Chrome.Start
         }
 
     val title: String
@@ -50,27 +65,36 @@ sealed class AppRoute {
             History -> "기록"
             Settings -> "설정"
             is ReportDetail -> "회차 리포트"
-            Exam -> "모의시험"
-            Practice -> "한 문항 연습"
-            is KeyEntry -> "API 키 넣기"
-            FreeTierNotice -> "음성 전송 동의"
+            is AnswerReport -> "답변 리포트"
+            is Exam -> "모의시험"
+            is Practice -> "한 문항 연습"
+            is KeyEntry, StartKeyEntry -> "API 키 넣기"
+            FreeTierNotice, StartConsent -> "음성 전송 동의"
+            FlagExport -> "틀림 표시 내보내기"
         }
 
     /** 시스템 뒤로가기로 나가면 안 되는 화면. 시험 중에는 저장하고 나가는 화면 안 버튼으로만 나간다. */
-    val blocksBack: Boolean get() = this == Exam
+    val blocksBack: Boolean get() = this is Exam
 
-    /** Android 는 탭 화면에서만, iOS 는 하위 화면에도 탭을 보인다. 시험과 녹음 화면은 두 플랫폼 모두 탭이 없다. */
+    /** Android 는 탭 화면에서만, iOS 는 하위 화면에도 탭을 보인다. 시험, 녹음, 첫 실행 화면은 두 플랫폼 모두 탭이 없다. */
     fun showsTabBar(platform: Platform): Boolean = when (chrome) {
         Chrome.TopLevel -> true
         Chrome.Sub -> platform == Platform.Ios
-        Chrome.FullScreen -> false
+        Chrome.FullScreen, Chrome.Start -> false
     }
 
     /** iOS 내비게이션 바(뒤로 버튼과 가장자리 스와이프)를 보일지. Android 는 시스템 뒤로가기라 그리는 버튼이 없다. */
-    val showsBackButtonOnIos: Boolean get() = chrome != Chrome.TopLevel && !blocksBack
+    val showsBackButtonOnIos: Boolean get() = chrome != Chrome.TopLevel && chrome != Chrome.Start && !blocksBack
 
     companion object {
         /** 하단 탭 순서. 값으로 두면 하위 object 초기화와 순환해 null 이 들어가므로 읽을 때 만든다. */
         val tabs: List<AppRoute> get() = listOf(Home, History, Settings)
+
+        /** 시작 분기(S0, F1.0) 결과의 첫 화면. 키 입력과 동의는 홈 위가 아니라 백스택 맨 아래에 혼자 둔다. */
+        fun start(destination: StartDestination): AppRoute = when (destination) {
+            StartDestination.KeyEntry -> StartKeyEntry
+            StartDestination.Consent -> StartConsent
+            StartDestination.Home -> Home
+        }
     }
 }

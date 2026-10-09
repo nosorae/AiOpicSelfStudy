@@ -40,11 +40,12 @@ fun SettingsRoute(
     viewModel: SettingsViewModel,
     onOpenKeyEntry: (KeyProvider) -> Unit,
     onOpenFreeTierNotice: () -> Unit,
+    onOpenFlagExport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onIntent(SettingsIntent.Reload) }
-    SettingsScreen(state, viewModel::onIntent, onOpenKeyEntry, onOpenFreeTierNotice, modifier)
+    SettingsScreen(state, viewModel::onIntent, onOpenKeyEntry, onOpenFreeTierNotice, onOpenFlagExport, modifier)
 }
 
 /** 상태만 받아 그리는 안쪽 겹. 미리보기와 스크린샷 테스트가 이 함수를 쓴다. */
@@ -54,6 +55,7 @@ fun SettingsScreen(
     onIntent: (SettingsIntent) -> Unit,
     onOpenKeyEntry: (KeyProvider) -> Unit,
     onOpenFreeTierNotice: () -> Unit,
+    onOpenFlagExport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.settings_title)) }) {
@@ -102,6 +104,8 @@ fun SettingsScreen(
                 chevron = true,
                 onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) },
             )
+            // 리포트에서 "틀림"을 누른 교정을 JSON 으로 복사하는 화면(F8.3).
+            MontageListCell(title = stringResource(Res.string.export_title), chevron = true, onClick = onOpenFlagExport)
         }
     }
     state.deletingKey?.let { provider ->
@@ -197,5 +201,5 @@ internal object SettingsSamples {
 @Preview
 @Composable
 private fun SettingsScreenPreview() {
-    MontageTheme { SettingsScreen(SettingsSamples.previewSelected, onIntent = {}, onOpenKeyEntry = {}, onOpenFreeTierNotice = {}) }
+    MontageTheme { SettingsScreen(SettingsSamples.previewSelected, onIntent = {}, onOpenKeyEntry = {}, onOpenFreeTierNotice = {}, onOpenFlagExport = {}) }
 }

@@ -7,9 +7,10 @@ struct RouteView: UIViewControllerRepresentable {
     let onOpen: (AppRoute) -> Void
     let onExit: () -> Void
     let onBack: () -> Void
+    let onRestart: (AppRoute) -> Void
 
     func makeUIViewController(context: Context) -> UIViewController {
-        shell.controller(route: route, onOpen: onOpen, onExit: onExit, onBack: onBack)
+        shell.controller(route: route, onOpen: onOpen, onExit: onExit, onBack: onBack, onRestart: onRestart)
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
@@ -20,6 +21,7 @@ struct TabRoot: View {
     let shell: IosShell
     let root: AppRoute
     @Binding var path: [AppRoute]
+    var onRestart: (AppRoute) -> Void = { _ in }
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -29,7 +31,7 @@ struct TabRoot: View {
     }
 
     private func destination(_ route: AppRoute) -> some View {
-        RouteView(shell: shell, route: route, onOpen: { path.append($0) }, onExit: { path.removeAll() }, onBack: { path.removeLast() })
+        RouteView(shell: shell, route: route, onOpen: { path.append($0) }, onExit: { path.removeAll() }, onBack: { path.removeLast() }, onRestart: onRestart)
             // 배경은 안전 영역 밖까지 그리고, 내용은 Compose 화면이 safeDrawing 인셋으로 안쪽에 둔다.
             .ignoresSafeArea()
             .navigationTitle("")
@@ -42,7 +44,31 @@ struct TabRoot: View {
     }
 }
 
+// 시작 분기(S0, F1.0)가 첫 화면을 정할 때까지 실행 화면과 같은 빈 배경만 둔다. 키 입력과 동의는 탭 없이 혼자 뜨고, 마치면 분기를 다시 한다.
 struct ContentView: View {
+    let shell: IosShell
+    @State private var start: AppRoute?
+    @State private var startPath: [AppRoute] = []
+
+    var body: some View {
+        if let first = start, first == AppRoute.Home.shared {
+            Tabs(shell: shell)
+        } else if let first = start {
+            TabRoot(shell: shell, root: first, path: $startPath, onRestart: { next in
+                startPath = []
+                start = next
+            })
+            // 루트가 바뀌면 그 Compose 화면을 새로 만든다.
+            .id(first)
+        } else {
+            Color(.systemBackground)
+                .ignoresSafeArea()
+                .task { shell.decideStart { start = $0 } }
+        }
+    }
+}
+
+struct Tabs: View {
     let shell: IosShell
     @State private var tab: AppRoute = AppRoute.Home.shared
     @State private var paths: [AppRoute: [AppRoute]] = [:]

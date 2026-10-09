@@ -8,6 +8,7 @@ androidx-appcompat = "1.8.0"
 # Compose Multiplatform 1.12.1 이 Android 에서 끌어오는 androidx Compose 판. 테스트 전용 아티팩트만 이 값으로 직접 건다.
 androidx-compose = "1.12.1"
 androidx-core = "1.19.1"
+androidx-core-splashscreen = "1.2.0"
 androidx-datastore = "1.2.1"
 androidx-espresso = "3.7.0"
 androidx-lifecycle = "2.11.0"
@@ -38,6 +39,7 @@ composeRules-ktlint = { module = "io.nlopez.compose.rules:ktlint", version.ref =
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
+androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "androidx-core-splashscreen" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-testRunner" }
@@ -50,6 +52,7 @@ compose-uiTestJunit4 = { module = "androidx.compose.ui:ui-test-junit4", version.
 compose-uiTestManifest = { module = "androidx.compose.ui:ui-test-manifest", version.ref = "androidx-compose" }
 compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodelNavigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
