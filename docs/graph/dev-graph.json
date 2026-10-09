@@ -977,9 +977,10 @@
       "reqs": [],
       "done": "test \"$(ls docs/adr/*.md | wc -l)\" -ge 25 && test -s docs/error-analysis.md",
       "done_desc": "ADR 마다 상황, 고른 것, 버린 것, 근거 링크",
-      "status": "doing",
+      "status": "done",
       "issue": 36,
-      "start": "2026-10-10"
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "store",
