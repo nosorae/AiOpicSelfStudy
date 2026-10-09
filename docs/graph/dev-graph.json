@@ -446,9 +446,10 @@
       "reqs": [],
       "done": "./gradlew check",
       "done_desc": "다른 모델의 리뷰 에이전트가 모델과 인터페이스를 제품 명세와 대조한다. 이후 바뀌면 그래프에 새 확인 노드를 넣는다",
-      "status": "doing",
+      "status": "done",
       "issue": 17,
-      "start": "2026-10-10"
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-state",
