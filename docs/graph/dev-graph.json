@@ -595,8 +595,10 @@
       ],
       "done": "./gradlew :libs:tts:allTests :libs:timer:allTests",
       "done_desc": "재생 끝 콜백이 오는지 두 플랫폼 테스트",
-      "status": "todo",
-      "issue": 22
+      "status": "done",
+      "issue": 22,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-rec-a",
