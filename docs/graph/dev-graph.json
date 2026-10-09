@@ -907,8 +907,10 @@
       ],
       "done": "./gradlew :ui:feature-settings:allTests :ui:feature-settings:verifyRoborazziAndroidHostTest",
       "done_desc": "검증된 목록에서 모델을 고르고 저장. 미리보기 모델을 고르면 2주 공지 안내, 고른 모델이 내려가면 기본 모델로 돌린 알림. 키 관리는 제공사 선택 구조(첫 버전은 Gemini 만). 무료 등급 안내는 동의 화면으로 연결. 화면 모드(시스템 따라가기, 라이트, 다크, 기본은 시스템 따라가기)를 고르면 저장되고 앱 테마가 바로 바뀌는지, 두 플랫폼 같은 화면. 라이트·다크 스크린샷",
-      "status": "todo",
-      "issue": 54
+      "status": "done",
+      "issue": 54,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "g3",

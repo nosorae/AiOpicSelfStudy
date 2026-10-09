@@ -1,6 +1,12 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import android.graphics.Color
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -11,6 +17,9 @@ import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
@@ -38,7 +47,15 @@ import org.jetbrains.compose.resources.painterResource
 fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<AppRoute> = listOf(AppRoute.Home)) {
     val backStack = rememberSaveable(saver = backStackSaver) { startStack.toMutableStateList() }
     val top = backStack.last()
-    MontageTheme {
+    val themeMode by graph.themeModeStore.themeMode.collectAsState()
+    val dark = themeMode.isDark(isSystemInDarkTheme())
+    val activity = LocalActivity.current as? ComponentActivity
+    // 시스템과 다른 화면 모드를 고르면 상태 바와 내비게이션 바 아이콘 색도 앱 테마에 맞춘다.
+    LaunchedEffect(activity, dark) {
+        val style = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark }
+        activity?.enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+    }
+    MontageTheme(darkTheme = dark) {
         Scaffold(
             modifier = modifier,
             // 인셋은 화면(MontageScreen)이 맡는다. 탭 바가 있을 때만 그 높이를 여백으로 주고 소비한다.
@@ -71,6 +88,7 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
                             graph = graph,
                             onOpen = { backStack.add(it) },
                             onExit = { backStack.retainAll { it == AppRoute.Home } },
+                            onBack = { backStack.removeAt(backStack.lastIndex) },
                         )
                     }
                 },

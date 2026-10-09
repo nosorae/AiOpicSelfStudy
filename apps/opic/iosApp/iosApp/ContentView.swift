@@ -6,9 +6,10 @@ struct RouteView: UIViewControllerRepresentable {
     let route: AppRoute
     let onOpen: (AppRoute) -> Void
     let onExit: () -> Void
+    let onBack: () -> Void
 
     func makeUIViewController(context: Context) -> UIViewController {
-        shell.controller(route: route, onOpen: onOpen, onExit: onExit)
+        shell.controller(route: route, onOpen: onOpen, onExit: onExit, onBack: onBack)
     }
 
     func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
@@ -28,7 +29,7 @@ struct TabRoot: View {
     }
 
     private func destination(_ route: AppRoute) -> some View {
-        RouteView(shell: shell, route: route, onOpen: { path.append($0) }, onExit: { path.removeAll() })
+        RouteView(shell: shell, route: route, onOpen: { path.append($0) }, onExit: { path.removeAll() }, onBack: { path.removeLast() })
             // 배경은 안전 영역 밖까지 그리고, 내용은 Compose 화면이 safeDrawing 인셋으로 안쪽에 둔다.
             .ignoresSafeArea()
             .navigationTitle("")

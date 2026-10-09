@@ -4,7 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class AppRouteTest {
-    private val everyRoute = listOf(AppRoute.Home, AppRoute.History, AppRoute.Settings, AppRoute.ReportDetail("s"), AppRoute.Exam, AppRoute.Practice)
+    private val everyRoute = listOf(AppRoute.Home, AppRoute.History, AppRoute.Settings, AppRoute.ReportDetail("s"), AppRoute.Exam, AppRoute.Practice, AppRoute.KeyEntry("gemini"), AppRoute.FreeTierNotice)
 
     private fun tabBar(platform: Platform) = everyRoute.filter { it.showsTabBar(platform) }
 
@@ -20,7 +20,7 @@ class AppRouteTest {
 
     @Test
     fun `iOS 는 리포트 상세 같은 하위 화면에도 탭을 남긴다`() {
-        assertEquals(AppRoute.tabs + AppRoute.ReportDetail("s"), tabBar(Platform.Ios))
+        assertEquals(AppRoute.tabs + listOf(AppRoute.ReportDetail("s"), AppRoute.KeyEntry("gemini"), AppRoute.FreeTierNotice), tabBar(Platform.Ios))
     }
 
     @Test
@@ -37,6 +37,9 @@ class AppRouteTest {
 
     @Test
     fun `iOS 뒤로 버튼은 하위 화면과 한 문항 연습에만 있고 시험에는 없다`() {
-        assertEquals(listOf(AppRoute.ReportDetail("s"), AppRoute.Practice), everyRoute.filter { it.showsBackButtonOnIos })
+        assertEquals(
+            listOf(AppRoute.ReportDetail("s"), AppRoute.Practice, AppRoute.KeyEntry("gemini"), AppRoute.FreeTierNotice),
+            everyRoute.filter { it.showsBackButtonOnIos },
+        )
     }
 }

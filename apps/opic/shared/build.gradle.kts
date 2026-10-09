@@ -16,6 +16,10 @@ kotlin {
         implementation(project(":ui:design"))
         implementation(project(":ui:feature-onboarding"))
         implementation(project(":ui:feature-home"))
+        implementation(project(":ui:feature-settings"))
+        // 설정의 모델 목록으로 앱이 들고 있는 Gemini 목록을 넣는다.
+        implementation(project(":engine:answer"))
+        implementation(project(":engine:ai-gemini"))
         implementation(project(":libs:keyvault"))
         implementation(libs.androidx.lifecycle.viewmodelCompose)
         implementation(libs.kotlinx.serialization.json)

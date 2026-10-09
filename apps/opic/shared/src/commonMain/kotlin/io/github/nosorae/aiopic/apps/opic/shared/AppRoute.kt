@@ -31,10 +31,16 @@ sealed class AppRoute {
     /** 한 문항 연습. 녹음하는 화면이라 탭이 없지만 시험이 아니라서 뒤로가기는 막지 않는다. */
     @Serializable data object Practice : AppRoute()
 
+    /** 설정의 제공사별 키 관리에서 여는 키 입력. [provider] 는 제공사 이름(`gemini`)이다. */
+    @Serializable data class KeyEntry(val provider: String) : AppRoute()
+
+    /** 설정의 무료 등급 안내. 음성 전송 동의 화면을 그대로 연다(F1.3). */
+    @Serializable data object FreeTierNotice : AppRoute()
+
     private val chrome: Chrome
         get() = when (this) {
             Home, History, Settings -> Chrome.TopLevel
-            is ReportDetail -> Chrome.Sub
+            is ReportDetail, is KeyEntry, FreeTierNotice -> Chrome.Sub
             Exam, Practice -> Chrome.FullScreen
         }
 
@@ -46,6 +52,8 @@ sealed class AppRoute {
             is ReportDetail -> "회차 리포트"
             Exam -> "모의시험"
             Practice -> "한 문항 연습"
+            is KeyEntry -> "API 키 넣기"
+            FreeTierNotice -> "음성 전송 동의"
         }
 
     /** 시스템 뒤로가기로 나가면 안 되는 화면. 시험 중에는 저장하고 나가는 화면 안 버튼으로만 나간다. */
