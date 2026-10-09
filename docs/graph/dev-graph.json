@@ -1123,8 +1123,9 @@
       ],
       "done": "./gradlew :apps:opic:androidApp:connectedDebugAndroidTest :apps:opic:shared:iosSimulatorArm64Test",
       "done_desc": "자동 시나리오로 모의시험 한 회. 중간 강제 종료 뒤 이어 보기, 리포트까지",
-      "status": "todo",
-      "issue": 35
+      "status": "doing",
+      "issue": 35,
+      "start": "2026-10-10"
     },
     {
       "id": "docs",

@@ -7,6 +7,7 @@ import io.github.nosorae.aiopic.apps.opic.shared.createAppGraph
 import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
 import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
 import io.github.nosorae.aiopic.libs.keyvault.api.KeystoreKeyVault
+import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.recorder.api.AndroidRecorder
 import io.github.nosorae.aiopic.libs.tts.AndroidTts
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkManagerWorkQueue
@@ -15,7 +16,7 @@ import io.github.nosorae.aiopic.libs.workqueue.api.WorkManagerWorkQueue
  * 앱 프로세스에 그래프 하나를 둔다. 화면이 없을 때 WorkManager 가 프로세스를 깨워도 분석 대기열이 처리기를 찾게
  * Activity 가 아니라 여기서 만든다(F5.1).
  */
-class OpicApplication : Application() {
+open class OpicApplication : Application() {
     lateinit var graph: AppGraph
         private set
 
@@ -31,6 +32,10 @@ class OpicApplication : Application() {
             tts = AndroidTts(this),
             // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다.
             workQueue = WorkManagerWorkQueue(this) { graph.analysisHandler.handle(it) },
+            gemini = gemini(),
         )
     }
+
+    /** 시나리오 테스트가 저장해 둔 응답을 돌려주는 클라이언트로 바꾼다. */
+    protected open fun gemini(): GeminiClient = GeminiClient()
 }
