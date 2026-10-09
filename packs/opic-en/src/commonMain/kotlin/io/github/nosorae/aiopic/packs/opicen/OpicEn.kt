@@ -1,6 +1,8 @@
 package io.github.nosorae.aiopic.packs.opicen
 
+import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
@@ -36,6 +38,16 @@ object OpicEn {
     )
 
     val gradeScale = GradeScale(OpicGrade.entries.map { it.name })
+
+    /** 서베이에서 고를 수 있는 주제. 내장 문항 풀의 주제 id 와 같아야 그 주제 문항이 나온다(F6.2). */
+    // ponytail: 화면에 주제 id 를 그대로 보인다. 한국어 이름은 문구 노드(u-copy)가 붙인다.
+    val surveyTopics = listOf(
+        "movies", "music", "parks", "cafes", "shopping", "overseas-travel", "home",
+        "jogging", "tv", "walking", "cooking", "domestic-travel", "beach", "neighborhood",
+    )
+
+    /** 내장 문항 풀(F6.2). 앱이 출제할 때마다 읽는다. */
+    suspend fun questionPool(): List<Question> = parseQuestions(Res.readBytes("files/questions/pool.json").decodeToString())
 }
 
 /** 오픽 등급, 낮은 것부터. 회차 등급 응답 스키마가 이 값만 고르게 한다(F5.3). */

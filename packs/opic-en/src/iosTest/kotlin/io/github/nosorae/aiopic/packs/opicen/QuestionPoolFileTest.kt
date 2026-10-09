@@ -34,4 +34,10 @@ class QuestionPoolFileTest {
             }
         }
     }
+
+    @Test
+    fun `F6_2 서베이 주제는 내장 풀의 자기소개 아닌 주제와 같다`() = runTest {
+        assertEquals(pool().map { it.topic }.toSet() - "self", OpicEn.surveyTopics.toSet())
+        assertEquals(OpicEn.questionPool(), pool())
+    }
 }

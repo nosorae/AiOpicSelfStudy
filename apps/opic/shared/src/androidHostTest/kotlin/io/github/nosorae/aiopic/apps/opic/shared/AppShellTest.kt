@@ -25,7 +25,7 @@ class AppShellTest {
 
     private val settings = AppSettings.inMemory()
 
-    private fun start(vararg stack: AppRoute) = rule.setContent { AppShell(createAppGraph(settings), startStack = stack.toList()) }
+    private fun start(vararg stack: AppRoute) = rule.setContent { AppShell(testAppGraph(settings), startStack = stack.toList()) }
 
     private fun pressBack() = rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
 
@@ -131,7 +131,7 @@ class AppShellTest {
         }
         rule.setContent {
             CompositionLocalProvider(LocalUriHandler provides uriHandler) {
-                AppShell(createAppGraph(settings), startStack = listOf(AppRoute.Home, AppRoute.Settings))
+                AppShell(testAppGraph(settings), startStack = listOf(AppRoute.Home, AppRoute.Settings))
             }
         }
 
