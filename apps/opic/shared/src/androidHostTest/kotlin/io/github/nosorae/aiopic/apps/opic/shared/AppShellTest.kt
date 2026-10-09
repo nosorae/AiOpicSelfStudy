@@ -5,7 +5,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,7 +20,9 @@ import org.robolectric.annotation.Config
 class AppShellTest {
     @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
-    private fun start(vararg stack: AppRoute) = rule.setContent { AppShell(createAppGraph(), startStack = stack.toList()) }
+    private val settings = AppSettings.inMemory()
+
+    private fun start(vararg stack: AppRoute) = rule.setContent { AppShell(createAppGraph(settings), startStack = stack.toList()) }
 
     private fun pressBack() = rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
 
@@ -81,5 +86,35 @@ class AppShellTest {
         rule.onNodeWithText("나가기").performClick()
 
         rule.onNodeWithText("모의시험 시작").assertIsDisplayed()
+    }
+
+    @Test
+    fun `F9_1 설정에서 다크를 고르면 앱 틀이 보는 화면 모드가 바로 다크가 된다`() {
+        start(AppRoute.Home, AppRoute.Settings)
+
+        rule.onNodeWithText("다크").performScrollTo().performClick()
+        rule.waitForIdle()
+
+        assertEquals(ThemeMode.Dark, settings.themeMode.value)
+    }
+
+    @Test
+    fun `F1_2 설정의 제공사 키 줄을 누르면 키 입력 화면이 열리고 뒤로가기로 설정에 돌아온다`() {
+        start(AppRoute.Home, AppRoute.Settings)
+
+        rule.onNodeWithText("Gemini").performScrollTo().performClick()
+        rule.onNodeWithText("API 키 넣기").assertIsDisplayed()
+        pressBack()
+
+        rule.onNodeWithText("분석 모델").assertIsDisplayed()
+    }
+
+    @Test
+    fun `F1_3 설정의 무료 등급 안내 보기는 음성 전송 동의 화면으로 연결한다`() {
+        start(AppRoute.Home, AppRoute.Settings)
+
+        rule.onNodeWithText("무료 등급 안내 보기").performScrollTo().performClick()
+
+        rule.onNodeWithText("음성 전송 동의").assertIsDisplayed()
     }
 }
