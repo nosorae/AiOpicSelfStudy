@@ -8,12 +8,17 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** 화면마다 라이트 한 장, 문항 화면은 진행마다 한 장. 녹음 중 화면과 서베이는 다크와 글자 200% 도 찍는다. 입력은 [ExamSamples] 다. */
+/**
+ * 화면마다 라이트 한 장, 문항 화면은 진행마다 한 장. 녹음 중 화면과 서베이는 다크와 글자 200% 도 찍는다. 입력은 [ExamSamples] 다.
+ * 서베이 라이트는 Part 1~4 가 한 장에 다 들어오게 높이를 넉넉히 잡는다.
+ */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class ExamScreenshotTest {
-    @Test fun survey() = shot(ExamSamples.survey)
+    @Config(qualifiers = "w360dp-h1800dp-xhdpi")
+    @Test
+    fun survey() = shot(ExamSamples.survey)
 
     @Test fun surveyReady() = shot(ExamSamples.surveyReady)
 
