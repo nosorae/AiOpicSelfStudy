@@ -13,7 +13,7 @@
 | 앱 | `apps/opic/shared`, `apps/opic/androidApp`, `apps/opic/iosApp` | 조립만. DI 그래프, 진입점, 내비게이션 등록 | apps, ui, packs, engine, libs |
 | 화면 | `ui/design`, `ui/navigation`, `ui/feature-*` | 팩이 주는 문구와 등급 체계를 받아 그린다. "오픽"이라는 말을 코드에 쓰지 않는다 | ui, engine, libs |
 | 시험 팩 | `packs/opic-en` | 서베이, 문항 순서, 체크리스트, 프롬프트, 내장 문항, 등급 | engine, libs |
-| 엔진 | `engine/session`, `engine/answer`, `engine/question` | 시험 진행 계산과 이어 보기, 답변 분석 흐름과 출력 검사, 출제 | engine, libs |
+| 엔진 | `engine/session`, `engine/answer`, `engine/question`, `engine/ai-gemini` | 시험 진행 계산과 이어 보기, 답변 분석 포트와 경로 고르기와 출력 검사, 출제, Gemini 어댑터 | engine, libs |
 | 라이브러리 | `libs/recorder`, `libs/llm-gemini`, `libs/work-queue`, `libs/keyvault`, `libs/tts`, `libs/timer` | 플랫폼 기능과 외부 API. 폴더째 떼어 쓸 수 있다 | 없음 (프로젝트 모듈 의존 0개) |
 
 `tools/eval` 은 JVM 명령줄 도구이고 engine, packs, libs 만 의존한다.
@@ -89,12 +89,21 @@ main 에 직접 push 하지 않는다. pre-push 훅(`scripts/setup-hooks.sh` 로
 
 UI 가 바뀌는 PR 은 바뀌기 전과 후 스크린샷을 나란히 붙인다. 병합 전에 `git fetch origin main && git rebase origin/main` 으로 최신화하고 `gh pr merge --squash --delete-branch` 로 바로 병합한다. CI 는 기다리지 않는다. CI 가 깨지면 고치는 이슈를 새로 만든다.
 
-### 구현
+### 노드 진행 (안쪽 루프)
 
-- 테스트를 먼저 쓴다. 실패하는 것을 보고 나서 구현한다
-- 완료는 명령의 종료 코드로 판정한다. 이슈의 완료 조건 명령과 `./gradlew check` 가 0 으로 끝나야 끝난 것이다. "다 됐다"는 말로 판정하지 않는다
+노드의 `done` 은 실행 명령이고 `done_desc` 는 그 설명이다. 반복 규칙은 `docs/graph/dev-graph.json` 최상위 `loop` 하나에 있고 노드의 `loop` 가 횟수 상한을 덮어쓴다(ADR 0020).
+
+1. `scripts/graph/set_status.sh <노드id> doing`
+2. 구현: 테스트를 먼저 쓴다. 실패하는 것을 보고 나서 구현한다
+3. done: `scripts/graph/run_done.sh <노드id>` 와 `./gradlew check` 가 0 으로 끝나야 통과다. 실패하면 2로 돌아간다. 실패 횟수는 노드 `attempts.done` 에 남고, 상한(기본 3번)을 넘으면 스크립트가 노드를 blocked 로 바꾼다
+4. 리뷰: 다른 컨텍스트의 리뷰 에이전트가 diff 만 보고 검토한다. 반려되면 `scripts/graph/run_done.sh <노드id> review` 로 기록하고 2로 돌아간다. 상한(기본 2번)을 넘으면 blocked
+5. 병합: `set_status.sh <노드id> done` 을 돌려 바뀐 `docs/graph/` 를 커밋하고 PR 을 병합한다
+6. blocked 가 되면 멈추고 이슈에 막힌 이유를 적고 사람을 부른다
+
+- done 이 `"human"` 인 노드는 사람이 `done_desc` 를 보고 확인한다. 에이전트가 done 으로 바꾸지 않는다
+- "다 됐다"는 말로 판정하지 않는다. 종료 코드로만 판정한다
 - 막히면 에러 메시지가 가리키는 곳을 고친다. `--no-verify`, `--force`, 테스트 건너뛰기, 검사 끄기로 우회하지 않는다
-- 같은 노드에서 세 번 실패하면 멈추고 이슈에 막힌 이유를 적는다
+- 그래프를 고치면 `python3 scripts/graph/validate.py` 와 `python3 -m unittest discover -s scripts/graph` 를 돌린다
 
 ### 문서
 

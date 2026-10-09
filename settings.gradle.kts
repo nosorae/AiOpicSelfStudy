@@ -43,6 +43,7 @@ include(
     ":engine:session",
     ":engine:answer",
     ":engine:question",
+    ":engine:ai-gemini",
     ":libs:recorder",
     ":libs:llm-gemini",
     ":libs:work-queue",
