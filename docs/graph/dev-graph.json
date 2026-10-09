@@ -425,12 +425,13 @@
       ],
       "done": "./gradlew :ui:feature-onboarding:allTests :ui:feature-onboarding:verifyRoborazziAndroidHostTest :apps:opic:androidApp:assembleDebug",
       "done_desc": "키 입력 화면(제공사 선택 + 키 입력 구조, Gemini 하나만 보임), 상태, 테스트, 스크린샷을 이후 화면 노드가 따라 할 본보기로 병합. ui/design 의 Montage 컴포넌트만 쓴다. enableEdgeToEdge 와 공용 화면 틀의 인셋 처리, assisted 주입, collectAsStateWithLifecycle 도 본보기에 포함",
-      "status": "doing",
+      "status": "done",
       "issue": 16,
       "start": "2026-10-10",
       "attempts": {
         "review": 1
-      }
+      },
+      "end": "2026-10-10"
     },
     {
       "id": "g2",
