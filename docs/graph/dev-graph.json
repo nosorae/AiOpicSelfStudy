@@ -496,8 +496,9 @@
       ],
       "done": "./gradlew :engine:answer:allTests",
       "done_desc": "회차 상태 저장과 복원 왕복",
-      "status": "todo",
-      "issue": 19
+      "status": "doing",
+      "issue": 19,
+      "start": "2026-10-10"
     },
     {
       "id": "n-gemini",
