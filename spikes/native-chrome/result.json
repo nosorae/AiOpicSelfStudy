@@ -1,0 +1,58 @@
+{
+  "node": "s4",
+  "judged_on": "2026-10-09",
+  "devices": {
+    "android": "에뮬레이터 Pixel 3a, API 34, 개발자 설정 '뒤로 탐색 애니메이션' 켬",
+    "ios": "시뮬레이터 iPhone 17, iOS 26.4"
+  },
+  "criteria": [
+    {
+      "id": 1,
+      "question": "하위 화면 탭 표시 차이를 앱 틀 한 곳에서 처리하지 못하고 화면마다 플랫폼 분기가 생기는가",
+      "answer": "아니오",
+      "evidence": [
+        "공통 경로 표: shared/src/commonMain/kotlin/io/github/nosorae/aiopic/spikes/nativechrome/shared/Chrome.kt:9 (Screen), :20 (showsTabBar)",
+        "Android 앱 틀의 분기 한 곳: android/src/main/kotlin/io/github/nosorae/aiopic/spikes/nativechrome/android/MainActivity.kt:66",
+        "iOS 앱 틀의 분기 한 곳: iosApp/iosApp/ContentView.swift:33",
+        "화면 코드(shared/src/commonMain/kotlin/io/github/nosorae/aiopic/spikes/nativechrome/shared/Screens.kt)에는 플랫폼 분기가 없다",
+        "screenshots/android-detail.png (Android 하위 화면 탭 없음), screenshots/ios-detail.png (iOS 하위 화면 탭 있음)"
+      ]
+    },
+    {
+      "id": 2,
+      "question": "스크린샷 테스트를 화면마다 플랫폼별로 따로 만들어야 하는가",
+      "answer": "아니오",
+      "evidence": [
+        "화면은 탭 바를 모르고 Compose 한 벌이라 화면마다 한 벌: shared/src/androidHostTest/kotlin/io/github/nosorae/aiopic/spikes/nativechrome/shared/ScreensScreenshotTest.kt:16, :19",
+        "탭과 뒤로가기는 앱 틀 것이라 플랫폼마다 앱 틀 확인 하나면 된다: iosApp/UITests/ChromeUITests.swift"
+      ]
+    },
+    {
+      "id": 3,
+      "question": "탭 바 높이와 안전 영역 여백을 두 쪽에서 따로 계산해 화면마다 다르게 쓰는가",
+      "answer": "아니오",
+      "evidence": [
+        "화면은 WindowInsets.safeDrawing 하나만 본다: shared/src/commonMain/kotlin/io/github/nosorae/aiopic/spikes/nativechrome/shared/Screens.kt:71, :118",
+        "Android 는 앱 틀이 Scaffold 여백을 주고 소비한다: android/src/main/kotlin/io/github/nosorae/aiopic/spikes/nativechrome/android/MainActivity.kt:83",
+        "iOS 는 UIKit 안전 영역(내비게이션 바, 탭 바 포함)이 Compose safeDrawing 으로 그대로 들어온다. 앱 틀은 ignoresSafeArea 한 줄: iosApp/iosApp/ContentView.swift:29",
+        "screenshots/ios-detail.png (내용이 내비게이션 바 아래에서 시작), screenshots/ios-tab-state.png (목록이 Liquid Glass 탭 바 아래로 지나간다)"
+      ]
+    },
+    {
+      "id": 4,
+      "question": "iOS TabView 안 Compose 화면이 탭 전환에 상태를 잃거나, 시험 중 탭 숨기기가 한 줄 설정으로 안 되는가",
+      "answer": "아니오",
+      "evidence": [
+        "UI 테스트(실제 터치) 통과: 홈에서 3번 누르고 기록 탭에 갔다 오면 '화면 #1, 누른 횟수 3' 그대로다. remember 와 rememberSaveable 둘 다 남는다: iosApp/UITests/ChromeUITests.swift:23, :29",
+        "시험 화면 탭 숨김: iosApp/iosApp/ContentView.swift:33 의 .toolbar(..., for: .tabBar) 한 줄. UI 테스트 :52",
+        "screenshots/ios-tab-state.png, screenshots/ios-exam.png"
+      ],
+      "caveat": "보이는 쪽 값을 .visible 로 주면 첫 화면의 .visible 이 이겨서 시험 화면에서도 탭이 남는다. .automatic 으로 줘야 숨는다"
+    }
+  ],
+  "back_navigation": {
+    "android_predictive_back": "Navigation 3 NavDisplay 기본 동작으로 됐다. screenshots/android-predictive-back.png. 끄는 도중에는 뒤 화면(최상위)의 탭 바가 아직 안 보이고 놓은 뒤에 나타난다",
+    "ios_edge_swipe": "UI 테스트에서 왼쪽 가장자리 끌기로 상세에서 목록으로 돌아갔다(ChromeUITests.swift:42). screenshots/ios-edge-swipe.png 는 끄는 도중"
+  },
+  "decision": "기준 넷 모두 아니오. 하단 탭과 뒤로가기는 네이티브를 유지한다(ADR 0018 그대로)"
+}

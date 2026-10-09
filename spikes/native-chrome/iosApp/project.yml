@@ -1,0 +1,44 @@
+name: NativeChromeSpike
+options:
+  deploymentTarget:
+    iOS: "26.0"
+targets:
+  NativeChromeSpike:
+    type: application
+    platform: iOS
+    sources: [iosApp]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.nosorae.aiopic.spike.nativechrome
+        INFOPLIST_FILE: iosApp/Info.plist
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        ARCHS: arm64
+        CODE_SIGNING_ALLOWED: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    preBuildScripts:
+      - name: Compile Kotlin Framework
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/../../.."
+          ./gradlew :spikes:native-chrome:shared:embedAndSignAppleFrameworkForXcode
+  UITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: NativeChromeSpike
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.nosorae.aiopic.spike.nativechrome.uitests
+schemes:
+  NativeChromeSpike:
+    build:
+      targets:
+        NativeChromeSpike: all
+        UITests: [test]
+    test:
+      targets: [UITests]

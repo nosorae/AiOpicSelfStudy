@@ -282,8 +282,10 @@
       ],
       "done": "test -s spikes/native-chrome/result.json",
       "done_desc": "Montage 토큰으로 그린 화면 둘 위에 Android M3 Expressive NavigationBar 와 예측 뒤로가기, iOS SwiftUI TabView(Liquid Glass) 와 뒤로 스와이프를 얹어 본다. 관리 비용 기준 넷(하위 화면의 탭 표시 차이(Android 는 최상위 탭 화면에서만 탭을 보이고 하위 화면은 숨김, iOS 는 리포트 상세 같은 하위 화면에도 탭을 남김, 시험 진행과 녹음은 두 플랫폼 모두 탭 없는 전체 화면)를 앱 틀 한 곳에서 처리하지 못하고 화면마다 플랫폼 분기가 생기는지, 스크린샷 테스트를 화면마다 플랫폼별로 따로 만들어야 하는지, 탭 바 높이와 안전 영역 여백을 두 쪽에서 따로 계산해 화면마다 다르게 쓰는지, iOS TabView 안 Compose 화면이 탭 전환에 상태를 잃거나 시험 중 탭 숨기기가 한 줄 설정으로 안 되는지)을 결과 JSON 에 예/아니오로. 하나라도 예면 하단 탭과 뒤로가기도 Montage 로 완전 통일한다고 설계 문서 9.2절에 적는다. 코드는 버린다",
-      "status": "todo",
-      "issue": 50
+      "status": "done",
+      "issue": 50,
+      "start": "2026-10-09",
+      "end": "2026-10-09"
     },
     {
       "id": "g1",
