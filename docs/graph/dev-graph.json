@@ -471,8 +471,13 @@
       ],
       "done": "./gradlew :engine:session:allTests",
       "done_desc": "앱 꺼짐, 40분 끝, 7번 뒤 재조정, 수준 1~2 의 12문항 조합",
-      "status": "todo",
-      "issue": 18
+      "status": "done",
+      "issue": 18,
+      "start": "2026-10-10",
+      "attempts": {
+        "done": 1
+      },
+      "end": "2026-10-10"
     },
     {
       "id": "n-db",
