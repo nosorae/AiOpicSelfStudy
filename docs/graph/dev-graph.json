@@ -1000,8 +1000,12 @@
       ],
       "done": "test -s docs/privacy-policy.md && ./gradlew :apps:opic:androidApp:assembleDebug",
       "done_desc": "개인정보처리방침 문서와 앱 안 링크, 백업 제외 규칙과 네트워크 보안 설정 파일, Data safety 와 FGS 신고에 쓸 문구 초안",
-      "status": "todo",
-      "issue": 37
+      "status": "doing",
+      "issue": 37,
+      "start": "2026-10-10",
+      "attempts": {
+        "done": 1
+      }
     },
     {
       "id": "g4",
