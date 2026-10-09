@@ -619,8 +619,10 @@
       ],
       "done": "./gradlew :libs:recorder:connectedAndroidDeviceTest",
       "done_desc": "계측 테스트: 프로세스 종료 뒤 조각 목록 복구, 마이크 서비스 타입 선언",
-      "status": "todo",
-      "issue": 23
+      "status": "done",
+      "issue": 23,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-rec-i",
