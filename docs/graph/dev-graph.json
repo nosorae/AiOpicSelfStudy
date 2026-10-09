@@ -692,8 +692,10 @@
       ],
       "done": "./gradlew :engine:question:allTests :packs:opic-en:allTests",
       "done_desc": "생성 실패 시 내장 풀로 넘어가는지, 유형 순서와 주제 검사",
-      "status": "todo",
-      "issue": 26
+      "status": "done",
+      "issue": 26,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-weak",
