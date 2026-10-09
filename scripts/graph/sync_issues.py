@@ -3,6 +3,7 @@
 
 사용: python3 scripts/graph/sync_issues.py [--dry-run] [--graph 경로] [--repo owner/name]
 - issue 가 없는 노드: 이슈를 만들고 번호를 dev-graph.json 에 적는다
+- 이슈 제목을 그래프 제목 `[노드id] 제목` 에 맞춘다. 닫힌 이슈도 제목만 고친다
 - done: 이슈를 닫는다. done 이 아닌데 닫혀 있으면(PR 병합) 다시 열지 않고 알림만 낸다
 - blocked: status:blocked 라벨을 달고 blockedReason 을 댓글로 남긴다. 풀리면 라벨을 뗀다
 """
@@ -56,7 +57,7 @@ def sync(graph, path, dry_run=False, repo=None, run=gh):
     by_id = {n["id"]: n for n in graph["nodes"]}
     existing_labels = {l["name"] for l in json.loads(run("label", "list", "--limit", "200", "--json", "name", repo=repo))}
     issues = {i["number"]: i for i in json.loads(
-        run("issue", "list", "--state", "all", "--limit", "500", "--json", "number,state,labels", repo=repo))}
+        run("issue", "list", "--state", "all", "--limit", "500", "--json", "number,state,title,labels", repo=repo))}
 
     def ensure_label(name):
         if name not in existing_labels:
@@ -76,7 +77,7 @@ def sync(graph, path, dry_run=False, repo=None, run=gh):
                 continue
             url = run(*args, repo=repo).strip()
             node["issue"] = int(url.rstrip("/").rsplit("/", 1)[1])
-            issues[node["issue"]] = {"number": node["issue"], "state": "OPEN", "labels": []}
+            issues[node["issue"]] = {"number": node["issue"], "state": "OPEN", "title": title, "labels": []}
             save(graph, path)  # 중간에 실패해도 만든 번호는 남긴다
             print(f"이슈 생성: #{node['issue']} {title}")
 
@@ -85,6 +86,9 @@ def sync(graph, path, dry_run=False, repo=None, run=gh):
             print(f"경고: {node['id']} 의 이슈 #{node['issue']} 를 찾지 못했다", file=sys.stderr)
             continue
         num = str(node["issue"])
+        title = f"[{node['id']}] {node['title']}"
+        if issue.get("title") != title:
+            write("issue", "edit", num, "--title", title)
         if node["status"] == "done" and issue["state"] == "OPEN":
             write("issue", "close", num)
         elif node["status"] != "done" and issue["state"] == "CLOSED":

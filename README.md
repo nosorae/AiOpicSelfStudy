@@ -59,7 +59,7 @@ iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 | 제품 요구사항 (화면 목록, F1~F8 수락 기준) | `docs/specs/product.md` |
 | 설계 | `docs/specs/design.md` |
 | 설계 결정 기록 | `docs/adr/` |
-| 작업 규칙, 명령 | `AGENTS.md` |
+| 작업 규칙, 명령 | `CLAUDE.md` |
 
 ## AI 사용 범위
 
@@ -81,10 +81,9 @@ iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 
 | 파일 | 내용 |
 |---|---|
-| `AGENTS.md` | 모듈 구조, 명령, 작업 규칙. 에이전트와 사람이 같이 따른다 |
-| `CLAUDE.md` | `AGENTS.md` 를 불러오고 Claude Code 전용 메모를 더한다 |
+| `CLAUDE.md` | 모듈 구조, 명령, 작업 규칙, Claude Code 메모. 에이전트와 사람이 같이 따른다 |
 | `.claude/rules/` | 소스셋별 규칙(commonMain, androidMain, iosMain) |
-| `.claude/skills/architecture`, `testing`, `adr` | 이 프로젝트 전용 스킬 |
+| `.claude/skills/architecture`, `testing`, `adr`, `ui-quality` | 이 프로젝트 전용 스킬 |
 | `.claude/skills/` 의 나머지 | 외부에서 가져온 스킬. 출처와 라이선스는 `.claude/skills/THIRD_PARTY.md` |
 | `.mcp.json` | KMP 라이브러리 검색용 MCP 서버 |
 
