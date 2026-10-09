@@ -1,0 +1,255 @@
+{
+ "date": "2026-10-09",
+ "models": {
+  "main": "gemini-3.8-flash",
+  "transcribe": "gemini-3.5-transcribe",
+  "sessionSendFallback": "gemini-3.5-flash-lite"
+ },
+ "audio": {
+  "source": "macOS say 합성 음성(Samantha). 사람 녹음이 아니다",
+  "durationSec": 59.12,
+  "pausesInsertedSec": [
+   [
+    22.03,
+    23.58
+   ],
+   [
+    39.9,
+    41.96
+   ]
+  ],
+  "chunks": "5초 m4a(AAC 32kbps) 12개",
+  "full": "m4a 1개 189KB",
+  "referenceWords": 182,
+  "trueWpmIncludingPauses": 184.7,
+  "trueWpmExcludingPauses": 196.7
+ },
+ "requests": {
+  "total": 18,
+  "byStatus": {
+   "200": 7,
+   "400": 2,
+   "429": 1,
+   "503": 8
+  },
+  "note": "503 은 모델 과부하(\"high demand\"), 429 는 무료 등급 gemini-3.8-flash 일일 generateContent 20회 한도(응답 메시지 'limit: 20'). 이 실험의 3.8-flash 생성 요청은 15번째에서 막혔다. 같은 키의 다른 호출이 하루 한도를 같이 쓴 것으로 보지만 확인 못했다. countTokens 1회 포함"
+ },
+ "1_chunksVsFull": {
+  "chunksInline": {
+   "works": true,
+   "wer": 0.0,
+   "audioTokens": 1502,
+   "seconds": 18.01
+  },
+  "singleFile": {
+   "works": true,
+   "wer": 0.0,
+   "audioTokens": 1479,
+   "seconds": 5.61
+  },
+  "note": "조각 경계가 단어 중간을 잘라도 전문은 같았다. 조각 묶음은 마지막 마침표가 빠지고 문단 구분이 없어졌다. 오디오 토큰은 조각 쪽이 23개(1.6%) 많다"
+ },
+ "2_audioPlusStructuredOutput": {
+  "works": true,
+  "field": "generationConfig.responseFormat.text = {mimeType: \"APPLICATION_JSON\", schema}",
+  "pitfall": "mimeType 에 \"application/json\" 을 넣으면 400. 열거값 APPLICATION_JSON 이다",
+  "wer": 0.0,
+  "corrections": 3,
+  "correctionOriginalInTranscript": [
+   true,
+   true,
+   true
+  ],
+  "modelWpm": 183.5,
+  "pauses": {
+   "detected": [
+    [
+     21.8,
+     23.6
+    ],
+    [
+     39.5,
+     41.7
+    ]
+   ],
+   "matches": [
+    {
+     "true": [
+      22.03,
+      23.58
+     ],
+     "found": [
+      21.8,
+      23.6
+     ],
+     "startErrorSec": -0.23,
+     "endErrorSec": 0.02
+    },
+    {
+     "true": [
+      39.9,
+      41.96
+     ],
+     "found": [
+      39.5,
+      41.7
+     ],
+     "startErrorSec": -0.4,
+     "endErrorSec": -0.26
+    }
+   ],
+   "falsePauses": 0
+  },
+  "chunksPlusStructured": "확인 못함. 503 네 번 뒤 429 로 막혔다",
+  "thoughtsTokens": 2797,
+  "noSchemaNote": "gemini-3.5-flash-lite 에 schema 없이 mimeType 만 주니 JSON 이 아닌 마크다운 표를 돌려줬다. schema 를 늘 함께 준다"
+ },
+ "3_wordTimestamps": {
+  "generalModel": {
+   "model": "gemini-3.8-flash",
+   "words": 182,
+   "wer": 0.0055,
+   "detected": [
+    [
+     22.28,
+     23.46
+    ],
+    [
+     40.32,
+     41.52
+    ]
+   ],
+   "matches": [
+    {
+     "true": [
+      22.03,
+      23.58
+     ],
+     "found": [
+      22.28,
+      23.46
+     ],
+     "startErrorSec": 0.25,
+     "endErrorSec": -0.12
+    },
+    {
+     "true": [
+      39.9,
+      41.96
+     ],
+     "found": [
+      40.32,
+      41.52
+     ],
+     "startErrorSec": 0.42,
+     "endErrorSec": -0.44
+    }
+   ],
+   "falsePauses": 0,
+   "outputTokens": 4991
+  },
+  "transcribeModel": {
+   "model": "gemini-3.5-transcribe",
+   "endpoint": "POST v1beta/interactions, input type audio inline data 가 된다",
+   "words": 182,
+   "wer": 0.0,
+   "detected": [
+    [
+     22.0,
+     23.6
+    ],
+    [
+     39.9,
+     42.0
+    ]
+   ],
+   "matches": [
+    {
+     "true": [
+      22.03,
+      23.58
+     ],
+     "found": [
+      22.0,
+      23.6
+     ],
+     "startErrorSec": -0.03,
+     "endErrorSec": 0.02
+    },
+    {
+     "true": [
+      39.9,
+      41.96
+     ],
+     "found": [
+      39.9,
+      42.0
+     ],
+     "startErrorSec": 0.0,
+     "endErrorSec": 0.04
+    }
+   ],
+   "falsePauses": 0,
+   "outputTokens": 199
+  },
+  "gapThresholdSec": 0.8
+ },
+ "4_cost": {
+  "priceUsdPerMTok": {
+   "gemini-3.8-flash": {
+    "in": 0.75,
+    "out": 3.75,
+    "in2027": 1.5,
+    "out2027": 7.5
+   },
+   "gemini-3.5-transcribe": {
+    "in": 2.0,
+    "out": 12.0
+   }
+  },
+  "billedAudioTokensPerSec": 25.0,
+  "countTokensAudioPerSec": 32.1,
+  "answer": {
+   "inputTokens": 1545,
+   "outputPlusThoughtTokens": 3190,
+   "usd2026": 0.013121,
+   "usd2027": 0.026242
+  },
+  "sessionGrade": {
+   "assumption": "답변 15개 피드백 JSON + 60초 오디오 15개. 입력은 countTokens 의 텍스트 토큰 + 답변 응답 usage 기준 오디오 토큰x15, 출력은 답변 1개 분석과 같다고 가정",
+   "countTokensTotal": 34486,
+   "inputTokensBilledEstimate": 28216,
+   "outputTokensEstimate": 3190,
+   "usd2026": 0.033125,
+   "usd2027": 0.066249,
+   "sentFor3AudiosWith": "gemini-3.5-flash-lite",
+   "sent3Usage": {
+    "promptTokenCount": 10468,
+    "candidatesTokenCount": 362,
+    "totalTokenCount": 10830,
+    "promptTokensDetails": [
+     {
+      "modality": "TEXT",
+      "tokenCount": 6031
+     },
+     {
+      "modality": "AUDIO",
+      "tokenCount": 4437
+     }
+    ],
+    "serviceTier": "standard"
+   }
+  },
+  "transcribeAnswerUsd": 0.005348,
+  "freeTierBilledUsd": 0,
+  "sessionTotal15Answers1Grade": {
+   "usd2026": 0.2299,
+   "usd2027": 0.4599
+  }
+ },
+ "conclusions": [
+  "답변 1개는 녹음 조각을 기기에서 한 m4a 로 이어 붙여 gemini-3.8-flash 한 번 호출(오디오 + responseFormat APPLICATION_JSON 스키마)로 보낸다. 조각을 따로 넣어도 전문은 같았지만 응답이 18.0초로 한 파일(5.6초)보다 느렸다(각 1회 측정)",
+  "비용은 생각 토큰이 대부분이다. 답변 1개 약 $0.013 중 출력과 생각 토큰(3,190개)이 90%다. 15문항 회차(답변 15 + 등급 1)는 약 $0.23, 2027년 단가로 $0.46. 생각 예산을 줄였을 때 품질은 다음에 확인한다",
+  "무료 등급 gemini-3.8-flash 는 generateContent 하루 20회라 회차 1번(16회)과 재시도면 끝난다. 18번 중 8번이 503 과부하였다. 대기열에 대기 후 재시도와 다른 안정 모델로 바꾸는 경로가 있어야 한다. 멈춤 위치는 일반 모델도 0.45초 안, 받아쓰기 전용 모델은 0.04초 안이었다"
+ ]
+}

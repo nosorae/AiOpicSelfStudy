@@ -1,0 +1,40 @@
+{
+ "candidates": [
+  {
+   "content": {
+    "parts": [
+     {
+      "text": "### ACTFL Checklist\n\n| Statement | Yes / No |\n|---|---|\n| Can handle successfully a limited number of interactive, task-oriented, and social situations? | **Yes** |\n| Can ask and answer questions, initiate and maintain predictable conversational exchanges? | **Yes** |\n| Can communicate personal information about self, family, and daily activities? | **Yes** |\n| Can narrate and describe in present, past, and future time? | **Yes** |\n| Can handle uncomplicated tasks and social situations requiring an exchange of basic information? | **Yes** |\n| Can maintain communication with some difficulty or hesitation, but without breakdown? | **Yes** |\n| Can connect sentences into a paragraph-length discourse? | **Yes** |\n\n---\n\n### Level Range: **Intermediate Mid (IM2 – IM3)**\n\n#### Reasons:\n1. **Paragraph-Level Discourse:** The speaker successfully links multiple sentences together to form cohesive paragraphs recounting daily routines, past experiences (a trip to Busan), and future goals. This is a hallmark of the Intermediate High/Mid threshold.\n2. **Time Frames:** The speaker demonstrates control over multiple time frames (present work routines, past weekend trip, and future goals).\n3. **Vocabulary and Fluency:** The speech is delivered at a natural, steady pace (around 183 WPM) with minimal pausing, showing high comfort with basic social and personal topics. \n4. **Minor Errors:** While there are minor non-native phrasings (e.g., \"breakfast with eggs and toast\" instead of \"of eggs and toast,\" \"trips I have ever had\" instead of \"taken\"), these do not obscure meaning and are typical of strong Intermediate speakers.",
+      "thoughtSignature": "EmAKXgFpFH0TSbunWWJgHFio+uY8/9kr+1Dr1wWJDsw5sI2QE3z2TFb1HmFW8lXGcZTtkuxvIp+fSr+YQV3hVeRnpIKCBm3FytzBTL09OCtWEV7MH40SJ+tweMM4Q/6VUUI="
+     }
+    ],
+    "role": "model"
+   },
+   "finishReason": "STOP",
+   "index": 0
+  }
+ ],
+ "usageMetadata": {
+  "promptTokenCount": 10468,
+  "candidatesTokenCount": 362,
+  "totalTokenCount": 10830,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 6031
+   },
+   {
+    "modality": "AUDIO",
+    "tokenCount": 4437
+   }
+  ],
+  "serviceTier": "standard"
+ },
+ "modelVersion": "gemini-3.5-flash-lite",
+ "responseId": "IfPIavDyKYu02roP77OpyAg",
+ "_spike": {
+  "status": 200,
+  "seconds": 5.66,
+  "model": "gemini-3.5-flash-lite"
+ }
+}

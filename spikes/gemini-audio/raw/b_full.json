@@ -1,0 +1,40 @@
+{
+ "candidates": [
+  {
+   "content": {
+    "parts": [
+     {
+      "text": "Hi, my name is Alex and I am a software developer living in Seoul. I usually work from home three days a week, and on the other days, I go to an office near Gangnam Station. In my free time, I like to go jogging along the Han River, especially in the early morning when the air is fresh. After jogging, I usually make a simple breakfast with eggs and toast.\n\nLast weekend, I went to a small cafe with my friends. We talked about our trip to Busan last summer. We ate a lot of seafood and we walked on the beach until midnight. It was one of the best trips I have ever had. I took so many pictures that my phone ran out of storage.\n\nThese days, I am trying to improve my English speaking skills because I want to work with people from other countries. I practice every evening for about 30 minutes, and I think my confidence is getting better little by little. My goal is to get a good score on my speaking test next month.",
+      "thoughtSignature": "EmkKZwFpFH0TD3HbM+3Kfhk70Rmjb4CcucmsAEaBLV9eiwZ/gtGkPU4ap5vOjVqXLs5ONshyflD3C6sefj8w9NPOcScwP6ptcNrTo9I8YgGJ6wYF1wLyx9iFFzNby2aW2vtLCl49K3qg4nQ="
+     }
+    ],
+    "role": "model"
+   },
+   "finishReason": "STOP",
+   "index": 0
+  }
+ ],
+ "usageMetadata": {
+  "promptTokenCount": 1493,
+  "candidatesTokenCount": 208,
+  "totalTokenCount": 1701,
+  "promptTokensDetails": [
+   {
+    "modality": "TEXT",
+    "tokenCount": 14
+   },
+   {
+    "modality": "AUDIO",
+    "tokenCount": 1479
+   }
+  ],
+  "serviceTier": "standard"
+ },
+ "modelVersion": "gemini-3.8-flash",
+ "responseId": "hPHIaofPK_Gl0-kPh7jukQY",
+ "_spike": {
+  "status": 200,
+  "seconds": 5.61,
+  "model": "gemini-3.8-flash"
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "totalTokens": 34486,
+ "promptTokensDetails": [
+  {
+   "modality": "TEXT",
+   "tokenCount": 6031
+  },
+  {
+   "modality": "AUDIO",
+   "tokenCount": 28455
+  }
+ ],
+ "_spike": {
+  "status": 200,
+  "seconds": 6.67,
+  "model": "gemini-3.8-flash"
+ }
+}
