@@ -7,6 +7,10 @@ plugins {
 }
 
 kotlin {
+    // 켜지 않으면 Android 앱 APK 에 문항 풀과 프롬프트 파일이 실리지 않아 출제와 분석이 리소스 없음으로 멈춘다.
+    android {
+        androidResources.enable = true
+    }
     sourceSets {
         commonMain.dependencies {
             api(project(":engine:session"))
