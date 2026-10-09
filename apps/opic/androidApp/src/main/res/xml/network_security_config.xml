@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 앱이 여는 연결은 Gemini HTTPS 하나다. 평문 HTTP 를 모든 주소에서 막는다. 사용자가 깐 인증서는 믿지 않는다(시스템 인증서만). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
