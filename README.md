@@ -58,7 +58,9 @@ iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 |---|---|
 | 제품 요구사항 (화면 목록, F1~F8 수락 기준) | `docs/specs/product.md` |
 | 설계 | `docs/specs/design.md` |
-| 설계 결정 기록 | `docs/adr/` |
+| 설계 결정 기록 (26개) | `docs/adr/` |
+| AI 출력 오류 분석 | `docs/error-analysis.md` |
+| 라이브러리 모듈 사용법 | `libs/<모듈>/README.md` |
 | 꼭 지킬 것, 명령 | `CLAUDE.md` |
 | 노드 진행 절차 | `.claude/skills/node-workflow` |
 
@@ -76,7 +78,7 @@ iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 - 막힌 노드를 판단한다
 - 완성 뒤 실기기(Android, iPhone)로 모의시험 한 회를 끝까지 보고, 중간에 앱을 강제 종료해 이어 보기를 확인한다
 
-**AI 출력 검사.** 앱 안에서도 Gemini 응답을 그대로 믿지 않는다. 교정의 원문 구절이 전문에 있는지, 값 범위와 문항 수가 맞는지 앱 코드가 확인하고, 통과하지 못한 항목은 버린다. 사용자는 틀린 교정을 표시해 내보낼 수 있다.
+**AI 출력 검사.** 앱 안에서도 Gemini 응답을 그대로 믿지 않는다. 교정의 원문 구절이 전문에 있는지, 값 범위와 문항 수가 맞는지 앱 코드가 확인하고, 통과하지 못한 항목은 버린다. 사용자는 틀린 교정을 표시해 내보낼 수 있다. 모인 표시와 품질 확인 도구(`tools/eval`)의 보고서는 `docs/error-analysis.md` 에서 종류별로 세어 다음 프롬프트 버전에 반영한다.
 
 **규칙 파일과 스킬.**
 
@@ -91,3 +93,5 @@ iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 ## 라이선스
 
 정하는 중이다. `.claude/skills/` 아래 외부 스킬은 각 원본의 Apache License 2.0 을 따른다.
+
+디자인 시스템: Montage by Wantedlab (MIT). 글꼴 Pretendard 는 SIL OFL 1.1 이다. 전문은 `THIRD_PARTY_LICENSES.md` 에 있다.

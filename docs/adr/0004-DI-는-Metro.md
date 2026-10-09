@@ -27,3 +27,7 @@ Metro 를 쓴다.
 ## 결과
 
 컴파일러 플러그인이라 Kotlin 버전을 올릴 때 Metro 지원 버전을 함께 확인해야 한다.
+
+## 근거
+
+- [앱 DI 그래프](../../apps/opic/shared/src/commonMain/kotlin/io/github/nosorae/aiopic/apps/opic/shared/AppGraph.kt)

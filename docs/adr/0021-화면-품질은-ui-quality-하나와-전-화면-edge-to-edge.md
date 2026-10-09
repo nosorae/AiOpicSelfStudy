@@ -31,3 +31,8 @@ Android 16 기기에서는 앱이 edge-to-edge 를 끌 수 없다. 일부 화면
 ## 결과
 
 화면마다 인셋 처리를 빠뜨리면 버튼이 시스템 바에 가려진다. 공용 화면 틀과 스크린샷 테스트로 잡는다. 기준이 바뀌면 `ui-quality` 를 고치고 이 기록은 그대로 둔다.
+
+## 근거
+
+- [화면 품질 기준](../../.claude/skills/ui-quality/SKILL.md)
+- [공용 화면 틀](../../ui/design/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/design/MontageScreen.kt)
