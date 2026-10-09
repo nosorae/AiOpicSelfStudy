@@ -1,0 +1,16 @@
+{
+  "node": "s2",
+  "judged_by": "",
+  "judged_on": "",
+  "listened_on": "",
+  "samples": {
+    "ios-sim-default": { "easy_to_understand": null, "natural_like_exam": null, "usable_for_practice": null, "note": "" },
+    "macos-default": { "easy_to_understand": null, "natural_like_exam": null, "usable_for_practice": null, "note": "" },
+    "android-default": { "easy_to_understand": null, "natural_like_exam": null, "usable_for_practice": null, "note": "" },
+    "gemini-kore": { "easy_to_understand": null, "natural_like_exam": null, "usable_for_practice": null, "note": "" }
+  },
+  "decision": {
+    "device_tts_ok": null,
+    "note": ""
+  }
+}
