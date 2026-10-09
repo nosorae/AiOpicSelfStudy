@@ -1,0 +1,46 @@
+{
+  "repeatLevel": "IM2",
+  "wrong": {
+    "answer": {
+      "question": "Tell me about a memorable trip you took. Where did you go and what did you do?",
+      "type": "past-experience",
+      "script": "Last summer I go to Busan with my family. We stay at a small hotel near the beach. On the first day I eat a lot of seafood at the market. It was a amazing trip. When it started to rain, I bought a umbrella at a convenience store and we kept walking along the beach."
+    },
+    "errors": [
+      { "wrong": "I go to Busan", "right": "I went to Busan" },
+      { "wrong": "We stay at", "right": "We stayed at" },
+      { "wrong": "I eat a lot", "right": "I ate a lot" },
+      { "wrong": "a amazing trip", "right": "an amazing trip" },
+      { "wrong": "a umbrella", "right": "an umbrella" }
+    ]
+  },
+  "levels": [
+    {
+      "name": "NL",
+      "answers": [
+        { "question": "Tell me about your home.", "type": "description", "script": "My home. Apartment. Small. Living room. Kitchen." },
+        { "question": "Tell me about a trip you took.", "type": "past-experience", "script": "Busan. Beach. Good. Family." },
+        { "question": "Call your friend and ask three or four questions about the concert.", "type": "roleplay-ask", "script": "Hello. Concert. Time? Okay. Bye." },
+        { "question": "You cannot go to the concert. Call your friend, explain the problem and give two or three alternatives.", "type": "roleplay-solve", "script": "Sorry. Sick. Concert no. Sorry." }
+      ]
+    },
+    {
+      "name": "IM2",
+      "answers": [
+        { "question": "Tell me about your home.", "type": "description", "script": "I live in an apartment in Seoul. It has two bedrooms and a small living room. I like my kitchen because it is bright. I usually cook dinner there with my sister." },
+        { "question": "Tell me about a trip you took.", "type": "past-experience", "script": "Last year I went to Busan with my family. We stayed near the beach for three days. We ate fresh fish and walked on the beach at night. It was really fun and I want to go again." },
+        { "question": "Call your friend and ask three or four questions about the concert.", "type": "roleplay-ask", "script": "Hi, it's me. I heard you have tickets for the concert. What time does it start? Where is the concert hall? How much is the ticket? Okay, thank you." },
+        { "question": "You cannot go to the concert. Call your friend, explain the problem and give two or three alternatives.", "type": "roleplay-solve", "script": "Hi, I'm sorry but I can't go to the concert tonight. I have a bad cold. Maybe you can go with your brother. Or we can go to another concert next month." }
+      ]
+    },
+    {
+      "name": "AL",
+      "answers": [
+        { "question": "Tell me about your home.", "type": "description", "script": "I live in a two bedroom apartment on the fifteenth floor of a building near the Han River. What I like most is the living room, because the big windows face south, so it gets sunlight almost all day. A few years ago I replaced the old furniture with a low sofa and a long wooden table, and since then it has become the place where my friends and I end up whenever we get together. If I move someday, I will definitely look for a place with the same kind of light." },
+        { "question": "Tell me about a trip you took.", "type": "past-experience", "script": "The most memorable trip I have taken was a three day trip to Busan with my family last summer. We had planned to spend most of the time on the beach, but it rained heavily on the second day, so we changed our plans and visited the fish market and a small museum about the history of the port. Honestly, that rainy day turned out to be the highlight, because we talked to local shop owners and learned a lot about the city. Looking back, I think trips are more interesting when things do not go exactly as planned." },
+        { "question": "Call your friend and ask three or four questions about the concert.", "type": "roleplay-ask", "script": "Hey, it's me. I just saw your message about the concert on Saturday, and I'd love to join you. Could you tell me what time the doors open? Also, do you know if there are any seats left near the stage, or is it standing only? And how are you planning to get there, because if you are driving, maybe I could ride with you? Let me know, and thanks for thinking of me." },
+        { "question": "You cannot go to the concert. Call your friend, explain the problem and give two or three alternatives.", "type": "roleplay-solve", "script": "Hi, I'm really sorry to call you so late, but I have a problem. My manager just asked me to finish an urgent report tonight, so I won't be able to make it to the concert. I feel terrible because you bought the tickets. Here is what I was thinking. You could give my ticket to your cousin, since she loves this band. Or, if you can't find anyone, I could pay you back for the ticket. Another option is that we watch their next show together, and I will take care of the tickets this time. Which one works best for you?" }
+      ]
+    }
+  ]
+}
