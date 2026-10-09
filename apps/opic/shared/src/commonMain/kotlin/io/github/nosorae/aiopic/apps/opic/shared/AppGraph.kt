@@ -15,9 +15,11 @@ import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
 import io.github.nosorae.aiopic.engine.answer.analysis.AnswerAnalysisHandler
 import io.github.nosorae.aiopic.engine.answer.check.choose
 import io.github.nosorae.aiopic.engine.answer.model.Answer
+import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
+import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.ModelCatalog
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording
@@ -154,15 +156,7 @@ interface AppGraph {
     @Provides fun timer(): MonotonicTimer = deviceMonotonicTimer()
 
     @Provides
-    fun analysisHandler(store: OpicStore, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): WorkHandler {
-        val gemini = GeminiAnalyzer(client) { keyVault.get(GeminiModels.PROVIDER) }
-        return AnswerAnalysisHandler(
-            store = store,
-            router = AnswerRouter(gemini, NoTwoStepPath, NoTwoStepPath),
-            consented = settings::isGiven,
-            request = { answer -> analysisRequest(answer, GeminiModels.choose(settings.selectedModelId()).model, recorder) },
-        )
-    }
+    fun analysisHandler(store: OpicStore, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): WorkHandler = answerAnalysisHandler(store, client, keyVault, settings) { answer, model -> analysisRequest(answer, model, recorder) }
 
     @DependencyGraph.Factory
     fun interface Factory {
@@ -199,10 +193,44 @@ internal fun geminiKeyCheck(result: LlmResult): DomainResult<Unit> = when (resul
 }
 
 /**
+ * 분석 대기열의 처리기. 테스트가 가짜 Gemini 클라이언트를 넣을 수 있게 그래프 밖에 둔다.
+ * [request] 를 따로 받는 것은 호스트 JVM 테스트에서 시험 팩의 프롬프트 파일(Compose 리소스)을 못 읽어서다.
+ */
+internal fun answerAnalysisHandler(
+    store: OpicStore,
+    client: GeminiClient,
+    keyVault: KeyVault,
+    settings: AppSettings,
+    request: suspend (Answer, ModelInfo) -> AnalysisRequest,
+): WorkHandler {
+    val gemini = FallBackToDefaultModel(GeminiAnalyzer(client) { keyVault.get(GeminiModels.PROVIDER) }, settings)
+    return AnswerAnalysisHandler(
+        store = store,
+        router = AnswerRouter(gemini, NoTwoStepPath, NoTwoStepPath),
+        consented = settings::isGiven,
+        request = { answer -> request(answer, GeminiModels.choose(settings.selectedModelId()).model) },
+    )
+}
+
+/**
+ * 고른 모델이 내려가 분석이 [AnalysisError.ModelUnavailable] 로 끝나면 기본 모델을 저장하고 다시 보내게 한다(F5.8).
+ * 다시 보낼 때 [answerAnalysisHandler] 가 저장된 모델을 읽어서 기본 모델로 간다. 설정 화면은 [AppSettings.takeFellBackFrom] 으로 알린다.
+ * 기본 모델마저 없으면 돌릴 곳이 없어 그대로 실패로 둔다.
+ */
+private class FallBackToDefaultModel(private val analyzer: AudioAnswerAnalyzer, private val settings: AppSettings) : AudioAnswerAnalyzer {
+    override suspend fun analyze(model: ModelInfo, prompt: Prompt, question: Question, recording: Recording): AnalysisResult<Feedback> {
+        val result = analyzer.analyze(model, prompt, question, recording)
+        val default = GeminiModels.choose(model.id, unavailable = true).model
+        if (result != AnalysisResult.Failed(AnalysisError.ModelUnavailable) || model == default) return result
+        settings.fallBack(from = model.id, to = default.id)
+        return AnalysisResult.Failed(AnalysisError.Retryable)
+    }
+}
+
+/**
  * 답변 하나의 분석 요청을 만든다. 조각을 같은 폴더의 `answer.m4a` 하나로 이어 붙이고(조각 이름 규칙과 겹치지 않는다)
  * 시험 팩의 답변 프롬프트에 문항과 이어 녹음 위치를 채운다(F3.4, F5.7).
  */
-// ponytail: 고른 모델이 내려가면(F5.8) 이 답변은 버려지고 다음 답변도 같은 모델로 간다. 기본 모델로 돌리고 알리는 일은 설정 화면 노드에서 한다.
 private suspend fun analysisRequest(answer: Answer, model: ModelInfo, recorder: Recorder): AnalysisRequest {
     // 조각이 없는 답변(마이크를 못 연 경우)은 빈 녹음으로 보낸다. 여기서 예외가 나면 대기열 사슬 전체가 멈춘다.
     val output = answer.chunkPaths.firstOrNull()?.substringBeforeLast('/')?.plus("/answer.m4a")

@@ -1005,7 +1005,8 @@
       "issue": 104,
       "start": "2026-10-10",
       "attempts": {
-        "done": 1
+        "done": 1,
+        "review": 1
       }
     },
     {

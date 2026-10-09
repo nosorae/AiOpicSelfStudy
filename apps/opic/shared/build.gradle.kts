@@ -40,6 +40,10 @@ kotlin {
         implementation(libs.androidx.navigation3.ui)
         implementation(libs.androidx.activity.compose)
     }
+    // 분석 처리기 테스트가 Gemini 응답을 가짜 HTTP 엔진으로 돌려준다.
+    sourceSets.commonTest.dependencies {
+        implementation(libs.ktor.client.mock)
+    }
     sourceSets.getByName("androidHostTest").dependencies {
         implementation(libs.compose.uiTestJunit4)
         implementation(libs.compose.uiTestManifest)

@@ -28,6 +28,14 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
 
     override suspend fun selectModel(id: String) = write(MODEL_ID, id)
 
+    /** 고른 모델이 내려가 분석이 실패했을 때 부른다(F5.8). 기본 모델로 바꾸고, 설정 화면이 알릴 수 있게 원래 모델 id 를 남긴다. */
+    suspend fun fallBack(from: String, to: String) {
+        write(FELL_BACK_FROM, from)
+        selectModel(to)
+    }
+
+    override suspend fun takeFellBackFrom(): String? = read(FELL_BACK_FROM)?.ifEmpty { null }?.also { write(FELL_BACK_FROM, "") }
+
     override suspend fun isGiven(): Boolean = read(VOICE_CONSENT) == "true"
 
     override suspend fun give() = write(VOICE_CONSENT, "true")
@@ -35,6 +43,7 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
     companion object {
         private const val THEME_MODE = "theme_mode"
         private const val MODEL_ID = "model_id"
+        private const val FELL_BACK_FROM = "model_fell_back_from"
         private const val VOICE_CONSENT = "voice_consent"
 
         /** 앱 틀 테스트처럼 기기에 남길 필요가 없을 때 쓴다. */
