@@ -4,6 +4,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.time.Duration.Companion.seconds
 
 class FakeRecorderTest {
     @Test
@@ -17,6 +18,17 @@ class FakeRecorderTest {
 
         assertEquals(listOf("a1/0.m4a", "a1/1.m4a"), chunks)
         assertEquals(chunks, recorder.chunks("a1"))
+    }
+
+    @Test
+    fun `F3_4 이어 녹음을 시작한 위치를 합친 녹음 기준으로 돌려준다`() = runTest {
+        val recorder = FakeRecorder(chunkLength = 5.seconds)
+        recorder.start("a1")
+        recorder.stop()
+        recorder.start("a1")
+        val chunks = recorder.stop()
+
+        assertEquals(listOf(5.seconds), recorder.merge(chunks, "a1.m4a"))
     }
 
     @Test

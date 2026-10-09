@@ -48,7 +48,17 @@ class ExamSessionTest {
 
     @Test
     fun `F5_3 등급이 붙은 회차는 저장했다 읽어도 같다`() {
-        val session = ExamSession(id = "s1", status = ExamStatus.Finished, grade = SessionGrade(low = "IH", high = "AL", reasons = listOf("Keeps paragraphs."), brokeAt = listOf(12)))
+        val session = ExamSession(
+            id = "s1",
+            status = ExamStatus.Finished,
+            grade = SessionGrade(
+                checks = listOf(GradeCheck("C1", met = true), GradeCheck("C2", met = false)),
+                low = "IH",
+                high = "AL",
+                reasons = listOf("Keeps paragraphs."),
+                brokeAt = listOf(12),
+            ),
+        )
 
         assertEquals(session, roundTrip(session))
     }
