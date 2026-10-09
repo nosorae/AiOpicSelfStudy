@@ -1027,8 +1027,12 @@
       ],
       "done": "./gradlew :ui:feature-history:allTests :ui:feature-report:allTests :ui:feature-exam:allTests :ui:feature-settings:allTests :ui:feature-history:verifyRoborazziAndroidHostTest :ui:feature-report:verifyRoborazziAndroidHostTest :ui:feature-exam:verifyRoborazziAndroidHostTest :ui:feature-settings:verifyRoborazziAndroidHostTest",
       "done_desc": "기록과 리포트에 문항 유형 id 대신 한국어 이름을 보인다. 분석 모델은 id(\"gemini gemini-3.8-flash\") 대신 ModelInfo.displayName 을 보이고 목록에 없는 모델만 id 로 보인다. 글자 크기 200% 에서 모델 이름이 단어 중간에서 줄바뀌지 않는다. 서베이(S4)가 Part 1~4 를 모두 보인다. 테스트: 유형 이름과 모델 표시 이름 매핑, 목록에 없는 모델, 200% 글자 기록, 리포트, 설정 모델 스크린샷, 서베이 Part 1~3 스크린샷",
-      "status": "todo",
-      "issue": 105
+      "status": "doing",
+      "issue": 105,
+      "start": "2026-10-10",
+      "attempts": {
+        "done": 1
+      }
     },
     {
       "id": "u-wire",
