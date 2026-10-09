@@ -4,6 +4,7 @@ import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
 import io.github.nosorae.aiopic.ui.featuresettings.key.KeyStatus
+import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionImportResult
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 
 data class SettingsUiState(
@@ -15,6 +16,16 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.System,
     /** 지우기 확인을 묻는 중인 제공사. */
     val deletingKey: KeyProvider? = null,
+    /** 음성 전송 동의(F1.3). 철회하면 false 이고, 동의 화면에서 다시 동의하고 돌아오면 다시 읽는다. */
+    val consentGiven: Boolean = true,
+    /** 철회 확인을 묻는 중이다. */
+    val revokingConsent: Boolean = false,
+    /** 문항별 답변 타이머(F2.7). 기본은 꺼짐이다. */
+    val answerTimerOn: Boolean = false,
+    /** 불러온 문항 파일의 문항 수(F6.3). 없으면 0 이다. */
+    val importedQuestionCount: Int = 0,
+    /** 방금 불러온 결과 안내. 다시 불러오기 전까지 남는다. */
+    val questionImport: QuestionImportResult? = null,
 ) {
     val selectedModel: ModelInfo? get() = models.firstOrNull { it.id == selectedModelId }
 
@@ -35,4 +46,15 @@ sealed interface SettingsIntent {
     data object DeleteKey : SettingsIntent
 
     data object CancelKeyDeletion : SettingsIntent
+
+    data object RequestConsentRevoke : SettingsIntent
+
+    data object RevokeConsent : SettingsIntent
+
+    data object CancelConsentRevoke : SettingsIntent
+
+    data class SetAnswerTimer(val on: Boolean) : SettingsIntent
+
+    /** 화면이 고른 파일의 내용을 넘긴다. 파일을 읽지 못했으면 null 이다. 고르기를 취소하면 보내지 않는다. */
+    data class ImportQuestions(val json: String?) : SettingsIntent
 }

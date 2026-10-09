@@ -3,8 +3,12 @@ package io.github.nosorae.aiopic.ui.featuresettings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.Inject
+import io.github.nosorae.aiopic.ui.featuresettings.consent.RevokeVoiceConsentUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.key.DeleteKeyUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.model.SelectModelUseCase
+import io.github.nosorae.aiopic.ui.featuresettings.practice.ImportQuestionsUseCase
+import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionImportResult
+import io.github.nosorae.aiopic.ui.featuresettings.practice.SetAnswerTimerUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.theme.SetThemeModeUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,13 +16,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** 설정 탭(S14)의 분석 모델, 제공사별 키, 화면 모드. */
+/** 설정 탭(S14)의 분석 모델, 제공사별 키, 음성 전송 동의, 답변 타이머, 문항 파일, 화면 모드. */
 @Inject
 class SettingsViewModel(
     private val loadSettingsUseCase: LoadSettingsUseCase,
     private val selectModelUseCase: SelectModelUseCase,
     private val deleteKeyUseCase: DeleteKeyUseCase,
     private val setThemeModeUseCase: SetThemeModeUseCase,
+    private val revokeVoiceConsentUseCase: RevokeVoiceConsentUseCase,
+    private val setAnswerTimerUseCase: SetAnswerTimerUseCase,
+    private val importQuestionsUseCase: ImportQuestionsUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -46,6 +53,33 @@ class SettingsViewModel(
             SettingsIntent.CancelKeyDeletion -> _uiState.update { it.copy(deletingKey = null) }
 
             SettingsIntent.DeleteKey -> deleteKey()
+
+            SettingsIntent.RequestConsentRevoke -> _uiState.update { it.copy(revokingConsent = true) }
+
+            SettingsIntent.CancelConsentRevoke -> _uiState.update { it.copy(revokingConsent = false) }
+
+            SettingsIntent.RevokeConsent -> {
+                _uiState.update { it.copy(revokingConsent = false) }
+                viewModelScope.launch {
+                    revokeVoiceConsentUseCase()
+                    _uiState.update { it.copy(consentGiven = false) }
+                }
+            }
+
+            is SettingsIntent.SetAnswerTimer -> viewModelScope.launch {
+                setAnswerTimerUseCase(intent.on)
+                _uiState.update { it.copy(answerTimerOn = intent.on) }
+            }
+
+            is SettingsIntent.ImportQuestions -> viewModelScope.launch {
+                val result = importQuestionsUseCase(intent.json)
+                _uiState.update {
+                    it.copy(
+                        questionImport = result,
+                        importedQuestionCount = (result as? QuestionImportResult.Imported)?.count ?: it.importedQuestionCount,
+                    )
+                }
+            }
         }
     }
 
@@ -60,6 +94,9 @@ class SettingsViewModel(
                     fellBackFrom = loaded.fellBackFrom ?: it.fellBackFrom,
                     keys = loaded.keys,
                     themeMode = loaded.themeMode,
+                    consentGiven = loaded.consentGiven,
+                    answerTimerOn = loaded.answerTimerOn,
+                    importedQuestionCount = loaded.importedQuestionCount,
                 )
             }
         }

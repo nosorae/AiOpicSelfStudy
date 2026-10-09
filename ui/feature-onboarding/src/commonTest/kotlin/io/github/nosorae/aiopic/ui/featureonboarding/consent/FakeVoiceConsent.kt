@@ -6,4 +6,8 @@ class FakeVoiceConsent(var given: Boolean = false) : VoiceConsent {
     override suspend fun give() {
         given = true
     }
+
+    override suspend fun revoke() {
+        given = false
+    }
 }

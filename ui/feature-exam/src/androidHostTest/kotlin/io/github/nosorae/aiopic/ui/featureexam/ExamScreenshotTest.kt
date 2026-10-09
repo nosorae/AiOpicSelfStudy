@@ -36,6 +36,9 @@ class ExamScreenshotTest {
 
     @Test fun questionNextable() = shot(ExamSamples.questionNextable)
 
+    /** 설정에서 답변 타이머를 켰을 때(F2.7). 꺼져 있으면 "녹음 중"만 보인다. */
+    @Test fun questionTimer() = shot(ExamSamples.questionTimer)
+
     @Test fun recalibrate() = shot(ExamSamples.recalibrate)
 
     @Test fun survey_dark() = shot(ExamSamples.survey, dark = true)

@@ -45,6 +45,9 @@ sealed class AppRoute {
     /** 설정의 틀림 표시 내보내기(F8.3). */
     @Serializable data object FlagExport : AppRoute()
 
+    /** 설정의 앱 정보와 라이선스 고지(ADR 0018). */
+    @Serializable data object AppInfo : AppRoute()
+
     /** 첫 실행의 키 입력(S1). 설정에서 여는 [KeyEntry] 와 달리 홈 위에 쌓지 않고 혼자 뜨며, 끝나면 시작 분기를 다시 한다. */
     @Serializable data object StartKeyEntry : AppRoute()
 
@@ -54,7 +57,7 @@ sealed class AppRoute {
     private val chrome: Chrome
         get() = when (this) {
             Home, History, Settings -> Chrome.TopLevel
-            is ReportDetail, is AnswerReport, is KeyEntry, FreeTierNotice, FlagExport -> Chrome.Sub
+            is ReportDetail, is AnswerReport, is KeyEntry, FreeTierNotice, FlagExport, AppInfo -> Chrome.Sub
             is Exam, is Practice -> Chrome.FullScreen
             StartKeyEntry, StartConsent -> Chrome.Start
         }
@@ -71,6 +74,7 @@ sealed class AppRoute {
             is KeyEntry, StartKeyEntry -> "API 키 넣기"
             FreeTierNotice, StartConsent -> "음성 전송 동의"
             FlagExport -> "틀림 표시 내보내기"
+            AppInfo -> "앱 정보와 라이선스"
         }
 
     /** 시스템 뒤로가기로 나가면 안 되는 화면. 시험 중에는 저장하고 나가는 화면 안 버튼으로만 나간다. */

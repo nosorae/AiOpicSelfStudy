@@ -59,7 +59,13 @@ class ExamViewModel(
             val loaded = loadExamUseCase(sessionId)
             content = loaded.content
             _uiState.update {
-                it.copy(surveyParts = content.surveyParts, topics = content.topics, selectedTopics = loaded.prefilledTopics.toSet(), levelCount = content.spec.levelCount)
+                it.copy(
+                    surveyParts = content.surveyParts,
+                    topics = content.topics,
+                    selectedTopics = loaded.prefilledTopics.toSet(),
+                    levelCount = content.spec.levelCount,
+                    answerTimer = content.answerTimer,
+                )
             }
             changed(loaded.session)
         }

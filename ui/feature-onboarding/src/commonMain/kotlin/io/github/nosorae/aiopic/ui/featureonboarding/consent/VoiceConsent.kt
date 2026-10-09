@@ -8,4 +8,7 @@ interface VoiceConsent {
     suspend fun isGiven(): Boolean
 
     suspend fun give()
+
+    /** 설정에서 철회한다(F1.3). 다음 실행의 시작 분기가 동의 화면으로 간다. */
+    suspend fun revoke()
 }

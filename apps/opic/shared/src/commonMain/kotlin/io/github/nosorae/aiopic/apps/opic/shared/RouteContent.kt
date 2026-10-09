@@ -16,6 +16,7 @@ import io.github.nosorae.aiopic.ui.featurereport.AnswerReportRoute
 import io.github.nosorae.aiopic.ui.featurereport.SessionReportRoute
 import io.github.nosorae.aiopic.ui.featuresettings.SettingsRoute
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportRoute
+import io.github.nosorae.aiopic.ui.featuresettings.info.AppInfoRoute
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.uuid.ExperimentalUuidApi
@@ -67,6 +68,7 @@ internal fun RouteContent(
             onOpenKeyEntry = { onOpen(AppRoute.KeyEntry(it.id)) },
             onOpenFreeTierNotice = { onOpen(AppRoute.FreeTierNotice) },
             onOpenFlagExport = { onOpen(AppRoute.FlagExport) },
+            onOpenAppInfo = { onOpen(AppRoute.AppInfo) },
             modifier = modifier,
         )
 
@@ -114,6 +116,8 @@ internal fun RouteContent(
         AppRoute.FreeTierNotice -> ConsentRoute(viewModel = viewModel { graph.consentViewModel }, onDone = onBack, modifier = modifier)
 
         AppRoute.FlagExport -> FlagExportRoute(viewModel = viewModel { graph.flagExportViewModel }, modifier = modifier)
+
+        AppRoute.AppInfo -> AppInfoRoute(modifier = modifier)
 
         // 첫 실행은 제공사를 고르게 둔다(null). 키를 저장하면 동의 여부를 다시 읽어 동의 화면이나 홈으로 간다.
         AppRoute.StartKeyEntry -> KeyEntryRoute(
