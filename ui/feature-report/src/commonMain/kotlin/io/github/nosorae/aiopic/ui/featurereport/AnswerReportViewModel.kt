@@ -7,11 +7,10 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.ui.featurereport.flag.MarkCorrectionWrongUseCase
-import io.github.nosorae.aiopic.ui.featurereport.flag.ObserveCorrectionFlagsUseCase
+import io.github.nosorae.aiopic.ui.featurereport.flag.ObserveAnswerReportUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,8 +26,7 @@ sealed interface AnswerReportIntent {
 @AssistedInject
 class AnswerReportViewModel(
     @Assisted private val answerId: String,
-    observeAnswerUseCase: ObserveAnswerUseCase,
-    observeCorrectionFlagsUseCase: ObserveCorrectionFlagsUseCase,
+    observeAnswerReportUseCase: ObserveAnswerReportUseCase,
     private val markCorrectionWrongUseCase: MarkCorrectionWrongUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AnswerReportUiState())
@@ -36,8 +34,8 @@ class AnswerReportViewModel(
 
     init {
         viewModelScope.launch {
-            combine(observeAnswerUseCase(answerId), observeCorrectionFlagsUseCase(answerId), ::Pair).collect { (answer, wrong) ->
-                _uiState.update { it.copy(loading = false, answer = answer, wrongCorrections = wrong) }
+            observeAnswerReportUseCase(answerId).collect { report ->
+                _uiState.update { it.copy(loading = false, answer = report.answer, wrongCorrections = report.wrongCorrections) }
             }
         }
     }

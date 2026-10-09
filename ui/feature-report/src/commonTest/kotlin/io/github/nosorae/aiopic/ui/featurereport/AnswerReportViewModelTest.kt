@@ -8,7 +8,7 @@ import io.github.nosorae.aiopic.engine.answer.weakness.weaknessScores
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.ui.featurereport.flag.FakeFlagStore
 import io.github.nosorae.aiopic.ui.featurereport.flag.MarkCorrectionWrongUseCase
-import io.github.nosorae.aiopic.ui.featurereport.flag.ObserveCorrectionFlagsUseCase
+import io.github.nosorae.aiopic.ui.featurereport.flag.ObserveAnswerReportUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -34,8 +34,7 @@ class AnswerReportViewModelTest {
 
     private fun viewModel(answerId: String, store: FakeReportStore) = AnswerReportViewModel(
         answerId,
-        ObserveAnswerUseCase(store),
-        ObserveCorrectionFlagsUseCase(flagStore),
+        ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore),
         MarkCorrectionWrongUseCase(flagStore),
     )
 
