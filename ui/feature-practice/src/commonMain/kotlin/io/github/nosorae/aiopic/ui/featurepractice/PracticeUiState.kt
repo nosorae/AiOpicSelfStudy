@@ -1,0 +1,64 @@
+package io.github.nosorae.aiopic.ui.featurepractice
+
+import io.github.nosorae.aiopic.engine.question.model.Question
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
+
+/** 녹음 시작 뒤 다시 듣기를 할 수 있는 시간. 모의시험과 같은 규칙이다(F2.4, F4.1). */
+val ReplayWindow = 5.seconds
+
+/** 녹음 시작 뒤 Next 가 켜지기까지의 시간(F2.4, F4.1). */
+val NextDelay = 10.seconds
+
+data class PracticeUiState(
+    /** 낼 질문. 고르기 전이거나 고르지 못했으면 null 이다. 글자는 화면에 보이지 않는다. */
+    val question: Question? = null,
+    val phase: PracticePhase = PracticePhase.Ready,
+    /** 지금 녹음이 시작된 뒤 흐른 시간. */
+    val recorded: Duration = Duration.ZERO,
+    val replayUsed: Boolean = false,
+    val error: PracticeError? = null,
+    val navigation: PracticeDestination? = null,
+) {
+    val canPlay: Boolean get() = question != null && phase == PracticePhase.Ready
+    val canReplay: Boolean get() = phase == PracticePhase.Recording && !replayUsed && recorded < ReplayWindow
+    val canNext: Boolean get() = phase == PracticePhase.Recording && recorded >= NextDelay
+}
+
+/** 질문 글자는 보이지 않고 읽기와 녹음만 있다. */
+enum class PracticePhase { Ready, Speaking, Recording }
+
+enum class PracticeError {
+    /** 마이크 권한이 없거나 마이크를 열지 못했다. */
+    MicUnavailable,
+
+    /** 기기 음성으로 질문을 읽지 못했다. */
+    SpeechFailed,
+
+    /** 문항 풀이 비어 낼 질문이 없다. */
+    QuestionUnavailable,
+}
+
+/** 저장이 끝나야 가는 이동만 상태로 둔다(ADR 0009). 어디로 갈지는 화면을 등록한 쪽이 정한다. */
+sealed interface PracticeDestination {
+    /** 답변을 남기지 않고 나간다. */
+    data object Exit : PracticeDestination
+
+    /** 답변을 저장했다. 이 답변의 리포트를 바로 연다(F4.2, F7.1). */
+    data class Feedback(val answerId: String) : PracticeDestination
+}
+
+sealed interface PracticeIntent {
+    data object PlayQuestion : PracticeIntent
+
+    data object ReplayQuestion : PracticeIntent
+
+    data object SubmitAnswer : PracticeIntent
+
+    /** 화면이 마이크 권한을 요청했는데 거절됐다. */
+    data object MicDenied : PracticeIntent
+
+    data object ExitPractice : PracticeIntent
+
+    data object NavigationHandled : PracticeIntent
+}
