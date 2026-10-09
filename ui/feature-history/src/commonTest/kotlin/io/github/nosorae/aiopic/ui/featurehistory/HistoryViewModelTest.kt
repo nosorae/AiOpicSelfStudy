@@ -3,8 +3,10 @@ package io.github.nosorae.aiopic.ui.featurehistory
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
+import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -78,6 +80,18 @@ class HistoryViewModelTest {
     }
 
     @Test
+    fun `F8_2 틀림을 표시하면 그 답변이 약점 점수에서 빠진다`() = runTest(dispatcher) {
+        val store = FakeHistoryStore(answers = listOf(answer("a1", "s1", score = 40), answer("a2", "s1", score = 80)))
+        val viewModel = subscribed(store)
+        advanceUntilIdle()
+
+        store.flags.value = setOf(CorrectionFlag("a1", 0))
+        advanceUntilIdle()
+
+        assertEquals(listOf("t" to 80), viewModel.uiState.value.weaknesses.map { it.type.id to it.score })
+    }
+
+    @Test
     fun `불러오기 전에는 빈 기록 대신 불러오는 중이다`() = runTest(dispatcher) {
         val viewModel = HistoryViewModel(ObserveHistoryUseCase(FakeHistoryStore()))
 
@@ -91,7 +105,7 @@ class HistoryViewModelTest {
         chunkPaths = emptyList(),
         analysis = AnswerAnalysis.Done(
             AnalyzedBy("gemini", model, "v1"),
-            Feedback("", emptyList(), emptyList(), true, 1, 100.0, emptyList(), null, Pronunciation.NotEvaluated, score),
+            Feedback("I go.", listOf(Correction("I go", "I went")), emptyList(), true, 1, 100.0, emptyList(), null, Pronunciation.NotEvaluated, score),
         ),
     )
 }
