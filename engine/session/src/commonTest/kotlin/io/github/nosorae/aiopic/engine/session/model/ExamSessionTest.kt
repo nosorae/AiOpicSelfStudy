@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 class ExamSessionTest {
     private inline fun <reified T> roundTrip(value: T): T = Json.decodeFromString(Json.encodeToString(value))
@@ -70,10 +71,11 @@ class ExamSessionTest {
             ExamEvent.LevelSelected(4),
             ExamEvent.Play,
             ExamEvent.Replay,
-            ExamEvent.Next,
+            ExamEvent.Next("a1"),
             ExamEvent.Recalibrated(Recalibration.Same),
             ExamEvent.AppClosed,
             ExamEvent.TimeUp,
+            ExamEvent.TimePassed(3.seconds),
         )
 
         assertEquals(events, roundTrip<List<ExamEvent>>(events))
