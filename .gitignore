@@ -17,3 +17,6 @@ captures
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 node_modules/
+
+# 기기마다 다른 iOS 서명 설정
+apps/opic/iosApp/Configuration/Local.xcconfig

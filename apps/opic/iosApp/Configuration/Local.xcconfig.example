@@ -1,0 +1,2 @@
+// 이 파일을 Local.xcconfig 로 복사하고 자기 Apple 개발 팀 ID 를 넣는다. Local.xcconfig 는 커밋하지 않는다.
+TEAM_ID=
