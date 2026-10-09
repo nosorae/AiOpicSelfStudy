@@ -524,12 +524,13 @@
       ],
       "done": "./gradlew :libs:llm-gemini:allTests :engine:ai-gemini:allTests :engine:answer:allTests checkLayers",
       "done_desc": "저장한 실제 응답으로 해석 테스트. 전문에 없는 교정 구절을 버리는지. engine/ai-gemini 가 AudioAnswerAnalyzer 와 ModelCatalog 를 구현하고 libs/llm-gemini 는 엔진을 모른다(모듈 의존 검사). 기본값이 안정 모델인지, 고른 모델이 없어졌다는 응답이면 기본 모델로 돌리고 알림 상태를 내는지 회차 등급(F5.3)은 답변 피드백과 녹음을 묶어 SessionGrade(체크리스트 포함)를 돌려주는 분석 포트를 engine 에 새로 두고 구현한다",
-      "status": "doing",
+      "status": "done",
       "issue": 20,
       "start": "2026-10-10",
       "attempts": {
         "done": 1
-      }
+      },
+      "end": "2026-10-10"
     },
     {
       "id": "n-route",
