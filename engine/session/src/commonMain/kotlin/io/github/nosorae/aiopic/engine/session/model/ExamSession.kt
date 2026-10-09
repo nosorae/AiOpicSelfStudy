@@ -55,6 +55,8 @@ enum class Recalibration {
  */
 @Serializable
 data class SessionGrade(
+    /** 등급 기준 문장마다 채운 예/아니오. 범위와 근거가 이 체크에서 나온다. 같은 입력으로 다시 돌렸을 때 어느 문장에서 갈렸는지 본다. */
+    val checks: List<GradeCheck>,
     /** [GradeScale] 의 등급 이름. */
     val low: String,
     val high: String,
@@ -62,3 +64,7 @@ data class SessionGrade(
     /** 무너진 문항의 번호(1 부터). */
     val brokeAt: List<Int>,
 )
+
+/** 등급 기준 문장 하나의 체크 결과. [id] 는 시험 팩 프롬프트의 문장 번호다. */
+@Serializable
+data class GradeCheck(val id: String, val met: Boolean)
