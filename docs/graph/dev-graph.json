@@ -219,8 +219,10 @@
       ],
       "done": "test -s spikes/gemini-audio/result.json",
       "done_desc": "조각 여러 개 전송 가능 여부, 답변 1개·회차 등급 1회 비용, 오디오 입력과 구조화 출력을 한 요청에 쓸 수 있는지, 일반 모델이 돌려주는 단어 시각을 멈춤·속도 계산에 쓸 수 있는지를 결과 JSON 으로. 코드는 버린다",
-      "status": "todo",
-      "issue": 9
+      "status": "done",
+      "issue": 9,
+      "start": "2026-10-09",
+      "end": "2026-10-09"
     },
     {
       "id": "s2",
