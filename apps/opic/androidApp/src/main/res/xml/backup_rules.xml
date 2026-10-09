@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 9~11 의 자동 백업 규칙이다. 빼는 이유는 data_extraction_rules.xml 과 같다. -->
+<full-backup-content>
+    <exclude domain="file" path="datastore/keyvault.preferences_pb" />
+    <exclude domain="file" path="recordings/" />
+</full-backup-content>

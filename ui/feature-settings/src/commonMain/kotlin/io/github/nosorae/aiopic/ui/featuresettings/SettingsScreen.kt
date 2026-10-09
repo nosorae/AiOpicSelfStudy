@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -92,6 +93,15 @@ fun SettingsScreen(
                     onClick = { onIntent(SettingsIntent.SelectThemeMode(mode)) },
                 )
             }
+
+            val uriHandler = LocalUriHandler.current
+            MontageListCell(
+                title = stringResource(Res.string.settings_privacy_policy),
+                // 화면 모드 선택지로 읽히지 않게 묶음 사이 간격만큼 띄운다.
+                modifier = Modifier.padding(top = MontageSpacing.spacing24),
+                chevron = true,
+                onClick = { uriHandler.openUri(PRIVACY_POLICY_URL) },
+            )
         }
     }
     state.deletingKey?.let { provider ->
@@ -106,6 +116,9 @@ fun SettingsScreen(
         )
     }
 }
+
+/** 서버가 없어 방침 문서는 저장소에 둔다. 스토어 등록 화면에도 같은 주소를 넣는다. */
+private const val PRIVACY_POLICY_URL = "https://github.com/nosorae/AiOpicSelfStudy/blob/main/docs/privacy-policy.md"
 
 @Composable
 private fun SectionLabel(text: StringResource) {

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12 이상의 클라우드 백업과 기기 간 이전에서 뺄 파일이다. 나머지(기록 DB, 화면 모드, 모델 선택)는 백업한다.
+  - datastore/keyvault.preferences_pb: Keystore 키로 암호화한 API 키다. Keystore 키는 기기 밖으로 나가지 않아 다른 기기에서 풀 수 없다.
+  - recordings/: 답변 녹음 폴더다. 커지면 백업 한도를 채워 나머지 백업까지 막는다. 녹음 저장소는 filesDir 아래 이 폴더에 쓴다.
+  Android 9~11 은 backup_rules.xml 이 같은 규칙을 맡는다.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="datastore/keyvault.preferences_pb" />
+        <exclude domain="file" path="recordings/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="datastore/keyvault.preferences_pb" />
+        <exclude domain="file" path="recordings/" />
+    </device-transfer>
+</data-extraction-rules>
