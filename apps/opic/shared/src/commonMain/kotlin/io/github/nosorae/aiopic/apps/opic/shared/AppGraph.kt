@@ -132,10 +132,6 @@ interface AppGraph {
     // ponytail: 첫 버전은 제공사가 Gemini 하나라 목록도 하나다.
     @Provides fun modelCatalog(): ModelCatalog = GeminiModels
 
-    @SingleIn(AppScope::class)
-    @Provides
-    fun geminiClient(): GeminiClient = GeminiClient()
-
     @Provides
     fun keyChecker(client: GeminiClient): KeyChecker = KeyChecker { _, key ->
         // ponytail: 키 확인 전용 API 가 없어 기본 모델에 짧은 요청을 보낸다. 무료 키의 하루 한도에서 한 번을 쓴다.
@@ -188,8 +184,6 @@ interface AppGraph {
     @Provides
     fun practiceRepository(store: OpicStore, queue: WorkQueue, settings: AppSettings, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, { practicePool(settings) }, recordingsRoot)
 
-    @Provides fun timer(): MonotonicTimer = deviceMonotonicTimer()
-
     @Provides
     fun analysisHandler(store: OpicStore, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): WorkHandler = answerAnalysisHandler(store, client, keyVault, settings) { answer, model -> analysisRequest(answer, model, recorder) }
 
@@ -203,6 +197,8 @@ interface AppGraph {
             @Provides recorder: Recorder,
             @Provides tts: Tts,
             @Provides workQueue: WorkQueue,
+            @Provides gemini: GeminiClient,
+            @Provides timer: MonotonicTimer,
         ): AppGraph
     }
 }
@@ -223,7 +219,10 @@ internal suspend fun practicePool(settings: AppSettings, builtIn: suspend () -> 
     return pack + settings.questionFile()?.let(::parseQuestions).orEmpty()
 }
 
-/** 플랫폼 진입점이 Metro 컴파일러 플러그인 없이 그래프를 만들 수 있게 여기서 만든다. 인자는 [AppGraph.Factory] 와 같다. */
+/**
+ * 플랫폼 진입점이 Metro 컴파일러 플러그인 없이 그래프를 만들 수 있게 여기서 만든다. 인자는 [AppGraph.Factory] 와 같다.
+ * [gemini] 와 [timer] 는 앱이 기본값을 쓰고, 끝까지 도는 시나리오 테스트가 저장해 둔 Gemini 응답과 손으로 넘기는 시계로 바꾼다.
+ */
 fun createAppGraph(
     settings: AppSettings,
     keyVault: KeyVault,
@@ -232,7 +231,9 @@ fun createAppGraph(
     recorder: Recorder,
     tts: Tts,
     workQueue: WorkQueue,
-): AppGraph = createGraphFactory<AppGraph.Factory>().create(settings, keyVault, database, recordingsRoot, recorder, tts, workQueue)
+    gemini: GeminiClient = GeminiClient(),
+    timer: MonotonicTimer = deviceMonotonicTimer(),
+): AppGraph = createGraphFactory<AppGraph.Factory>().create(settings, keyVault, database, recordingsRoot, recorder, tts, workQueue, gemini, timer)
 
 /** 키 확인 요청 결과를 키 입력 화면의 결과로 옮긴다(F1.1). 모델이 없다는 답도 키는 통과했다는 뜻이다. */
 internal fun geminiKeyCheck(result: LlmResult): DomainResult<Unit> = when (result) {
