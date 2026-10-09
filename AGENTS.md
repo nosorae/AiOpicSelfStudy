@@ -98,13 +98,14 @@ UI 가 바뀌는 PR 은 바뀌기 전과 후 스크린샷을 나란히 붙인다
 
 ## 4. 스킬
 
-`.claude/skills/` 아래에 있다. 작업에 맞는 스킬을 먼저 읽는다.
+`.claude/skills/` 아래에 있다. 작업에 맞는 스킬을 먼저 읽는다. UI 작업은 언제나 `ui-quality` 를 먼저 읽는다.
 
 | 스킬 | 언제 |
 |---|---|
 | `architecture` | ViewModel, UseCase, 화면, 이동, 상태, DI, 결과 타입을 만들거나 고칠 때 |
 | `testing` | 테스트를 쓸 때. Fake, 디스패처 교체, ViewModel 테스트, 스크린샷 |
 | `adr` | 설계 결정을 기록할 때 |
+| `ui-quality` | 화면, 테마, 컴포넌트를 만들거나 고칠 때. 화면 PR 을 리뷰할 때 |
 | `navigation-3` | Navigation 3 백스택, 결과 전달 |
 | `edge-to-edge` | 시스템 바, 키보드 인셋 처리 |
 | `android-permissions-security` | 마이크 권한, 포그라운드 서비스 |
@@ -112,5 +113,6 @@ UI 가 바뀌는 PR 은 바뀌기 전과 후 스크린샷을 나란히 붙인다
 | `kotlin-tooling-agp9-migration` | AGP 9 와 KMP 플러그인 구성 |
 | `kotlin-tooling-native-build-performance` | iOS 링크가 느릴 때 |
 | `kotlin-multiplatform-libraries-expert` (폴더 `kmp-libraries-expert`) | KMP 라이브러리 좌표와 iOS 지원 확인 (klibs MCP 와 함께) |
+| `material-3` | Material 3 컴포넌트, 색 역할, 타입 스케일을 찾아볼 때 |
 
-뒤의 일곱 개는 외부에서 그대로 가져온 스킬이다. 출처와 라이선스는 `.claude/skills/THIRD_PARTY.md` 에 있다. 소스셋별 규칙은 `.claude/rules/` 에 있다.
+뒤의 여덟 개는 외부에서 그대로 가져온 스킬이다. 출처와 라이선스는 `.claude/skills/THIRD_PARTY.md` 에 있다. 소스셋별 규칙은 `.claude/rules/` 에 있다.
