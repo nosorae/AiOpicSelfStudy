@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">설정</string>
+    <string name="settings_model_section">분석 모델</string>
+    <string name="settings_model_stable">안정</string>
+    <string name="settings_model_preview">미리보기</string>
+    <string name="settings_model_hears_audio">음성 직접 분석</string>
+    <string name="settings_model_transcribes">받아쓴 뒤 글 분석</string>
+    <string name="settings_model_caption">%1$s, %2$s, %3$s</string>
+    <string name="settings_model_preview_notice">미리보기 모델은 제공사가 2주 전에 알리고 내릴 수 있습니다. 내려가면 기본 모델로 돌아갑니다.</string>
+    <string name="settings_model_fell_back">고른 모델(%1$s)을 더 쓸 수 없어서 기본 모델인 %2$s 로 바꿨습니다.</string>
+    <string name="settings_free_tier_link">무료 등급 안내 보기</string>
+    <string name="settings_key_section">API 키</string>
+    <string name="settings_key_saved">저장됨. 눌러서 바꾸기</string>
+    <string name="settings_key_missing">없음. 눌러서 넣기</string>
+    <string name="settings_key_delete">지우기</string>
+    <string name="settings_key_delete_title">%1$s 키를 지울까요?</string>
+    <string name="settings_key_delete_message">지우면 답변을 분석하기 전에 키를 다시 넣어야 합니다. 다른 제공사 키는 그대로 남습니다.</string>
+    <string name="settings_key_delete_cancel">취소</string>
+    <string name="settings_theme_section">화면 모드</string>
+    <string name="settings_theme_system">시스템 따라가기</string>
+    <string name="settings_theme_light">라이트</string>
+    <string name="settings_theme_dark">다크</string>
+</resources>

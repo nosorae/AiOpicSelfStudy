@@ -1,0 +1,78 @@
+package io.github.nosorae.aiopic.ui.featuresettings
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dev.zacsweers.metro.Inject
+import io.github.nosorae.aiopic.ui.featuresettings.key.DeleteKeyUseCase
+import io.github.nosorae.aiopic.ui.featuresettings.model.SelectModelUseCase
+import io.github.nosorae.aiopic.ui.featuresettings.theme.SetThemeModeUseCase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/** 설정 탭(S14)의 분석 모델, 제공사별 키, 화면 모드. */
+@Inject
+class SettingsViewModel(
+    private val loadSettingsUseCase: LoadSettingsUseCase,
+    private val selectModelUseCase: SelectModelUseCase,
+    private val deleteKeyUseCase: DeleteKeyUseCase,
+    private val setThemeModeUseCase: SetThemeModeUseCase,
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    init {
+        load()
+    }
+
+    fun onIntent(intent: SettingsIntent) {
+        when (intent) {
+            SettingsIntent.Reload -> load()
+
+            is SettingsIntent.SelectModel -> viewModelScope.launch {
+                selectModelUseCase(intent.id)
+                _uiState.update { it.copy(selectedModelId = intent.id, fellBackFrom = null) }
+            }
+
+            is SettingsIntent.SelectThemeMode -> viewModelScope.launch {
+                setThemeModeUseCase(intent.mode)
+                _uiState.update { it.copy(themeMode = intent.mode) }
+            }
+
+            is SettingsIntent.RequestKeyDeletion -> _uiState.update { it.copy(deletingKey = intent.provider) }
+
+            SettingsIntent.CancelKeyDeletion -> _uiState.update { it.copy(deletingKey = null) }
+
+            SettingsIntent.DeleteKey -> deleteKey()
+        }
+    }
+
+    private fun load() {
+        viewModelScope.launch {
+            val loaded = loadSettingsUseCase()
+            _uiState.update {
+                it.copy(
+                    models = loaded.models,
+                    selectedModelId = loaded.selectedModelId,
+                    // 다시 읽을 때는 이미 기본 모델이 저장돼 있어 null 이 온다. 사용자가 다른 모델을 고르기 전까지 알림을 남긴다.
+                    fellBackFrom = loaded.fellBackFrom ?: it.fellBackFrom,
+                    keys = loaded.keys,
+                    themeMode = loaded.themeMode,
+                )
+            }
+        }
+    }
+
+    private fun deleteKey() {
+        val provider = _uiState.value.deletingKey ?: return
+        _uiState.update { it.copy(deletingKey = null) }
+        viewModelScope.launch {
+            deleteKeyUseCase(provider)
+            _uiState.update { state ->
+                state.copy(keys = state.keys.map { if (it.provider == provider) it.copy(saved = false) else it })
+            }
+        }
+    }
+}
