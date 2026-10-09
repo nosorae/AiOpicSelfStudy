@@ -35,7 +35,7 @@ def problems_in(commit):
     found = []
     for path in git("show", "--format=", "--name-only", "--diff-filter=A", commit).splitlines():
         if path.rsplit("/", 1)[-1] in LOCAL_FILES:
-            found.append(f"{path}: 기기마다 다른 설정 파일 {path.rsplit('/', 1)[-1]} 을 커밋했다")
+            found.append(f"{path}: 기기마다 다른 설정 파일을 커밋했다")
     path, line_no = None, 0
     for line in git("show", "--format=", "--unified=0", "--no-color", "--no-ext-diff", commit).splitlines():
         if line.startswith("+++ "):
