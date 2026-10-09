@@ -23,7 +23,8 @@ class KmpLibraryPlugin : Plugin<Project> {
                 namespace = namespaceOf(path)
                 compileSdk = requiredIntVersion("android-compileSdk")
                 minSdk = requiredIntVersion("android-minSdk")
-                withHostTest {}
+                // Robolectric 스크린샷 테스트가 Android 리소스를 읽을 수 있게 넣는다. 리소스 없는 모듈에는 영향이 없다.
+                withHostTest { isIncludeAndroidResources = true }
             }
 
             sourceSets.commonTest.dependencies {

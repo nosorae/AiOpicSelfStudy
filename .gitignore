@@ -20,3 +20,7 @@ node_modules/
 
 # 기기마다 다른 iOS 서명 설정
 apps/opic/iosApp/Configuration/Local.xcconfig
+
+# Roborazzi 비교 실패 산출물. 기준 이미지만 커밋한다.
+*_compare.png
+*_actual.png

@@ -7,6 +7,8 @@ dependencies {
     implementation(libs.kotlin.gradlePlugin)
     implementation(libs.compose.gradlePlugin)
     implementation(libs.composeCompiler.gradlePlugin)
+    implementation(libs.spotless.gradlePlugin)
+    implementation(libs.roborazzi.gradlePlugin)
     testImplementation(libs.kotlin.testJunit)
 }
 
@@ -35,6 +37,10 @@ gradlePlugin {
         register("layerCheck") {
             id = libs.plugins.aiopicLayerCheck.get().pluginId
             implementationClass = "io.github.nosorae.aiopic.buildlogic.LayerCheckPlugin"
+        }
+        register("spotless") {
+            id = libs.plugins.aiopicSpotless.get().pluginId
+            implementationClass = "io.github.nosorae.aiopic.buildlogic.SpotlessPlugin"
         }
     }
 }
