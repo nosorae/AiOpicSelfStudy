@@ -937,8 +937,9 @@
       "reqs": [],
       "done": "./gradlew check",
       "done_desc": "리뷰 에이전트가 스크린샷을 제품 명세의 목업(S0~S14)과 대조한다",
-      "status": "todo",
-      "issue": 34
+      "status": "doing",
+      "issue": 34,
+      "start": "2026-10-10"
     },
     {
       "id": "e2e",
