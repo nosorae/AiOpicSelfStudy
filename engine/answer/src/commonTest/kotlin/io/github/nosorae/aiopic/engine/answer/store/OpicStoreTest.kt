@@ -4,6 +4,7 @@ import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
+import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -101,5 +102,18 @@ class OpicStoreTest {
         store.save(scored)
 
         assertEquals(listOf(scored, a2), store.answers("s1").first())
+    }
+
+    @Test
+    fun `F8_1 틀림 표시를 저장하고 해제하면 남은 표시만 나온다`() = runTest {
+        store.mark(CorrectionFlag("a1", 0), wrong = true)
+        store.mark(CorrectionFlag("a1", 2), wrong = true)
+        store.mark(CorrectionFlag("a1", 0), wrong = true)
+
+        assertEquals(setOf(CorrectionFlag("a1", 0), CorrectionFlag("a1", 2)), store.flags().first())
+
+        store.mark(CorrectionFlag("a1", 0), wrong = false)
+
+        assertEquals(setOf(CorrectionFlag("a1", 2)), store.flags().first())
     }
 }
