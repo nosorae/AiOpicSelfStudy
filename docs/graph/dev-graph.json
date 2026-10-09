@@ -784,8 +784,9 @@
       ],
       "done": "./gradlew :ui:feature-home:allTests :ui:feature-home:verifyRoborazziAndroidHostTest :apps:opic:shared:allTests",
       "done_desc": "s4 판정대로 하단 탭(홈, 기록, 설정)과 뒤로가기를 그린다. 네이티브 유지면 Android NavigationBar 와 예측 뒤로가기, iOS TabView 와 뒤로 스와이프, 플랫폼별 코드는 앱 틀 한 곳에만. 통일이면 Montage 탭. 홈 화면(S3: 모의시험 시작 또는 이어 보기, 한 문항 풀기, 지난 회차)을 ui/feature-home 에 만든다. 탭 표시는 플랫폼별로 다르다. Android 는 최상위 탭 화면(홈, 기록, 설정)에서만 탭을 보이고 하위 화면은 숨기고, iOS 는 리포트 상세 같은 하위 화면에도 탭을 남긴다. 시험 진행과 녹음 화면은 두 플랫폼 모두 탭 없는 전체 화면이다. 이 규칙은 앱 틀의 화면 경로 표 하나에 두고 화면 모듈은 모른다. 하위 화면 탭 표시 테스트, 시험 중 나가기 가로채기 테스트, 두 플랫폼 스크린샷",
-      "status": "todo",
-      "issue": 53
+      "status": "doing",
+      "issue": 53,
+      "start": "2026-10-10"
     },
     {
       "id": "u-exam",
