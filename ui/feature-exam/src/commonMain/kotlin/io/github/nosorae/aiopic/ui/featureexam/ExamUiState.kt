@@ -14,6 +14,9 @@ val NextDelay = 10.seconds
 data class ExamUiState(
     /** 지금 단계. 회차를 읽기 전에는 null 이다. */
     val step: ExamStep? = null,
+    val surveyParts: List<SurveyPart> = emptyList(),
+    /** Part 위치마다 고른 답의 위치. */
+    val surveyAnswers: Map<Int, Int> = emptyMap(),
     val topics: List<String> = emptyList(),
     val selectedTopics: Set<String> = emptySet(),
     val levelCount: Int = 0,
@@ -60,6 +63,8 @@ enum class ExamDestination {
 }
 
 sealed interface ExamIntent {
+    data class SelectSurveyAnswer(val part: Int, val option: Int) : ExamIntent
+
     data class ToggleTopic(val topic: String) : ExamIntent
 
     data object SubmitSurvey : ExamIntent

@@ -59,7 +59,7 @@ class ExamViewModel(
             val loaded = loadExamUseCase(sessionId)
             content = loaded.content
             _uiState.update {
-                it.copy(topics = content.topics, selectedTopics = loaded.prefilledTopics.toSet(), levelCount = content.spec.levelCount)
+                it.copy(surveyParts = content.surveyParts, topics = content.topics, selectedTopics = loaded.prefilledTopics.toSet(), levelCount = content.spec.levelCount)
             }
             changed(loaded.session)
         }
@@ -68,6 +68,9 @@ class ExamViewModel(
     fun onIntent(intent: ExamIntent) {
         if (_uiState.value.step == null) return
         when (intent) {
+            // ponytail: Part 질문의 답은 출제에 쓰지 않아 저장하지 않는다. 출제가 직업, 거주 형태를 보게 되면 회차에 저장한다.
+            is ExamIntent.SelectSurveyAnswer -> _uiState.update { it.copy(surveyAnswers = it.surveyAnswers + (intent.part to intent.option)) }
+
             is ExamIntent.ToggleTopic -> _uiState.update {
                 it.copy(selectedTopics = if (intent.topic in it.selectedTopics) it.selectedTopics - intent.topic else it.selectedTopics + intent.topic)
             }

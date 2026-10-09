@@ -3,6 +3,7 @@
     <string name="exam_exit">나가기</string>
     <string name="exam_next_step">다음</string>
     <string name="exam_survey_title">서베이</string>
+    <string name="exam_survey_part">Part %1$d / %2$d</string>
     <string name="exam_survey_description">관심 있는 항목을 %1$d개 이상 고르세요. 고른 주제로 질문이 나옵니다.</string>
     <string name="exam_survey_count">%1$d개 고름</string>
     <string name="exam_level_title">난이도 고르기</string>

@@ -42,7 +42,7 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
             else -> LazyColumn(Modifier.fillMaxWidth()) {
                 if (state.sessions.isNotEmpty()) item { SectionTitle(stringResource(Res.string.history_grades)) }
                 itemsIndexed(state.sessions, key = { _, row -> row.session.id }) { index, row ->
-                    val models = row.models.joinToString(", ") { "${it.provider} ${it.modelId}" }
+                    val models = row.models.joinToString(", ")
                     MontageListCell(
                         title = stringResource(Res.string.history_session, index + 1),
                         caption = when {
@@ -67,8 +67,8 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
                         Body(stringResource(Res.string.history_weakness_help))
                     }
                 }
-                items(state.weaknesses, key = { it.type.id }) { weakness ->
-                    MontageListCell(title = weakness.type.id) {
+                items(state.weaknesses, key = { it.typeName }) { weakness ->
+                    MontageListCell(title = weakness.typeName) {
                         Text(
                             text = stringResource(Res.string.history_score, weakness.score),
                             style = MontageTheme.typography.body2.bold,

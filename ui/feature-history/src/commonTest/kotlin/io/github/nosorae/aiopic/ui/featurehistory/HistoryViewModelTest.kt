@@ -5,7 +5,10 @@ import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
+import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
+import io.github.nosorae.aiopic.engine.answer.model.Stability
+import io.github.nosorae.aiopic.engine.answer.port.ModelCatalog
 import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
@@ -33,7 +36,16 @@ class HistoryViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private fun TestScope.subscribed(store: FakeHistoryStore) = HistoryViewModel(ObserveHistoryUseCase(store)).also { viewModel ->
+    private val modelA = ModelInfo("gemini", "model-a", "Model A", hearsAudio = true, stability = Stability.Stable)
+    private val catalog = object : ModelCatalog {
+        override val defaultModel = modelA
+        override val models = listOf(modelA)
+    }
+    private val typeNames = mapOf(QuestionType("routine") to "습관", QuestionType("roleplay") to "롤플레이")
+
+    private fun useCase(store: FakeHistoryStore) = ObserveHistoryUseCase(store, typeNames, catalog)
+
+    private fun TestScope.subscribed(store: FakeHistoryStore) = HistoryViewModel(useCase(store)).also { viewModel ->
         backgroundScope.launch { viewModel.uiState.collect {} }
     }
 
@@ -63,8 +75,21 @@ class HistoryViewModelTest {
 
         val (first, second) = viewModel.uiState.value.sessions
         assertTrue(first.mixedModels)
-        assertEquals(listOf("model-a"), second.models.map { it.modelId })
+        assertEquals(listOf("Model A"), second.models)
         assertFalse(second.mixedModels)
+    }
+
+    @Test
+    fun `F5_7 모델은 표시 이름으로 보이고 목록에 없는 모델만 id 로 보인다`() = runTest(dispatcher) {
+        val store = FakeHistoryStore(
+            sessions = listOf(ExamSession(id = "s1", status = ExamStatus.Finished)),
+            answers = listOf(answer("a1", "s1", "model-a"), answer("a2", "s1", "retired-model")),
+        )
+
+        val viewModel = subscribed(store)
+        advanceUntilIdle()
+
+        assertEquals(listOf("Model A", "retired-model"), viewModel.uiState.value.sessions.single().models)
     }
 
     @Test
@@ -76,7 +101,15 @@ class HistoryViewModelTest {
         val viewModel = subscribed(store)
         advanceUntilIdle()
 
-        assertEquals(listOf("roleplay" to 40, "routine" to 80), viewModel.uiState.value.weaknesses.map { it.type.id to it.score })
+        assertEquals(listOf(HistoryWeakness("롤플레이", 40), HistoryWeakness("습관", 80)), viewModel.uiState.value.weaknesses)
+    }
+
+    @Test
+    fun `이름을 모르는 문항 유형은 id 로 보인다`() = runTest(dispatcher) {
+        val viewModel = subscribed(FakeHistoryStore(answers = listOf(answer("a1", "s1", type = "new-type"))))
+        advanceUntilIdle()
+
+        assertEquals(listOf("new-type"), viewModel.uiState.value.weaknesses.map { it.typeName })
     }
 
     @Test
@@ -88,12 +121,12 @@ class HistoryViewModelTest {
         store.flags.value = setOf(CorrectionFlag("a1", 0))
         advanceUntilIdle()
 
-        assertEquals(listOf("t" to 80), viewModel.uiState.value.weaknesses.map { it.type.id to it.score })
+        assertEquals(listOf(HistoryWeakness("t", 80)), viewModel.uiState.value.weaknesses)
     }
 
     @Test
     fun `불러오기 전에는 빈 기록 대신 불러오는 중이다`() = runTest(dispatcher) {
-        val viewModel = HistoryViewModel(ObserveHistoryUseCase(FakeHistoryStore()))
+        val viewModel = HistoryViewModel(useCase(FakeHistoryStore()))
 
         assertTrue(viewModel.uiState.value.loading)
     }

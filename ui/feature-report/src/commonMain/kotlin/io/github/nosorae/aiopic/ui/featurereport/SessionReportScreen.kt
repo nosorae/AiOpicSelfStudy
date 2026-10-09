@@ -63,7 +63,7 @@ private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -
         item { SectionTitle(stringResource(Res.string.session_answers, report.questionCount)) }
         itemsIndexed(report.answers, key = { _, answer -> answer.id }) { index, answer ->
             val number = index + 1
-            AnswerRow(number, answer, broke = grade != null && number in grade.brokeAt, onClick = { onOpenAnswer(answer.id) })
+            AnswerRow(number, answer, report.names, broke = grade != null && number in grade.brokeAt, onClick = { onOpenAnswer(answer.id) })
         }
         items(report.timeShortCount) {
             MontageListCell(
@@ -105,7 +105,7 @@ private fun GradeHeader(report: SessionReport) {
         }
         if (report.models.isNotEmpty()) {
             Text(
-                text = stringResource(Res.string.session_models, report.models.joinToString(", ") { it.label }),
+                text = stringResource(Res.string.session_models, report.models.joinToString(", ", transform = report.names::model)),
                 style = typography.label1.regular,
                 color = colors.foregroundNeutralSecondary,
                 modifier = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8),
@@ -115,15 +115,15 @@ private fun GradeHeader(report: SessionReport) {
 }
 
 @Composable
-private fun AnswerRow(number: Int, answer: Answer, broke: Boolean, onClick: () -> Unit) {
+private fun AnswerRow(number: Int, answer: Answer, names: ReportNames, broke: Boolean, onClick: () -> Unit) {
     val status = when (val analysis = answer.analysis) {
         AnswerAnalysis.Pending -> stringResource(Res.string.status_pending)
-        is AnswerAnalysis.Done -> stringResource(Res.string.status_score, analysis.feedback.score, analysis.analyzedBy.label)
-        is AnswerAnalysis.Unscorable -> stringResource(Res.string.status_unscorable, stringResource(analysis.reason.text), analysis.analyzedBy.label)
+        is AnswerAnalysis.Done -> stringResource(Res.string.status_score, analysis.feedback.score, names.model(analysis.analyzedBy))
+        is AnswerAnalysis.Unscorable -> stringResource(Res.string.status_unscorable, stringResource(analysis.reason.text), names.model(analysis.analyzedBy))
     }
     val caption = if (broke) "${stringResource(Res.string.session_broke)}, $status" else status
     MontageListCell(
-        title = stringResource(Res.string.session_answer_title, number, answer.question.type.id),
+        title = stringResource(Res.string.session_answer_title, number, names.type(answer.question.type)),
         caption = caption,
         chevron = true,
         onClick = onClick,

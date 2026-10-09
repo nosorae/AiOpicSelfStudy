@@ -15,7 +15,12 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** [wrongCorrections] 는 "틀림"을 누른 교정의 `Feedback.corrections` 안 순서다(F8.1). */
-data class AnswerReportUiState(val loading: Boolean = true, val answer: Answer? = null, val wrongCorrections: Set<Int> = emptySet())
+data class AnswerReportUiState(
+    val loading: Boolean = true,
+    val answer: Answer? = null,
+    val wrongCorrections: Set<Int> = emptySet(),
+    val names: ReportNames = ReportNames(),
+)
 
 sealed interface AnswerReportIntent {
     /** 교정 하나의 "틀림" 표시를 붙이거나 뗀다. */
@@ -35,7 +40,7 @@ class AnswerReportViewModel(
     init {
         viewModelScope.launch {
             observeAnswerReportUseCase(answerId).collect { report ->
-                _uiState.update { it.copy(loading = false, answer = report.answer, wrongCorrections = report.wrongCorrections) }
+                _uiState.update { it.copy(loading = false, answer = report.answer, wrongCorrections = report.wrongCorrections, names = report.names) }
             }
         }
     }

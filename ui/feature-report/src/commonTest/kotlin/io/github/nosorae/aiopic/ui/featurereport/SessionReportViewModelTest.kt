@@ -34,7 +34,7 @@ class SessionReportViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(store: FakeReportStore) = SessionReportViewModel("s1", ObserveSessionReportUseCase(store, spec))
+    private fun viewModel(store: FakeReportStore) = SessionReportViewModel("s1", ObserveSessionReportUseCase(store, spec, typeNames, FakeCatalog))
 
     @Test
     fun `F2_6 시간이 다 된 회차는 답하지 못한 문항 수를 시간 부족으로 센다`() = runTest(dispatcher) {
@@ -87,6 +87,26 @@ class SessionReportViewModelTest {
         val report = viewModel.uiState.value.report!!
         assertTrue(report.mixedModels)
         assertEquals(listOf("model-a", "model-b"), report.models.map { it.modelId })
+    }
+
+    @Test
+    fun `F5_7 모델은 표시 이름으로 보이고 목록에 없는 모델만 id 로 보인다`() = runTest(dispatcher) {
+        val list = answers("s1", 2).mapIndexed { i, a -> if (i == 1) a.copy(analysis = done(model = "model-b")) else a }
+        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 2)), list))
+        advanceUntilIdle()
+
+        val report = viewModel.uiState.value.report!!
+        assertEquals(listOf("Model A", "model-b"), report.models.map(report.names::model))
+    }
+
+    @Test
+    fun `답변 목록은 문항 유형 id 대신 시험 팩이 정한 이름을 보이고 모르는 유형만 id 를 보인다`() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 1)), answers("s1", 1)))
+        advanceUntilIdle()
+
+        val names = viewModel.uiState.value.report!!.names
+        assertEquals("유형 T", names.type(QuestionType("t")))
+        assertEquals("new-type", names.type(QuestionType("new-type")))
     }
 
     @Test

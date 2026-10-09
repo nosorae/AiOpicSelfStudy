@@ -108,6 +108,20 @@ class ExamViewModelTest {
     }
 
     @Test
+    fun `F2_2 서베이는 주제 앞의 Part 질문을 보이고 Part 마다 하나를 고른다`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onIntent(ExamIntent.SelectSurveyAnswer(part = 0, option = 1))
+        viewModel.onIntent(ExamIntent.SelectSurveyAnswer(part = 1, option = 0))
+        viewModel.onIntent(ExamIntent.SelectSurveyAnswer(part = 0, option = 0))
+
+        assertEquals(testContent.surveyParts, viewModel.uiState.value.surveyParts)
+        assertEquals(mapOf(0 to 0, 1 to 0), viewModel.uiState.value.surveyAnswers)
+    }
+
+    /** Part 질문은 고르지 않았다. 다음으로 가는 조건은 Part 4 주제 수 하나다(F2.2). */
+    @Test
     fun `F2_1 서베이를 내면 수준 선택으로 가고 고른 주제가 저장된다`() = runTest(dispatcher) {
         val viewModel = viewModel()
         advanceUntilIdle()

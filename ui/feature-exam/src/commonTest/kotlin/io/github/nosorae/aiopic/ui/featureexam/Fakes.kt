@@ -13,7 +13,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-/** 서베이(2개 이상), 수준(1~3), 점검, 1번, 재조정, 2번, 수준 3 이상만 3번. 40분. */
+/** 서베이(Part 1~2 와 주제 2개 이상), 수준(1~3), 점검, 1번, 재조정, 2번, 수준 3 이상만 3번. 40분. */
 val testContent = ExamContent(
     spec = ExamSpec(
         timeLimit = 40.minutes,
@@ -29,6 +29,7 @@ val testContent = ExamContent(
         ),
     ),
     topics = listOf("영화", "공원", "요리", "여행"),
+    surveyParts = listOf(SurveyPart("하는 일", listOf("회사원", "학생")), SurveyPart("사는 곳", listOf("혼자", "가족과"))),
 )
 
 class FakeExamRepository(var lastTopics: List<String> = emptyList()) : ExamRepository {

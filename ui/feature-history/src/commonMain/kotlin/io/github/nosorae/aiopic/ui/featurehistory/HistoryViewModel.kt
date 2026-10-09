@@ -3,7 +3,6 @@ package io.github.nosorae.aiopic.ui.featurehistory
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.Inject
-import io.github.nosorae.aiopic.engine.answer.weakness.TypeWeakness
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -12,7 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 data class HistoryUiState(
     val loading: Boolean = true,
     val sessions: List<HistorySession> = emptyList(),
-    val weaknesses: List<TypeWeakness> = emptyList(),
+    val weaknesses: List<HistoryWeakness> = emptyList(),
 ) {
     val empty: Boolean get() = !loading && sessions.isEmpty() && weaknesses.isEmpty()
 }

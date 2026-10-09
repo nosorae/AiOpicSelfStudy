@@ -34,7 +34,7 @@ class AnswerReportViewModelTest {
 
     private fun viewModel(answerId: String, store: FakeReportStore) = AnswerReportViewModel(
         answerId,
-        ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore),
+        ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore, FakeCatalog),
         MarkCorrectionWrongUseCase(flagStore),
     )
 
@@ -53,6 +53,16 @@ class AnswerReportViewModelTest {
         advanceUntilIdle()
 
         assertEquals("a1", viewModel.uiState.value.answer?.id)
+    }
+
+    @Test
+    fun `F5_7 답변 리포트도 모델 표시 이름을 보인다`() = runTest(dispatcher) {
+        val viewModel = viewModel("a0", FakeReportStore(answers = answers("s1", 1)))
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        val analyzedBy = assertIs<AnswerAnalysis.Done>(state.answer?.analysis).analyzedBy
+        assertEquals("Model A", state.names.model(analyzedBy))
     }
 
     @Test

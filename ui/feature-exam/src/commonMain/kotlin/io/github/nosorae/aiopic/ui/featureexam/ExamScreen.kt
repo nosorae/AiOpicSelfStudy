@@ -15,6 +15,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
@@ -77,6 +79,9 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
         null -> StepScaffold(title = "", onExit = onExit, modifier = modifier) {}
 
         is ExamStep.Survey -> SurveyStep(
+            parts = state.surveyParts,
+            answers = state.surveyAnswers,
+            onAnswer = { part, option -> onIntent(ExamIntent.SelectSurveyAnswer(part, option)) },
             minTopics = step.minTopics,
             topics = state.topics,
             selected = state.selectedTopics,
@@ -159,8 +164,12 @@ private fun StepScaffold(
     }
 }
 
+/** Part 질문을 차례로 두고 마지막 Part 에서 관심 주제를 고른다. 다음으로 가는 조건은 마지막 Part 의 주제 수 하나다(F2.2). */
 @Composable
 private fun SurveyStep(
+    parts: List<SurveyPart>,
+    answers: Map<Int, Int>,
+    onAnswer: (part: Int, option: Int) -> Unit,
     minTopics: Int,
     topics: List<String>,
     selected: Set<String>,
@@ -176,6 +185,17 @@ private fun SurveyStep(
         modifier = modifier,
         bottomBar = { NextButton(enabled = canSubmit, onClick = onSubmit) },
     ) {
+        val partCount = parts.size + 1
+        parts.forEachIndexed { part, survey ->
+            PartTitle(part + 1, partCount)
+            Description(survey.question)
+            Column {
+                survey.options.forEachIndexed { option, text ->
+                    MontageListCell(title = text, selected = answers[part] == option, onClick = { onAnswer(part, option) })
+                }
+            }
+        }
+        PartTitle(partCount, partCount)
         Description(stringResource(Res.string.exam_survey_description, minTopics))
         Text(
             text = stringResource(Res.string.exam_survey_count, selected.size),
@@ -305,6 +325,16 @@ private fun Description(text: String) {
 }
 
 @Composable
+private fun PartTitle(part: Int, count: Int) {
+    Text(
+        text = stringResource(Res.string.exam_survey_part, part, count),
+        style = MontageTheme.typography.label1.bold,
+        color = MontageTheme.colors.foregroundNeutralSecondary,
+        modifier = Modifier.padding(start = Gutter, end = Gutter, top = MontageSpacing.spacing12).semantics { heading() },
+    )
+}
+
+@Composable
 private fun NextButton(enabled: Boolean, onClick: () -> Unit) {
     MontageButton(
         text = stringResource(Res.string.exam_next_step),
@@ -341,7 +371,22 @@ internal object ExamSamples {
     private val topics = listOf("영화 보기", "공원 가기", "요리하기", "음악 감상", "해변 가기", "캠핑", "조깅", "헬스", "여행(국내)", "여행(해외)", "카페 가기", "독서", "게임", "쇼핑", "콘서트 보기")
     private val ask = ExamStep.Ask(QuestionType("routine"))
 
-    val survey = ExamUiState(step = ExamStep.Survey(minTopics = 12), topics = topics, selectedTopics = topics.take(5).toSet())
+    private val surveyParts = listOf(
+        SurveyPart("현재 귀하는 어느 분야에 종사하고 계십니까?", listOf("사업, 회사", "재택근무, 재택사업", "교사, 교육자", "일 경험 없음")),
+        SurveyPart("현재 귀하는 학생이십니까?", listOf("예", "아니요")),
+        SurveyPart(
+            "현재 귀하는 어디에 살고 계십니까?",
+            listOf("개인주택이나 아파트에 홀로 거주", "친구나 룸메이트와 함께 주택이나 아파트에 거주", "가족과 함께 주택이나 아파트에 거주", "학교 기숙사", "군대 막사"),
+        ),
+    )
+
+    val survey = ExamUiState(
+        step = ExamStep.Survey(minTopics = 12),
+        surveyParts = surveyParts,
+        surveyAnswers = mapOf(0 to 0, 1 to 1, 2 to 2),
+        topics = topics,
+        selectedTopics = topics.take(5).toSet(),
+    )
     val surveyReady = survey.copy(selectedTopics = topics.take(12).toSet())
     val level = ExamUiState(step = ExamStep.LevelSelect, levelCount = 6, selectedLevel = 4)
     val check = ExamUiState(step = ExamStep.Check)
