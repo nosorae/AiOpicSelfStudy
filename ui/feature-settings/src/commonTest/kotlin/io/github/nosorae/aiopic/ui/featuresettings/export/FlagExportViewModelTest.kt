@@ -95,4 +95,15 @@ class FlagExportViewModelTest {
         assertEquals(0, viewModel.uiState.value.count)
         assertEquals("[]", Json.parseToJsonElement(viewModel.uiState.value.json).toString())
     }
+
+    @Test
+    fun `복사했다고 알리면 안내 상태를 켜고 내보낼 내용은 그대로 둔다`() = runTest(dispatcher) {
+        val viewModel = FlagExportViewModel(ObserveFlagExportUseCase(FakeStore(listOf(answer("a1", done)), setOf(CorrectionFlag("a1", 0)))))
+        advanceUntilIdle()
+
+        viewModel.onIntent(FlagExportIntent.JsonCopied)
+
+        assertTrue(viewModel.uiState.value.copied)
+        assertEquals(1, viewModel.uiState.value.count)
+    }
 }

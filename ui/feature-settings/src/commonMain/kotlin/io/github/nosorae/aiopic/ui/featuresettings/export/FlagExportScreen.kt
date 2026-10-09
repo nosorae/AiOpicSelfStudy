@@ -9,9 +9,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -43,13 +40,11 @@ fun FlagExportRoute(viewModel: FlagExportViewModel, modifier: Modifier = Modifie
     // 플랫폼마다 따로 만들어야 해서 예전 API 를 쓴다. 이슈 본문 한도(65,536자)를 넘길 만큼 쌓이면 파일 공유로 바꾼다.
     @Suppress("DEPRECATION")
     val clipboard = LocalClipboardManager.current
-    var copied by rememberSaveable { mutableStateOf(false) }
     FlagExportScreen(
         state = state,
-        copied = copied,
-        onCopyClick = {
-            clipboard.setText(AnnotatedString(state.json))
-            copied = true
+        onIntent = { intent ->
+            if (intent == FlagExportIntent.JsonCopied) clipboard.setText(AnnotatedString(state.json))
+            viewModel.onIntent(intent)
         },
         modifier = modifier,
     )
@@ -57,7 +52,7 @@ fun FlagExportRoute(viewModel: FlagExportViewModel, modifier: Modifier = Modifie
 
 /** 표시 수, 무엇이 들어가는지, 복사 버튼. 표시가 없으면 어디서 표시하는지 알려 주고 버튼을 끈다. */
 @Composable
-fun FlagExportScreen(state: FlagExportUiState, copied: Boolean, onCopyClick: () -> Unit, modifier: Modifier = Modifier) {
+fun FlagExportScreen(state: FlagExportUiState, onIntent: (FlagExportIntent) -> Unit, modifier: Modifier = Modifier) {
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
     MontageScreen(
@@ -66,7 +61,7 @@ fun FlagExportScreen(state: FlagExportUiState, copied: Boolean, onCopyClick: () 
         bottomBar = {
             MontageButton(
                 text = stringResource(Res.string.export_copy),
-                onClick = onCopyClick,
+                onClick = { onIntent(FlagExportIntent.JsonCopied) },
                 enabled = state.count > 0,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing12),
             )
@@ -83,7 +78,7 @@ fun FlagExportScreen(state: FlagExportUiState, copied: Boolean, onCopyClick: () 
                 style = typography.body1Reading.regular,
                 color = colors.foregroundNeutralSecondary,
             )
-            if (copied) {
+            if (state.copied) {
                 Text(
                     text = stringResource(Res.string.export_copied),
                     style = typography.body1Reading.regular,
@@ -104,5 +99,5 @@ internal object FlagExportSamples {
 @Preview
 @Composable
 private fun FlagExportScreenPreview() {
-    MontageTheme { FlagExportScreen(state = FlagExportSamples.flagged, copied = true, onCopyClick = {}) }
+    MontageTheme { FlagExportScreen(state = FlagExportSamples.flagged.copy(copied = true), onIntent = {}) }
 }
