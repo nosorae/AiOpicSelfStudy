@@ -17,32 +17,37 @@ import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.featurereport.flag.CorrectionRow
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 @Composable
 fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    AnswerReportScreen(state = state, modifier = modifier)
+    AnswerReportScreen(state = state, onIntent = viewModel::onIntent, modifier = modifier)
 }
 
 /**
  * 답변 하나의 피드백(F5.2, F7.1). 모의시험과 한 문항 연습이 같은 화면을 쓴다. 분석한 제공사와 모델을 맨 위에 둔다(F5.7).
- * 받아쓴 글만 분석한 경로면 발음 칸에 "평가 안 함"을 쓴다(F5.9).
+ * 받아쓴 글만 분석한 경로면 발음 칸에 "평가 안 함"을 쓴다(F5.9). 교정마다 "틀림"을 누를 수 있다(F8.1).
  */
 @Composable
-fun AnswerReportScreen(state: AnswerReportUiState, modifier: Modifier = Modifier) {
+fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent) -> Unit, modifier: Modifier = Modifier) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.answer_title)) }) {
         val answer = state.answer
         when {
             state.loading -> Unit
+
             answer == null -> Paragraph(stringResource(Res.string.answer_not_found), secondary = true)
-            else -> LazyColumn(Modifier.fillMaxWidth()) { answerContent(answer) }
+
+            else -> LazyColumn(Modifier.fillMaxWidth()) {
+                answerContent(answer, state.wrongCorrections) { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) }
+            }
         }
     }
 }
 
-private fun LazyListScope.answerContent(answer: Answer) {
+private fun LazyListScope.answerContent(answer: Answer, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
     item {
         answer.analysis.analyzedBy?.let { Paragraph(stringResource(Res.string.answer_analyzed_by, it.label), secondary = true) }
         SectionTitle(stringResource(Res.string.answer_question))
@@ -57,11 +62,11 @@ private fun LazyListScope.answerContent(answer: Answer) {
             Paragraph(stringResource(Res.string.answer_unscorable_help), secondary = true)
         }
 
-        is AnswerAnalysis.Done -> feedback(analysis.feedback)
+        is AnswerAnalysis.Done -> feedback(analysis.feedback, wrongCorrections, onWrongClick)
     }
 }
 
-private fun LazyListScope.feedback(feedback: Feedback) {
+private fun LazyListScope.feedback(feedback: Feedback, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
     item {
         SectionTitle(stringResource(Res.string.answer_transcript))
         Paragraph(feedback.transcript)
@@ -69,11 +74,7 @@ private fun LazyListScope.feedback(feedback: Feedback) {
     item { SectionTitle(stringResource(Res.string.answer_corrections)) }
     if (feedback.corrections.isEmpty()) item { Paragraph(stringResource(Res.string.answer_corrections_none), secondary = true) }
     items(feedback.corrections.size) {
-        val correction = feedback.corrections[it]
-        MontageListCell(
-            title = stringResource(Res.string.answer_corrected, correction.corrected),
-            caption = stringResource(Res.string.answer_original, correction.original),
-        )
+        CorrectionRow(feedback.corrections[it], wrong = it in wrongCorrections, onWrongClick = { onWrongClick(it) })
     }
     item { SectionTitle(stringResource(Res.string.answer_upgrades)) }
     if (feedback.upgrades.isEmpty()) item { Paragraph(stringResource(Res.string.answer_upgrades_none), secondary = true) }
@@ -121,5 +122,5 @@ private fun Metric(label: String, value: String) {
 @Preview
 @Composable
 private fun AnswerReportScreenPreview() {
-    MontageTheme { AnswerReportScreen(state = ReportSamples.pronunciationNotEvaluated) }
+    MontageTheme { AnswerReportScreen(state = ReportSamples.pronunciationNotEvaluated, onIntent = {}) }
 }

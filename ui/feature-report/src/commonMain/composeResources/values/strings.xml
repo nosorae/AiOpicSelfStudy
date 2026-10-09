@@ -28,6 +28,7 @@
     <string name="answer_transcript">받아쓴 답변</string>
     <string name="answer_corrections">교정</string>
     <string name="answer_corrections_none">고칠 구절이 없습니다.</string>
+    <string name="flag_wrong">틀림</string>
     <string name="answer_upgrades">한 등급 위 표현</string>
     <string name="answer_upgrades_none">더 할 표현이 없습니다.</string>
     <string name="answer_original">원문 %1$s</string>

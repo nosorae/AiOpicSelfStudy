@@ -21,4 +21,10 @@
     <string name="settings_theme_system">시스템 따라가기</string>
     <string name="settings_theme_light">라이트</string>
     <string name="settings_theme_dark">다크</string>
+    <string name="export_title">틀림 표시 내보내기</string>
+    <string name="export_count">"틀림"을 누른 교정 %1$d개</string>
+    <string name="export_help">답변 전문, 교정 내용, 분석한 제공사와 모델, 프롬프트 버전을 JSON 으로 복사합니다. 저장소 이슈에 붙여 넣으면 분석 프롬프트를 고칠 때 씁니다.</string>
+    <string name="export_empty">아직 "틀림"을 누른 교정이 없습니다. 답변 리포트에서 잘못 고친 교정 옆의 "틀림"을 누르면 여기에 쌓입니다.</string>
+    <string name="export_copy">JSON 복사</string>
+    <string name="export_copied">복사했습니다. 저장소 이슈 본문에 붙여 넣으세요.</string>
 </resources>

@@ -10,7 +10,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * 회차 리포트와 답변 리포트의 상태마다 한 장. 등급 범위와 모델 섞임, 시간 부족, 평가 불가, 발음 평가 안 함은
- * 다크와 글자 200% 도 찍는다. 입력은 미리보기와 같은 [ReportSamples] 다.
+ * 다크와 글자 200% 도 찍는다. 교정에 "틀림"을 누른 답변(F8.1)도 다크와 글자 200% 를 찍는다. 입력은 미리보기와 같은 [ReportSamples] 다.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -31,6 +31,12 @@ class ReportScreenshotTest {
     fun session_timeShort() = session(ReportSamples.timeUp)
 
     @Test fun answer_evaluated() = answer(ReportSamples.answerEvaluated)
+
+    @Test fun answer_evaluated_dark() = answer(ReportSamples.answerEvaluated, dark = true)
+
+    @Config(qualifiers = "w360dp-h1400dp-xhdpi", fontScale = 2f)
+    @Test
+    fun answer_evaluated_fontScale200() = answer(ReportSamples.answerEvaluated)
 
     @Config(qualifiers = "w360dp-h1100dp-xhdpi")
     @Test
@@ -53,6 +59,6 @@ class ReportScreenshotTest {
     }
 
     private fun answer(state: AnswerReportUiState, dark: Boolean = false) = captureRoboImage {
-        MontageTheme(darkTheme = dark) { AnswerReportScreen(state = state) }
+        MontageTheme(darkTheme = dark) { AnswerReportScreen(state = state, onIntent = {}) }
     }
 }

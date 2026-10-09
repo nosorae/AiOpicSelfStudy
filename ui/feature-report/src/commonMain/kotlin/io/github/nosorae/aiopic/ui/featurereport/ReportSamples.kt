@@ -84,7 +84,8 @@ internal object ReportSamples {
         grade = null,
     )
 
-    val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)))
+    /** 첫 교정에 "틀림"을 누른 상태(F8.1). */
+    val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)), wrongCorrections = setOf(0))
 
     /** 받아쓴 글만 분석한 경로(F5.9). 롤플레이라 한 질문 수도 보인다. */
     val pronunciationNotEvaluated = AnswerReportUiState(

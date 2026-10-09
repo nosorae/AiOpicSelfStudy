@@ -19,19 +19,18 @@ data class History(val sessions: List<HistorySession>, val weaknesses: List<Type
 
 /**
  * 끝난 회차를 저장한 순서대로, 문항 유형별 약점은 한 문항 연습까지 모든 답변으로 낸다(F7.3).
- * 진행 중인 회차는 등급이 없어서 넣지 않는다.
+ * 진행 중인 회차는 등급이 없어서 넣지 않는다. 틀림 표시가 붙은 답변은 약점에서 뺀다(F8.2).
  */
 @Inject
 class ObserveHistoryUseCase(private val store: HistoryStore) {
-    // ponytail: 틀림 표시(F8.2)는 아직 저장하는 곳이 없어 빈 집합을 넘긴다. 표시 저장이 생기면 여기서 함께 구독한다.
-    operator fun invoke(): Flow<History> = combine(store.sessions(), store.answers()) { sessions, answers ->
+    operator fun invoke(): Flow<History> = combine(store.sessions(), store.answers(), store.flags()) { sessions, answers, flags ->
         val bySession = answers.groupBy { it.examSessionId }
         History(
             sessions = sessions.filter { it.status != ExamStatus.InProgress }.map { session ->
                 val models = bySession[session.id].orEmpty().mapNotNull { it.analysis.analyzedBy }.distinctBy { it.provider to it.modelId }
                 HistorySession(session, models)
             },
-            weaknesses = weaknessScores(answers),
+            weaknesses = weaknessScores(answers, flags),
         )
     }
 }
