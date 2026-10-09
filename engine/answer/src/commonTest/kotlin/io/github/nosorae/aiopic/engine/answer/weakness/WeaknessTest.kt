@@ -66,25 +66,22 @@ class WeaknessTest {
     }
 
     @Test
-    fun `F8_2 틀림으로 표시한 교정만큼 점수를 돌려받는다`() {
-        val answers = listOf(answer("a1", description, 60, corrections = 3), answer("a2", description, 60, corrections = 1))
-        val flagged = setOf(CorrectionFlag("a1", 0), CorrectionFlag("a1", 2))
-
-        assertEquals(
-            listOf(TypeWeakness(description, score = 60 + RESTORED_PER_FLAG)),
-            weaknessScores(answers, flagged),
+    fun `F8_2 틀림 표시가 붙은 답변은 평균에서 뺀다`() {
+        val answers = listOf(
+            answer("a1", description, 40, corrections = 3),
+            answer("a2", description, 80, corrections = 1),
+            answer("a3", roleplay, 30, corrections = 1),
         )
+        val flagged = setOf(CorrectionFlag("a1", 0), CorrectionFlag("a1", 2), CorrectionFlag("a3", 0))
+
+        assertEquals(listOf(TypeWeakness(description, score = 80)), weaknessScores(answers, flagged))
     }
 
     @Test
-    fun `없는 교정을 가리키는 표시는 무시하고 점수는 100 을 넘지 않는다`() {
-        val answers = listOf(answer("a1", description, 98, corrections = 1))
-        val flagged = setOf(CorrectionFlag("a1", 0), CorrectionFlag("a1", 5), CorrectionFlag("other", 0))
+    fun `없는 교정이나 다른 답변을 가리키는 표시는 무시한다`() {
+        val answers = listOf(answer("a1", description, 45, corrections = 1))
+        val flagged = setOf(CorrectionFlag("a1", 5), CorrectionFlag("other", 0))
 
-        assertEquals(listOf(TypeWeakness(description, score = 100)), weaknessScores(answers, flagged))
-        assertEquals(
-            listOf(TypeWeakness(description, score = 45 + RESTORED_PER_FLAG)),
-            weaknessScores(listOf(answer("a1", description, 45, corrections = 1)), flagged),
-        )
+        assertEquals(listOf(TypeWeakness(description, score = 45)), weaknessScores(answers, flagged))
     }
 }
