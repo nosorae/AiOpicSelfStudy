@@ -302,9 +302,10 @@
       "reqs": [],
       "done": "./gradlew check",
       "done_desc": "에이전트가 미리 확인 결과로 설계 문서 11절을 채우고(네이티브 탭 유지 또는 Montage 완전 통일 판정 포함) 리뷰 에이전트가 확인한다",
-      "status": "doing",
+      "status": "done",
       "issue": 12,
-      "start": "2026-10-09"
+      "start": "2026-10-09",
+      "end": "2026-10-09"
     },
     {
       "id": "c1",
