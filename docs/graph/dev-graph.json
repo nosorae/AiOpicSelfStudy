@@ -1099,9 +1099,10 @@
       ],
       "done": "./gradlew :ui:feature-settings:allTests :ui:feature-settings:verifyRoborazziAndroidHostTest :ui:feature-exam:allTests :ui:feature-practice:allTests :apps:opic:shared:allTests && ./gradlew :ui:feature-settings:testAndroidHostTest --tests '*ConsentRevokeTest*' --tests '*AnswerTimerSettingTest*' --tests '*QuestionImportTest*'",
       "done_desc": "설정(S14)에 빠진 행을 넣는다. 동의 철회(F1.3): 철회하면 대기 중인 전송을 멈추고 다음 실행 때 동의 화면으로 간다. 답변 타이머 켜기(F2.7): 기본 꺼짐, 켜면 시험 문항 화면에 타이머가 보인다. 문항 파일 불러오기(F6.3): JSON 을 골라 검사하고 틀리면 이유를 보이며, 불러온 문항이 한 문항 연습 풀에 들어간다. 내보내기 행(F8.3)은 u-wire 가 만든 내보내기 경로로 간다. 앱 정보와 라이선스 고지(ADR 0018). ConsentRevokeTest, AnswerTimerSettingTest, QuestionImportTest 와 설정 라이트, 다크 스크린샷",
-      "status": "doing",
+      "status": "done",
       "issue": 107,
-      "start": "2026-10-10"
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "e2e",
