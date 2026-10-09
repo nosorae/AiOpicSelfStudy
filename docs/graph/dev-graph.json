@@ -883,13 +883,14 @@
       ],
       "done": "./gradlew :ui:feature-report:allTests :ui:feature-settings:allTests",
       "done_desc": "표시 뒤 약점 점수에서 빠지는지, JSON 내보내기 형식 교정은 답변 id 와 Feedback.corrections 안의 순서로 가리킨다",
-      "status": "doing",
+      "status": "done",
       "issue": 33,
       "start": "2026-10-10",
       "attempts": {
         "done": 1,
         "review": 2
-      }
+      },
+      "end": "2026-10-10"
     },
     {
       "id": "u-model",
