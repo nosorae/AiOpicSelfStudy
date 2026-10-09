@@ -28,6 +28,7 @@ sqlite = "2.7.1"
 ksp = "2.3.12"
 roborazzi = "1.76.0"
 spotless = "8.10.4"
+work = "2.11.2"
 
 [libraries]
 composeRules-ktlint = { module = "io.nlopez.compose.rules:ktlint", version.ref = "composeRules-ktlint" }
@@ -62,6 +63,8 @@ room3-runtime = { module = "androidx.room3:room3-runtime", version.ref = "room3"
 room3-compiler = { module = "androidx.room3:room3-compiler", version.ref = "room3" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 sqlite-bundled-jvm = { module = "androidx.sqlite:sqlite-bundled-jvm", version.ref = "sqlite" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "work" }
+androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 
 # build-logic 의 convention 플러그인이 컴파일할 때 쓰는 Gradle 플러그인

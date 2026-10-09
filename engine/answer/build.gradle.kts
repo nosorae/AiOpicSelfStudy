@@ -11,6 +11,8 @@ kotlin {
             // 저장소가 회차 진행 상태(ExamSession)를 답변과 같은 DB 에 둔다(F3.1).
             // 회차 등급 포트(SessionGrader)가 회차 모델의 SessionGrade, GradeScale 을 돌려주고 받는다.
             api(project(":engine:session"))
+            // 분석 대기열이 꺼낸 답변을 분석하는 핸들러(analysis/)가 대기열의 WorkHandler 를 구현한다.
+            api(project(":libs:work-queue"))
             api(libs.kotlinx.serialization.json)
             api(libs.room3.runtime)
             api(libs.sqlite.bundled)

@@ -669,8 +669,13 @@
       ],
       "done": "./gradlew :libs:work-queue:allTests :engine:answer:allTests",
       "done_desc": "오프라인에서 넣고 온라인에서 비워지는지, 429 백오프 3회, 동의 철회 시 멈춤",
-      "status": "todo",
-      "issue": 25
+      "status": "done",
+      "issue": 25,
+      "start": "2026-10-10",
+      "attempts": {
+        "review": 1
+      },
+      "end": "2026-10-10"
     },
     {
       "id": "n-quest",
