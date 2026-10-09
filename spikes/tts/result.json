@@ -1,0 +1,19 @@
+{
+  "node": "s2",
+  "judged_by": "수치 기준 판정 (사용자 위임). 사용자 청취 확인은 나중",
+  "judged_on": "2026-10-09",
+  "method": "Gemini 받아쓰기 WER, 분당 단어, 문장 안 쉼. 원본은 measurements.json",
+  "wer_threshold": 0.05,
+  "samples": {
+    "ios-sim-default": { "voice": "com.apple.voice.super-compact.en-US.Samantha", "wer": [0, 0, 0], "wpm": [216, 211, 247], "usable_for_practice": true },
+    "macos-default": { "voice": "com.apple.voice.compact.en-US.Samantha", "wer": [0, 0, 0], "wpm": [216, 211, 247], "usable_for_practice": true },
+    "android-default": { "voice": "com.google.android.tts en-US-language", "wer": [0, 0, 0], "wpm": [215, 204, 234], "usable_for_practice": true },
+    "gemini-kore": { "voice": "gemini-2.5-flash-preview-tts Kore", "wer": [0], "wpm": [188], "usable_for_practice": true }
+  },
+  "hq_voice_available": false,
+  "decision": {
+    "device_tts_ok": true,
+    "voice_choice": "고품질(Enhanced, Premium) 음성이 있으면 우선, 없으면 기본 음성",
+    "note": "사용자가 나중에 직접 들어 보고 별로면 설계에 있는 대안(Gemini 음성 미리 만들기)으로 바꾼다. 음성 엔진은 포트 뒤에 둔다"
+  }
+}
