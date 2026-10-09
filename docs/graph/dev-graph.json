@@ -395,8 +395,9 @@
       ],
       "done": "./gradlew :ui:design:allTests :ui:design:verifyRoborazziAndroidHostTest",
       "done_desc": "Montage v4.0.0 태그 기준으로 색 238개와 다크 색 148개를 Kotlin 상수로, Pretendard 4종, 아이콘 vector, 컴포넌트를 commonMain 으로. brand 계열만 우리 강조색(ADR 0018)으로 바꾸고 다크 배경 위 대비를 다시 잰다. 로고, 워드마크, 로딩 애니메이션은 넣지 않는다. MIT 전문과 저작권 표시, Pretendard OFL 고지. 컴포넌트마다 라이트·다크 Roborazzi 스크린샷",
-      "status": "todo",
-      "issue": 51
+      "status": "doing",
+      "issue": 51,
+      "start": "2026-10-09"
     },
     {
       "id": "c4",
