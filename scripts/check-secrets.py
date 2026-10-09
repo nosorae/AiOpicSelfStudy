@@ -14,6 +14,7 @@ import sys
 # 패턴 문자열이 이 파일 자체에 걸리지 않게 일부 글자를 문자 집합으로 감싼다.
 PATTERNS = [
     ("Google API 키", re.compile(r"AIza[0-9A-Za-z_-]{35}")),
+    ("Google API 키(새 형식)", re.compile(r"A[Q]\.[0-9A-Za-z_-]{30,}")),
     ("GitHub 토큰", re.compile(r"gh[pousr]_[0-9A-Za-z]{30,}")),
     ("API 토큰(sk-)", re.compile(r"sk-[A-Za-z0-9]{20,}")),
     ("iOS 서명 팀 ID", re.compile(r"DEVELOPMENT_TEAM = [A-Z0-9]{10}")),

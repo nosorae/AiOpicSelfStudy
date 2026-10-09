@@ -12,7 +12,7 @@ import json
 import subprocess
 import sys
 
-from validate import DEFAULT_PATH, load, save, topo_order, validate
+from validate import DEFAULT_PATH, HUMAN, load, save, topo_order, validate
 
 HUMAN_KINDS = ("human", "gate")
 LABEL_COLORS = {"phase": "0E8A16", "by": "C5DEF5", "kind": "BFD4F2", "status": "E11D21"}
@@ -35,13 +35,18 @@ def issue_body(node, phase_title, by_id):
     todo = [f"- [ ] {node['title']}"]
     if node["reqs"]:
         todo.append(f"- [ ] 요구사항 {', '.join(node['reqs'])} 을 만족한다 (번호는 `docs/specs/product.md` 의 요구사항 번호)")
-    todo.append(f"- [ ] 완료 조건을 확인한다: {node['done']}")
+    if node["done"] == HUMAN:
+        todo.append("- [ ] 사람이 완료 조건을 확인한다")
+        done = f"{node['done_desc']}\n\n사람이 확인한다."
+    else:
+        todo.append(f"- [ ] `scripts/graph/run_done.sh {node['id']}` 가 0 으로 끝난다")
+        done = f"{node['done_desc']}\n\n```\n{node['done']}\n```"
     owns = "\n".join(f"- `{p}`" for p in node["owns"]) or "-"
     deps = ", ".join(f"#{by_id[d]['issue']}" if "issue" in by_id[d] else f"`{d}`" for d in node["dependsOn"]) or "-"
     return (
         f"## 배경\n{node['phase']} {phase_title} 단계의 작업이다. {node['title']}.\n\n"
         f"## 할 일\n" + "\n".join(todo) + "\n\n"
-        f"## 완료 조건\n{node['done']}\n\n"
+        f"## 완료 조건\n{done}\n\n"
         f"## 고칠 범위\n{owns}\n\n"
         f"## 먼저 끝날 것\n{deps}\n\n"
         f"## 노드\n`{node['id']}` ({node['phase']})\n"
