@@ -257,8 +257,10 @@
       ],
       "done": "human",
       "done_desc": "실기기에서 잠금 5분 뒤 조각 파일이 계속 생기는지",
-      "status": "todo",
-      "issue": 11
+      "status": "done",
+      "issue": 11,
+      "start": "2026-10-09",
+      "end": "2026-10-09"
     },
     {
       "id": "s4",
