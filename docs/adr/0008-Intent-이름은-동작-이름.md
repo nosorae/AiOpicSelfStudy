@@ -23,3 +23,7 @@ Intent 는 동작 이름(`StartExam`, `ReplayQuestion`, `SubmitAnswer`)으로 �
 ## 결과
 
 람다와 Intent 이름이 달라 화면 최상위에서 한 번 이어 준다(`onStartClicked = { onIntent(StartExam) }`).
+
+## 근거
+
+- [ExamIntent](../../ui/feature-exam/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/featureexam/ExamUiState.kt)

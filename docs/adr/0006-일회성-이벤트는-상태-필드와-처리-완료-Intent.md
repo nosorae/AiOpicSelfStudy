@@ -23,3 +23,8 @@ UiState 필드와 처리 완료 Intent 를 쓴다. Channel, SharedFlow 이벤트
 ## 결과
 
 처리 완료 Intent 가 이벤트마다 하나씩 늘어난다. ViewModel 상태는 프로세스와 함께 사라지므로 앱 재시작 뒤 복원은 이 필드가 아니라 Room 의 시험 상태(0012)가 맡는다.
+
+## 근거
+
+- [navigation 필드와 NavigationHandled](../../ui/feature-exam/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/featureexam/ExamUiState.kt)
+- [처리 완료를 보내는 화면](../../ui/feature-exam/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/featureexam/ExamScreen.kt)

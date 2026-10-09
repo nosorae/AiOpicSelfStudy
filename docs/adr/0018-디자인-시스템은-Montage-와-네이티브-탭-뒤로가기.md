@@ -50,3 +50,10 @@ Montage 는 KMP 구현이 없어 직접 옮기는 비용이 든다(노드 `c5`).
 2. 스크린샷 테스트를 화면마다 플랫폼별로 따로 만들어야 한다
 3. 탭 바 높이와 안전 영역 여백을 두 쪽에서 따로 계산해 화면마다 다르게 쓴다
 4. iOS TabView 안 Compose 화면이 탭 전환에 상태를 잃거나, 시험 중 탭 숨기기가 한 줄 설정으로 안 된다
+
+## 근거
+
+- [Montage 색](../../ui/design/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/design/MontagePalette.kt)
+- [Android 앱 틀](../../apps/opic/shared/src/androidMain/kotlin/io/github/nosorae/aiopic/apps/opic/shared/AppShell.kt)
+- [iOS 앱 틀](../../apps/opic/shared/src/iosMain/kotlin/io/github/nosorae/aiopic/apps/opic/shared/IosShell.kt)
+- [라이선스 고지](../../THIRD_PARTY_LICENSES.md)

@@ -28,3 +28,8 @@
 ## 결과
 
 check 가 길어진다. 모듈 하나만 볼 때는 모듈 테스트 명령을 쓰고, 끝내기 전에 check 를 돈다. Lint 경고가 쌓이면 보고서를 보고 규칙을 오류로 올리는 이슈를 만든다.
+
+## 근거
+
+- [Spotless 설정](../../build-logic/src/main/kotlin/io/github/nosorae/aiopic/buildlogic/SpotlessPlugin.kt)
+- [pre-push 훅](../../.githooks/pre-push)

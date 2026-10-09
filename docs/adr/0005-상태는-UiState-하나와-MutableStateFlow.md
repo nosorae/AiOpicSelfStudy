@@ -29,3 +29,9 @@ ViewModel 이 화면에 내보내는 상태를 어떻게 만들지 정해야 한
 ## 결과
 
 구독자가 없어도 저장소 Flow 구독이 ViewModel 수명 동안 살아 있는 화면이 생긴다. 리포트 화면은 짧게 머무는 화면이라 비용이 작다. 이런 화면이 늘면 `stateIn` 쪽으로 다시 본다.
+
+## 근거
+
+- [UiState 예](../../ui/feature-exam/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/featureexam/ExamUiState.kt)
+- [MutableStateFlow 와 update](../../ui/feature-exam/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/featureexam/ExamViewModel.kt)
+- [stateIn 을 쓰는 기록 화면](../../ui/feature-history/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/featurehistory/HistoryViewModel.kt)

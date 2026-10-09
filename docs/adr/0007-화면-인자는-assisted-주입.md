@@ -23,3 +23,8 @@ assisted 주입으로 생성자에 받는다. 인자는 직렬화 가능한 `Nav
 ## 결과
 
 화면마다 assisted 팩토리가 하나씩 생긴다.
+
+## 근거
+
+- [assisted 주입 ViewModel](../../ui/feature-exam/src/commonMain/kotlin/io/github/nosorae/aiopic/ui/featureexam/ExamViewModel.kt)
+- [화면 키](../../apps/opic/shared/src/commonMain/kotlin/io/github/nosorae/aiopic/apps/opic/shared/AppRoute.kt)

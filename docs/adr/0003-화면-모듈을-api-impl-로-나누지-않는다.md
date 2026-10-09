@@ -23,3 +23,8 @@
 ## 결과
 
 키 모듈이 바뀌면 모든 화면 모듈이 다시 컴파일된다. 키는 작은 직렬화 클래스라 자주 바뀌지 않는다. 화면 수가 크게 늘어 빌드 시간이 문제가 되면 다시 본다.
+
+## 근거
+
+- [화면 경로 표](../../apps/opic/shared/src/commonMain/kotlin/io/github/nosorae/aiopic/apps/opic/shared/AppRoute.kt)
+- [화면 등록](../../apps/opic/shared/src/commonMain/kotlin/io/github/nosorae/aiopic/apps/opic/shared/RouteContent.kt)

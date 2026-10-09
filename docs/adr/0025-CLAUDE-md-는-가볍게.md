@@ -30,3 +30,9 @@
 ## 결과
 
 규칙을 더할 때 "매 세션 지켜야 하나"를 먼저 묻는다. 아니면 경로 규칙이나 스킬에 넣는다. 그래프 h2 노드의 완료 명령(200줄 이하)은 그대로 둔다.
+
+## 근거
+
+- [CLAUDE.md](../../CLAUDE.md)
+- [빌드 규칙](../../.claude/rules/build.md)
+- [노드 진행 절차](../../.claude/skills/node-workflow/SKILL.md)
