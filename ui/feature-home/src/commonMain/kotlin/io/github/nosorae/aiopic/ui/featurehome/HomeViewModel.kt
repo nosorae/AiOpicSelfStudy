@@ -3,12 +3,23 @@ package io.github.nosorae.aiopic.ui.featurehome
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.Inject
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-/** 홈은 저장된 회차를 그대로 보여 주기만 하고 사용자 동작이 상태를 바꾸지 않아서 stateIn 으로 내보낸다(architecture 2절). */
+/** 홈은 기록 화면이 아니라서 저장소 Flow 를 init 에서 구독해 update 로 옮긴다(ADR 0005). */
 @Inject
 class HomeViewModel(observeHomeUseCase: ObserveHomeUseCase) : ViewModel() {
-    val uiState: StateFlow<HomeUiState> = observeHomeUseCase().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            observeHomeUseCase().collect { home ->
+                _uiState.update { it.copy(canResume = home.canResume, pastSessions = home.pastSessions) }
+            }
+        }
+    }
 }

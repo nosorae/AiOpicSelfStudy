@@ -12,6 +12,9 @@ private enum class Chrome { TopLevel, Sub, FullScreen }
  * 화면 모듈은 플랫폼도 탭도 모르고, 두 플랫폼 앱 틀(Android `AppShell`, iOS `ContentView.swift`)이 이 표를 읽는다.
  *
  * Swift 의 NavigationStack 경로로도 쓰므로 interface 가 아니라 class 다. Kotlin 클래스는 Swift 에서 Hashable 이다.
+ *
+ * architecture 5절(키는 ui/navigation 의 NavKey, 등록은 화면 모듈 함수)과 다르다. 탭과 뒤로가기 표가 키에 붙어 있어 앱 틀에 두고,
+ * iOS 는 Navigation 3 가 아니라 SwiftUI NavigationStack 이라 화면 모듈의 Navigation 3 등록 함수를 함께 쓸 수 없다. 맞출지는 후속 이슈에서 정한다.
  */
 @Serializable
 sealed class AppRoute {

@@ -6,7 +6,6 @@ import io.github.nosorae.aiopic.engine.session.model.GradeCheck
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -29,10 +28,8 @@ class HomeViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    /** 화면이 구독하는 동안만 저장소를 읽으므로(stateIn) 테스트도 구독한 뒤 값을 본다. */
-    private fun TestScope.subscribedViewModel(): HomeViewModel {
+    private fun TestScope.loadedViewModel(): HomeViewModel {
         val viewModel = HomeViewModel(ObserveHomeUseCase { sessions })
-        backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
         return viewModel
     }
@@ -48,7 +45,7 @@ class HomeViewModelTest {
     fun `F3 진행 중인 회차가 있으면 이어 볼 수 있다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.InProgress))
 
-        val viewModel = subscribedViewModel()
+        val viewModel = loadedViewModel()
 
         assertTrue(viewModel.uiState.value.canResume)
     }
@@ -57,7 +54,7 @@ class HomeViewModelTest {
     fun `진행 중인 회차가 없으면 새로 시작한다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished))
 
-        val viewModel = subscribedViewModel()
+        val viewModel = loadedViewModel()
 
         assertFalse(viewModel.uiState.value.canResume)
     }
@@ -70,7 +67,7 @@ class HomeViewModelTest {
             ExamSession(id = "c", status = ExamStatus.InProgress),
         )
 
-        val viewModel = subscribedViewModel()
+        val viewModel = loadedViewModel()
 
         assertEquals(listOf("b" to 2, "a" to 1), viewModel.uiState.value.pastSessions?.map { it.id to it.number })
     }
@@ -79,7 +76,7 @@ class HomeViewModelTest {
     fun `등급이 나온 회차는 등급 범위를 보인다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished, grade = grade("IM2", "IH")))
 
-        val viewModel = subscribedViewModel()
+        val viewModel = loadedViewModel()
 
         assertEquals("IM2~IH", viewModel.uiState.value.pastSessions?.single()?.gradeRange)
     }
@@ -88,7 +85,7 @@ class HomeViewModelTest {
     fun `등급 범위의 위아래가 같으면 등급 하나만 보인다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished, grade = grade("IH", "IH")))
 
-        val viewModel = subscribedViewModel()
+        val viewModel = loadedViewModel()
 
         assertEquals("IH", viewModel.uiState.value.pastSessions?.single()?.gradeRange)
     }
@@ -97,14 +94,14 @@ class HomeViewModelTest {
     fun `F2_6 시간이 다 돼 끝난 회차는 시간 부족으로 표시한다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.TimeUp))
 
-        val viewModel = subscribedViewModel()
+        val viewModel = loadedViewModel()
 
         assertTrue(viewModel.uiState.value.pastSessions!!.single().timeUp)
     }
 
     @Test
     fun `저장소에 회차가 새로 저장되면 지난 회차에 바로 더해진다`() = runTest(dispatcher) {
-        val viewModel = subscribedViewModel()
+        val viewModel = loadedViewModel()
 
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished))
         advanceUntilIdle()
