@@ -30,6 +30,11 @@ class AndroidApplicationPlugin : Plugin<Project> {
             buildFeatures {
                 compose = true
             }
+            // 오류는 빌드를 멈추고 경고는 보고서에만 남긴다.
+            lint {
+                abortOnError = true
+                warningsAsErrors = false
+            }
         }
         tasks.withType<KotlinCompile>().configureEach {
             compilerOptions.jvmTarget.set(JvmTarget.fromTarget(jvm))

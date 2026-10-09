@@ -21,13 +21,17 @@ class SpotlessPlugin : Plugin<Project> {
             "ktlint_function_naming_ignore_when_annotated_with" to "Composable",
             "ktlint_standard_no-empty-file" to "disabled",
         )
+        // Compose 규칙 묶음은 .kt 에만 건다. 기본값으로 켜진 규칙이 화면 함수 이름(대문자 시작), 미리보기 비공개,
+        // ViewModel 을 자식 컴포저블에 넘기지 않기를 잡는다. 화면은 Material 3 만 쓰므로 Material 2 사용을 막는 규칙을 켠다.
+        val composeRules = library("composeRules-ktlint").get().let { "${it.group}:${it.name}:${it.version}" }
+        val composeEditorConfig = editorConfig + ("compose_disallow_material2" to "true")
         val excluded = listOf("**/build/**", "**/.gradle/**", "**/.kotlin/**")
 
         extensions.configure<SpotlessExtension> {
             kotlin {
                 target("**/*.kt")
                 targetExclude(excluded)
-                ktlint(ktlintVersion).editorConfigOverride(editorConfig)
+                ktlint(ktlintVersion).editorConfigOverride(composeEditorConfig).customRuleSets(listOf(composeRules))
             }
             kotlinGradle {
                 target("**/*.kts")
