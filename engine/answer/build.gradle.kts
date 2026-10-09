@@ -9,6 +9,7 @@ kotlin {
         commonMain.dependencies {
             api(project(":engine:question"))
             // 저장소가 회차 진행 상태(ExamSession)를 답변과 같은 DB 에 둔다(F3.1).
+            // 회차 등급 포트(SessionGrader)가 회차 모델의 SessionGrade, GradeScale 을 돌려주고 받는다.
             api(project(":engine:session"))
             api(libs.kotlinx.serialization.json)
             api(libs.room3.runtime)
