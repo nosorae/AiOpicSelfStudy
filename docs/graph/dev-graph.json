@@ -570,8 +570,9 @@
       ],
       "done": "./gradlew :libs:keyvault:connectedAndroidDeviceTest :libs:keyvault:iosSimulatorArm64Test",
       "done_desc": "Android 계측 테스트, iOS 시뮬레이터 테스트로 제공사 이름별 저장·읽기·삭제. 한 제공사 키를 지워도 다른 제공사 키가 남는지",
-      "status": "todo",
-      "issue": 21
+      "status": "doing",
+      "issue": 21,
+      "start": "2026-10-10"
     },
     {
       "id": "n-tts",
