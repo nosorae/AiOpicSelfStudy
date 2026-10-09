@@ -41,15 +41,15 @@ fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent
             answer == null -> Paragraph(stringResource(Res.string.answer_not_found), secondary = true)
 
             else -> LazyColumn(Modifier.fillMaxWidth()) {
-                answerContent(answer, state.wrongCorrections) { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) }
+                answerContent(answer, state.names, state.wrongCorrections) { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) }
             }
         }
     }
 }
 
-private fun LazyListScope.answerContent(answer: Answer, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
+private fun LazyListScope.answerContent(answer: Answer, names: ReportNames, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
     item {
-        answer.analysis.analyzedBy?.let { Paragraph(stringResource(Res.string.answer_analyzed_by, it.label), secondary = true) }
+        answer.analysis.analyzedBy?.let { Paragraph(stringResource(Res.string.answer_analyzed_by, names.model(it)), secondary = true) }
         SectionTitle(stringResource(Res.string.answer_question))
         Paragraph(answer.question.text)
     }

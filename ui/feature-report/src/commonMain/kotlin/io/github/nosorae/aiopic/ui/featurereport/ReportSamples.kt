@@ -5,8 +5,10 @@ import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
+import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pause
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
+import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.answer.model.Upgrade
 import io.github.nosorae.aiopic.engine.question.model.Question
@@ -21,6 +23,16 @@ internal object ReportSamples {
     private val flash = AnalyzedBy("gemini", "gemini-3.8-flash", "v1")
     private val lite = AnalyzedBy("gemini", "gemini-3.5-flash-lite", "v1")
     private val types = listOf("self-intro", "description", "routine", "past-experience", "roleplay-ask")
+
+    /** 앱 층이 시험 팩과 모델 목록에서 넣는 이름. 받아쓰기 경로 모델은 목록에 없어 id 로 보인다. */
+    private val names = ReportNames(
+        types = mapOf("self-intro" to "자기소개", "description" to "묘사", "routine" to "습관", "past-experience" to "과거 경험", "roleplay-ask" to "롤플레이 질문하기")
+            .mapKeys { QuestionType(it.key) },
+        models = listOf(
+            ModelInfo(flash.provider, flash.modelId, "Gemini 3.8 Flash", hearsAudio = true, stability = Stability.Stable),
+            ModelInfo(lite.provider, lite.modelId, "Gemini 3.5 Flash Lite", hearsAudio = true, stability = Stability.Stable),
+        ),
+    )
 
     private val feedback = Feedback(
         transcript = "Last weekend I go to the park near my house. I walked my dog and we play with a ball for about an hour.",
@@ -63,6 +75,7 @@ internal object ReportSamples {
             session = ExamSession(id = "s1", level = 4, answerIds = answers.map { it.id }, status = status, grade = grade),
             answers = answers,
             questionCount = 7,
+            names = names,
         ),
     )
 
@@ -85,7 +98,7 @@ internal object ReportSamples {
     )
 
     /** 첫 교정에 "틀림"을 누른 상태(F8.1). */
-    val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)), wrongCorrections = setOf(0))
+    val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)), wrongCorrections = setOf(0), names = names)
 
     /** 받아쓴 글만 분석한 경로(F5.9). 롤플레이라 한 질문 수도 보인다. */
     val pronunciationNotEvaluated = AnswerReportUiState(
@@ -97,9 +110,10 @@ internal object ReportSamples {
                 feedback.copy(tenseConsistent = true, roleplayQuestionCount = 3, pronunciation = Pronunciation.NotEvaluated),
             ),
         ),
+        names = names,
     )
 
-    val answerUnscorable = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(flash, UnscorableReason.WrongLanguage)))
+    val answerUnscorable = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(flash, UnscorableReason.WrongLanguage)), names = names)
 
-    val answerPending = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Pending))
+    val answerPending = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Pending), names = names)
 }
