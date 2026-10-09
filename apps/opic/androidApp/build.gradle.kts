@@ -7,6 +7,12 @@ android {
         applicationId = "io.github.nosorae.aiopic"
         versionCode = 1
         versionName = "1.0"
+        // 시나리오 테스트가 Gemini 만 저장한 응답으로 바꾼 앱으로 띄운다.
+        testInstrumentationRunner = "io.github.nosorae.aiopic.apps.opic.androidapp.E2eRunner"
+    }
+    // 테스트마다 계측을 새로 띄워서, 앞 테스트가 끝날 때 앱 프로세스가 강제 종료된 뒤 이어 보기를 확인한다.
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
     packaging {
         resources {
@@ -38,4 +44,11 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.compose.uiToolingPreview)
     debugImplementation(libs.compose.uiTooling)
+    // 시나리오 테스트가 Gemini 클라이언트를 가짜 HTTP 엔진으로 바꿔 넣는다.
+    implementation(project(":libs:llm-gemini"))
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.testExt.junit)
+    androidTestImplementation(libs.compose.uiTestJunit4)
+    androidTestImplementation(libs.ktor.client.mock)
+    androidTestUtil(libs.androidx.test.orchestrator)
 }
