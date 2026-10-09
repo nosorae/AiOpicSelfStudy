@@ -544,8 +544,10 @@
       ],
       "done": "./gradlew :engine:answer:allTests",
       "done_desc": "음성을 직접 듣는 모델이면 한 번 호출, 아니면 받아쓰기 후 글 분석으로 보낸다. 음성을 못 듣는 가짜 제공사로 받아쓰기, 글 분석, 결과 저장까지 끝까지 돌리고 발음이 \"평가 안 함\", 멈춤과 속도는 단어 시각으로 앱이 계산한 값인지. 결과마다 제공사, 모델 id, promptVersion 이 붙는지",
-      "status": "todo",
-      "issue": 52
+      "status": "done",
+      "issue": 52,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-key",
