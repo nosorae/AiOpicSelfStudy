@@ -4,7 +4,7 @@ import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.createGraph
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
-import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyCheckResult
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainResult
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyChecker
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyEntryViewModel
 
@@ -29,7 +29,7 @@ interface AppGraph {
         }
     }
 
-    @Provides fun keyChecker(): KeyChecker = KeyChecker { _, _ -> KeyCheckResult.Valid }
+    @Provides fun keyChecker(): KeyChecker = KeyChecker { _, _ -> DomainResult.Success(Unit) }
 }
 
 /** 플랫폼 진입점이 Metro 컴파일러 플러그인 없이 그래프를 만들 수 있게 여기서 만든다. */

@@ -1,5 +1,7 @@
 package io.github.nosorae.aiopic.ui.featureonboarding.key
 
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -78,13 +80,13 @@ class KeyEntryViewModelTest {
         viewModel.onIntent(KeyEntryIntent.SubmitKey)
         advanceUntilIdle()
 
-        assertEquals(KeyCheckResult.Invalid, viewModel.uiState.value.error)
+        assertEquals(DomainError.InvalidKey, viewModel.uiState.value.error)
         assertNull(viewModel.uiState.value.navigation)
     }
 
     @Test
     fun `확인하는 동안에는 다시 보낼 수 없다`() = runTest(dispatcher) {
-        val answer = CompletableDeferred<KeyCheckResult>()
+        val answer = CompletableDeferred<DomainResult<Unit>>()
         val viewModel = viewModel(provider = KeyProvider.Gemini, checker = { _, _ -> answer.await() })
 
         viewModel.onIntent(KeyEntryIntent.ChangeKey("good-key"))
@@ -93,7 +95,7 @@ class KeyEntryViewModelTest {
 
         assertTrue(viewModel.uiState.value.checking)
         assertFalse(viewModel.uiState.value.canSubmit)
-        answer.complete(KeyCheckResult.Valid)
+        answer.complete(DomainResult.Success(Unit))
     }
 
     @Test

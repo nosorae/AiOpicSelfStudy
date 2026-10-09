@@ -24,6 +24,7 @@ import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTextField
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
 import io.github.nosorae.aiopic.ui.featureonboarding.Res
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_checking
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_error_invalid
@@ -94,9 +95,9 @@ fun KeyEntryScreen(state: KeyEntryUiState, onIntent: (KeyEntryIntent) -> Unit, m
                 placeholder = stringResource(Res.string.key_entry_key_placeholder),
                 description = stringResource(
                     when (state.error) {
-                        KeyCheckResult.Invalid -> Res.string.key_entry_error_invalid
-                        KeyCheckResult.Retryable -> Res.string.key_entry_error_retryable
-                        KeyCheckResult.Valid, null -> Res.string.key_entry_key_description
+                        DomainError.InvalidKey -> Res.string.key_entry_error_invalid
+                        DomainError.Unavailable -> Res.string.key_entry_error_retryable
+                        null -> Res.string.key_entry_key_description
                     },
                 ),
                 error = state.error != null,
@@ -114,8 +115,8 @@ internal object KeyEntrySamples {
     val empty = KeyEntryUiState()
     val ready = KeyEntryUiState(selectedProvider = KeyProvider.Gemini, key = "test-key")
     val checking = ready.copy(checking = true)
-    val invalid = ready.copy(error = KeyCheckResult.Invalid)
-    val retryable = ready.copy(error = KeyCheckResult.Retryable)
+    val invalid = ready.copy(error = DomainError.InvalidKey)
+    val retryable = ready.copy(error = DomainError.Unavailable)
 }
 
 @Preview

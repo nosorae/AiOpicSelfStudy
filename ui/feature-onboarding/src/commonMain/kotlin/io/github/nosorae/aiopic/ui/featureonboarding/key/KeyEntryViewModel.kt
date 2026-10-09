@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,10 +41,9 @@ class KeyEntryViewModel(
         viewModelScope.launch {
             val result = saveKeyUseCase(provider, state.key)
             _uiState.update {
-                if (result == KeyCheckResult.Valid) {
-                    it.copy(checking = false, navigation = KeyEntryDestination.KeySaved)
-                } else {
-                    it.copy(checking = false, error = result)
+                when (result) {
+                    is DomainResult.Success -> it.copy(checking = false, navigation = KeyEntryDestination.KeySaved)
+                    is DomainResult.Failure -> it.copy(checking = false, error = result.error)
                 }
             }
         }

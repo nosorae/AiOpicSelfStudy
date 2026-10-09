@@ -1,12 +1,14 @@
 package io.github.nosorae.aiopic.ui.featureonboarding.key
 
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
+
 data class KeyEntryUiState(
     val providers: List<KeyProvider> = KeyProvider.entries,
     val selectedProvider: KeyProvider? = null,
     val key: String = "",
     val checking: Boolean = false,
     /** 마지막 확인이 실패한 이유. 키를 고치면 지운다. */
-    val error: KeyCheckResult? = null,
+    val error: DomainError? = null,
     val navigation: KeyEntryDestination? = null,
 ) {
     val canSubmit: Boolean get() = selectedProvider != null && key.isNotBlank() && !checking

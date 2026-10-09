@@ -1,5 +1,7 @@
 package io.github.nosorae.aiopic.ui.featureonboarding.key
 
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
+import io.github.nosorae.aiopic.ui.featureonboarding.DomainResult
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,7 +22,7 @@ class SaveKeyUseCaseTest {
     fun `F1_1 틀린 키는 저장하지 않고 이유를 돌려준다`() = runTest {
         val result = saveKeyUseCase(KeyProvider.Gemini, "bad-key")
 
-        assertEquals(KeyCheckResult.Invalid, result)
+        assertEquals(DomainResult.Failure(DomainError.InvalidKey), result)
         assertNull(vault.get("gemini"))
     }
 
