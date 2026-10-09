@@ -1,0 +1,512 @@
+[
+  {
+    "id": "self-self-intro-1",
+    "text": "Let's begin. Please tell me a little about yourself.",
+    "type": "self-intro",
+    "topic": "self"
+  },
+  {
+    "id": "self-self-intro-2",
+    "text": "To start, introduce yourself. Talk about who you are and what you do these days.",
+    "type": "self-intro",
+    "topic": "self"
+  },
+  {
+    "id": "self-self-intro-3",
+    "text": "First, tell me about yourself. What kind of person are you, and how do you usually spend your time?",
+    "type": "self-intro",
+    "topic": "self"
+  },
+  {
+    "id": "movies-description-1",
+    "text": "You said you like going to the movies. Describe the theater you usually go to. Where is it, and what does it look like inside?",
+    "type": "description",
+    "topic": "movies"
+  },
+  {
+    "id": "movies-routine-1",
+    "text": "What do you usually do when you go to see a movie? Walk me through it from start to finish.",
+    "type": "routine",
+    "topic": "movies"
+  },
+  {
+    "id": "movies-past-experience-1",
+    "text": "Tell me about a movie that stayed with you. When did you watch it, who were you with, and why do you remember it?",
+    "type": "past-experience",
+    "topic": "movies"
+  },
+  {
+    "id": "music-description-1",
+    "text": "You told me you enjoy listening to music. What kind of music do you like, and who are some of your favorite singers?",
+    "type": "description",
+    "topic": "music"
+  },
+  {
+    "id": "music-routine-1",
+    "text": "When and where do you usually listen to music? Describe a normal day of listening.",
+    "type": "routine",
+    "topic": "music"
+  },
+  {
+    "id": "music-past-experience-1",
+    "text": "How did you first get into music? Tell me about how your taste has grown from when you were young until now.",
+    "type": "past-experience",
+    "topic": "music"
+  },
+  {
+    "id": "parks-description-1",
+    "text": "You said you like going to the park. Describe a park you often visit. What can people see and do there?",
+    "type": "description",
+    "topic": "parks"
+  },
+  {
+    "id": "parks-routine-1",
+    "text": "What do you usually do when you go to the park? Who do you go with, and how long do you stay?",
+    "type": "routine",
+    "topic": "parks"
+  },
+  {
+    "id": "parks-past-experience-1",
+    "text": "Tell me about something interesting or unexpected that happened to you at a park.",
+    "type": "past-experience",
+    "topic": "parks"
+  },
+  {
+    "id": "cafes-description-1",
+    "text": "You mentioned that you go to cafes. Describe your favorite cafe. What makes it special to you?",
+    "type": "description",
+    "topic": "cafes"
+  },
+  {
+    "id": "cafes-routine-1",
+    "text": "What do you typically do at a cafe? Tell me what you order and how you spend your time there.",
+    "type": "routine",
+    "topic": "cafes"
+  },
+  {
+    "id": "cafes-past-experience-1",
+    "text": "Tell me about a memorable visit to a cafe. What happened, and who were you with?",
+    "type": "past-experience",
+    "topic": "cafes"
+  },
+  {
+    "id": "walking-description-1",
+    "text": "You said you like walking. Where do you usually go for a walk? Describe the route.",
+    "type": "description",
+    "topic": "walking"
+  },
+  {
+    "id": "walking-routine-1",
+    "text": "When do you usually take a walk, and what do you do before and after?",
+    "type": "routine",
+    "topic": "walking"
+  },
+  {
+    "id": "walking-past-experience-1",
+    "text": "Tell me about a walk you will not forget. Where were you, and what made it memorable?",
+    "type": "past-experience",
+    "topic": "walking"
+  },
+  {
+    "id": "jogging-description-1",
+    "text": "You told me you go jogging. Describe the place where you usually jog.",
+    "type": "description",
+    "topic": "jogging"
+  },
+  {
+    "id": "jogging-routine-1",
+    "text": "What is your jogging routine like? Tell me how you prepare, how far you go and what you do afterwards.",
+    "type": "routine",
+    "topic": "jogging"
+  },
+  {
+    "id": "jogging-past-experience-1",
+    "text": "Tell me about a time something went wrong while you were jogging. What happened, and how did you handle it?",
+    "type": "past-experience",
+    "topic": "jogging"
+  },
+  {
+    "id": "shopping-description-1",
+    "text": "You said you enjoy shopping. Describe a store or shopping area you like to visit.",
+    "type": "description",
+    "topic": "shopping"
+  },
+  {
+    "id": "shopping-routine-1",
+    "text": "How do you usually shop? Tell me about what you buy, how often you go and who you go with.",
+    "type": "routine",
+    "topic": "shopping"
+  },
+  {
+    "id": "shopping-past-experience-1",
+    "text": "Tell me about something you bought that you were really happy with, or something you regretted buying.",
+    "type": "past-experience",
+    "topic": "shopping"
+  },
+  {
+    "id": "cooking-description-1",
+    "text": "You mentioned that you like to cook. Describe your kitchen and the things you use most when you cook.",
+    "type": "description",
+    "topic": "cooking"
+  },
+  {
+    "id": "cooking-routine-1",
+    "text": "What do you usually cook, and what are the steps you go through when you make a meal?",
+    "type": "routine",
+    "topic": "cooking"
+  },
+  {
+    "id": "cooking-past-experience-1",
+    "text": "Tell me about a time you cooked for other people. What did you make, and how did it turn out?",
+    "type": "past-experience",
+    "topic": "cooking"
+  },
+  {
+    "id": "domestic-travel-description-1",
+    "text": "You said you travel around the country. Describe a place in your country that you like to visit.",
+    "type": "description",
+    "topic": "domestic-travel"
+  },
+  {
+    "id": "domestic-travel-routine-1",
+    "text": "What do you usually do to get ready for a trip? Tell me how you plan and pack.",
+    "type": "routine",
+    "topic": "domestic-travel"
+  },
+  {
+    "id": "domestic-travel-past-experience-1",
+    "text": "Tell me about a trip in your country that you remember well. Where did you go, and what happened?",
+    "type": "past-experience",
+    "topic": "domestic-travel"
+  },
+  {
+    "id": "overseas-travel-description-1",
+    "text": "You told me you travel abroad. Describe a country or city you have visited. What was it like?",
+    "type": "description",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "overseas-travel-routine-1",
+    "text": "What do you usually do when you arrive in a new country? Tell me about your first day.",
+    "type": "routine",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "overseas-travel-past-experience-1",
+    "text": "Tell me about an unexpected problem you had during a trip abroad and how you dealt with it.",
+    "type": "past-experience",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "beach-description-1",
+    "text": "You said you like going to the beach. Describe a beach you have been to. What did it look like?",
+    "type": "description",
+    "topic": "beach"
+  },
+  {
+    "id": "beach-routine-1",
+    "text": "What do you usually do when you go to the beach? Tell me how you spend the day.",
+    "type": "routine",
+    "topic": "beach"
+  },
+  {
+    "id": "beach-past-experience-1",
+    "text": "Tell me about a memorable day at the beach. Who were you with, and why do you remember it?",
+    "type": "past-experience",
+    "topic": "beach"
+  },
+  {
+    "id": "tv-description-1",
+    "text": "You mentioned that you watch TV. What kinds of shows do you like, and why?",
+    "type": "description",
+    "topic": "tv"
+  },
+  {
+    "id": "tv-routine-1",
+    "text": "When and how do you usually watch TV? Describe a typical evening in front of the screen.",
+    "type": "routine",
+    "topic": "tv"
+  },
+  {
+    "id": "tv-past-experience-1",
+    "text": "Tell me about a show you could not stop watching. How did you find it, and what happened in it?",
+    "type": "past-experience",
+    "topic": "tv"
+  },
+  {
+    "id": "home-description-1",
+    "text": "Describe the home you live in. What does it look like, and which room do you like most?",
+    "type": "description",
+    "topic": "home"
+  },
+  {
+    "id": "home-routine-1",
+    "text": "What do you usually do at home on weekdays and on weekends?",
+    "type": "routine",
+    "topic": "home"
+  },
+  {
+    "id": "home-past-experience-1",
+    "text": "Tell me about a change you made to your home, such as moving furniture or fixing something. What happened?",
+    "type": "past-experience",
+    "topic": "home"
+  },
+  {
+    "id": "neighborhood-description-1",
+    "text": "Describe your neighborhood. What kinds of buildings and places are near your home?",
+    "type": "description",
+    "topic": "neighborhood"
+  },
+  {
+    "id": "neighborhood-routine-1",
+    "text": "What do people in your neighborhood usually do on weekends?",
+    "type": "routine",
+    "topic": "neighborhood"
+  },
+  {
+    "id": "neighborhood-past-experience-1",
+    "text": "Tell me about something that happened in your neighborhood that you still remember.",
+    "type": "past-experience",
+    "topic": "neighborhood"
+  },
+  {
+    "id": "movies-roleplay-ask-1",
+    "text": "I'd like to give you a situation. You want to see a movie with a friend this weekend. Call the theater and ask three or four questions about the movie and the tickets.",
+    "type": "roleplay-ask",
+    "topic": "movies"
+  },
+  {
+    "id": "movies-roleplay-solve-1",
+    "text": "There is a problem. When you arrive at the theater, you find that your tickets were booked for the wrong day. Explain the situation to the staff and suggest two or three ways to fix it.",
+    "type": "roleplay-solve",
+    "topic": "movies"
+  },
+  {
+    "id": "movies-roleplay-experience-1",
+    "text": "Have you ever had plans that did not work out because of a mistake? Tell me what happened and how it ended.",
+    "type": "roleplay-experience",
+    "topic": "movies"
+  },
+  {
+    "id": "music-roleplay-ask-1",
+    "text": "Your favorite singer is giving a concert. Call the ticket office and ask three or four questions to get the information you need.",
+    "type": "roleplay-ask",
+    "topic": "music"
+  },
+  {
+    "id": "music-roleplay-solve-1",
+    "text": "You bought concert tickets, but you suddenly cannot go. Call your friend who planned to go with you, explain the situation and offer some alternatives.",
+    "type": "roleplay-solve",
+    "topic": "music"
+  },
+  {
+    "id": "music-roleplay-experience-1",
+    "text": "Tell me about a time you had to cancel something you were looking forward to. What happened?",
+    "type": "roleplay-experience",
+    "topic": "music"
+  },
+  {
+    "id": "cafes-roleplay-ask-1",
+    "text": "A new cafe has opened near your home. Go in and ask the staff three or four questions about the menu.",
+    "type": "roleplay-ask",
+    "topic": "cafes"
+  },
+  {
+    "id": "cafes-roleplay-solve-1",
+    "text": "You ordered a drink, but you were given the wrong one and you are in a hurry. Explain the problem to the staff and suggest two or three solutions.",
+    "type": "roleplay-solve",
+    "topic": "cafes"
+  },
+  {
+    "id": "cafes-roleplay-experience-1",
+    "text": "Tell me about a time you received the wrong order at a restaurant or a cafe. What did you do?",
+    "type": "roleplay-experience",
+    "topic": "cafes"
+  },
+  {
+    "id": "shopping-roleplay-ask-1",
+    "text": "You want to buy a new jacket online. Call the store and ask three or four questions about the item and delivery.",
+    "type": "roleplay-ask",
+    "topic": "shopping"
+  },
+  {
+    "id": "shopping-roleplay-solve-1",
+    "text": "The jacket you received is the wrong size and has a stain on it. Call the store, explain the problem and offer two or three ways to solve it.",
+    "type": "roleplay-solve",
+    "topic": "shopping"
+  },
+  {
+    "id": "shopping-roleplay-experience-1",
+    "text": "Have you ever had a problem with something you bought? Tell me what happened and how it was solved.",
+    "type": "roleplay-experience",
+    "topic": "shopping"
+  },
+  {
+    "id": "overseas-travel-roleplay-ask-1",
+    "text": "You are planning to stay at a hotel abroad. Call the hotel and ask three or four questions about the room and the services.",
+    "type": "roleplay-ask",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "overseas-travel-roleplay-solve-1",
+    "text": "When you arrive at the hotel, they cannot find your booking. Explain the situation to the front desk and suggest two or three alternatives.",
+    "type": "roleplay-solve",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "overseas-travel-roleplay-experience-1",
+    "text": "Tell me about a time something went wrong when you were staying somewhere away from home.",
+    "type": "roleplay-experience",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "home-roleplay-ask-1",
+    "text": "You are looking for a new place to live. Call a real estate agent and ask three or four questions about an apartment you saw online.",
+    "type": "roleplay-ask",
+    "topic": "home"
+  },
+  {
+    "id": "home-roleplay-solve-1",
+    "text": "Something in your apartment has broken and water is leaking onto the floor. Call the building manager, explain what happened and suggest a few ways to deal with it.",
+    "type": "roleplay-solve",
+    "topic": "home"
+  },
+  {
+    "id": "home-roleplay-experience-1",
+    "text": "Tell me about a time something broke in your home. What was it, and how did you get it fixed?",
+    "type": "roleplay-experience",
+    "topic": "home"
+  },
+  {
+    "id": "parks-roleplay-ask-1",
+    "text": "Your friend wants to have a picnic in a park this weekend. Call your friend and ask three or four questions to plan it.",
+    "type": "roleplay-ask",
+    "topic": "parks"
+  },
+  {
+    "id": "parks-roleplay-solve-1",
+    "text": "On the day of the picnic, it starts to rain heavily. Call your friend, explain the situation and suggest two or three other plans.",
+    "type": "roleplay-solve",
+    "topic": "parks"
+  },
+  {
+    "id": "parks-roleplay-experience-1",
+    "text": "Have you ever had to change your plans because of the weather? Tell me what happened.",
+    "type": "roleplay-experience",
+    "topic": "parks"
+  },
+  {
+    "id": "jogging-roleplay-ask-1",
+    "text": "You want to join a gym near your home. Call the gym and ask three or four questions about membership.",
+    "type": "roleplay-ask",
+    "topic": "jogging"
+  },
+  {
+    "id": "jogging-roleplay-solve-1",
+    "text": "You paid for a gym membership, but you hurt your leg and cannot exercise for a month. Call the gym, explain the situation and suggest two or three options.",
+    "type": "roleplay-solve",
+    "topic": "jogging"
+  },
+  {
+    "id": "jogging-roleplay-experience-1",
+    "text": "Tell me about a time you could not do something you had already paid for. What happened?",
+    "type": "roleplay-experience",
+    "topic": "jogging"
+  },
+  {
+    "id": "movies-comparison-1",
+    "text": "How have the ways people watch movies changed compared to the past? Compare how people watched movies before and how they watch them now.",
+    "type": "comparison",
+    "topic": "movies"
+  },
+  {
+    "id": "movies-social-issue-1",
+    "text": "Many people now watch new movies at home instead of in theaters. What problems or worries does this cause, and what do you think about it?",
+    "type": "social-issue",
+    "topic": "movies"
+  },
+  {
+    "id": "music-comparison-1",
+    "text": "Compare how people listened to music when you were younger with how they listen to it today.",
+    "type": "comparison",
+    "topic": "music"
+  },
+  {
+    "id": "music-social-issue-1",
+    "text": "Some people say artists earn very little from music streaming. Tell me about this issue and what you think about it.",
+    "type": "social-issue",
+    "topic": "music"
+  },
+  {
+    "id": "cafes-comparison-1",
+    "text": "How are cafes today different from cafes ten years ago? Compare them in detail.",
+    "type": "comparison",
+    "topic": "cafes"
+  },
+  {
+    "id": "cafes-social-issue-1",
+    "text": "Some cafes no longer let people stay for many hours with one drink. What do you think about this trend?",
+    "type": "social-issue",
+    "topic": "cafes"
+  },
+  {
+    "id": "shopping-comparison-1",
+    "text": "Compare shopping online with shopping in stores. How has the way people shop changed?",
+    "type": "comparison",
+    "topic": "shopping"
+  },
+  {
+    "id": "shopping-social-issue-1",
+    "text": "Fast delivery has become common, but it also creates a lot of packaging waste. Talk about this issue and how people are dealing with it.",
+    "type": "social-issue",
+    "topic": "shopping"
+  },
+  {
+    "id": "home-comparison-1",
+    "text": "How are homes today different from homes when you were a child? Compare them.",
+    "type": "comparison",
+    "topic": "home"
+  },
+  {
+    "id": "home-social-issue-1",
+    "text": "In many cities, housing has become very expensive. Tell me about this problem and how it affects people around you.",
+    "type": "social-issue",
+    "topic": "home"
+  },
+  {
+    "id": "overseas-travel-comparison-1",
+    "text": "Compare how people traveled abroad in the past with how they travel now.",
+    "type": "comparison",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "overseas-travel-social-issue-1",
+    "text": "Some famous places have too many tourists. What problems does this cause for people who live there?",
+    "type": "social-issue",
+    "topic": "overseas-travel"
+  },
+  {
+    "id": "tv-comparison-1",
+    "text": "Compare the TV shows people watched in the past with the shows they watch now.",
+    "type": "comparison",
+    "topic": "tv"
+  },
+  {
+    "id": "tv-social-issue-1",
+    "text": "Some people worry that children spend too much time watching videos. Tell me about this concern and what you think.",
+    "type": "social-issue",
+    "topic": "tv"
+  },
+  {
+    "id": "parks-comparison-1",
+    "text": "How have parks in your area changed over the years? Compare what they were like before and what they are like now.",
+    "type": "comparison",
+    "topic": "parks"
+  },
+  {
+    "id": "parks-social-issue-1",
+    "text": "As cities grow, green spaces are disappearing. Talk about this issue and what people are doing about it.",
+    "type": "social-issue",
+    "topic": "parks"
+  }
+]
