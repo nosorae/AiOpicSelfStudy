@@ -30,6 +30,6 @@ class KeyEntryScreenshotTest {
     fun invalid_fontScale200() = shot(KeyEntrySamples.invalid)
 
     private fun shot(state: KeyEntryUiState, dark: Boolean = false) = captureRoboImage {
-        MontageTheme(darkTheme = dark) { KeyEntryScreen(state = state, onIntent = {}) }
+        MontageTheme(darkTheme = dark) { KeyEntryScreen(state = state, onIntent = {}, onOpenFreeTierNotice = {}) }
     }
 }
