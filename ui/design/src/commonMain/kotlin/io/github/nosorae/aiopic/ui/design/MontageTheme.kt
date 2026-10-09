@@ -95,7 +95,10 @@ private fun MontageColors.toMaterial(dark: Boolean) = if (dark) {
         surface = backgroundNeutralPrimary,
         onSurface = foregroundNeutralPrimary,
         onSurfaceVariant = foregroundNeutralTertiary,
+        secondary = foregroundBrandPrimary,
         secondaryContainer = surfaceBrandPrimaryOpacity12,
+        onSecondaryContainer = foregroundBrandPrimary,
+        surfaceContainer = backgroundNeutralSecondary,
         error = foregroundNegativePrimary,
     )
 } else {
@@ -107,7 +110,10 @@ private fun MontageColors.toMaterial(dark: Boolean) = if (dark) {
         surface = backgroundNeutralPrimary,
         onSurface = foregroundNeutralPrimary,
         onSurfaceVariant = foregroundNeutralTertiary,
+        secondary = foregroundBrandPrimary,
         secondaryContainer = surfaceBrandPrimaryOpacity12,
+        onSecondaryContainer = foregroundBrandPrimary,
+        surfaceContainer = backgroundNeutralSecondary,
         error = foregroundNegativePrimary,
     )
 }
