@@ -720,8 +720,10 @@
       ],
       "done": "./gradlew :engine:answer:allTests",
       "done_desc": "틀림 표시한 교정을 빼고 유형별 점수 계산",
-      "status": "todo",
-      "issue": 27
+      "status": "done",
+      "issue": 27,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-eval",
