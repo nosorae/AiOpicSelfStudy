@@ -41,7 +41,8 @@ public class ForegroundWorkQueue(
         scope.launch {
             online.collect {
                 connected = it
-                if (it) drain()
+                // drain 을 여기서 기다리면 보내는 동안 끊김을 못 받으니 따로 띄운다.
+                if (it) scope.launch { drain() }
             }
         }
     }
@@ -62,6 +63,8 @@ public class ForegroundWorkQueue(
             while (handler.handle(payload) == WorkResult.Retry && retries < MAX_RETRIES) {
                 delay(FIRST_BACKOFF * (1 shl retries))
                 retries++
+                // 기다리는 사이 끊겼으면 지우지 않고 멈춘다. 다시 연결되면 collect 가 drain 을 다시 부른다(F5.6).
+                if (!connected) return@withLock
                 // 기다리는 사이 음성 전송 동의를 철회해 비웠으면 더 보내지 않는다(F1.3).
                 if (load().none { it.first == id }) break
             }

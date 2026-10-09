@@ -99,4 +99,23 @@ class ForegroundWorkQueueTest {
 
         assertEquals(1, handled.size)
     }
+
+    @Test
+    fun `F5_6 다시 보내기를 기다리는 사이 끊기면 대기열에 남겼다가 다시 연결되면 보낸다`() = runTest {
+        result = WorkResult.Retry
+        val queue = queue()
+        queue.enqueue("a1", "first")
+        advanceTimeBy(10.seconds)
+
+        online.value = false
+        settle()
+        assertEquals(1, handled.size)
+        assertEquals(1, defaults.arrayForKey(QUEUE_KEY)?.size)
+
+        result = WorkResult.Success
+        online.value = true
+        settle()
+        assertEquals(2, handled.size)
+        assertEquals(0, defaults.arrayForKey(QUEUE_KEY)?.size ?: 0)
+    }
 }
