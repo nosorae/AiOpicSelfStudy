@@ -13,6 +13,7 @@ composeMultiplatform = "1.12.1"
 jvm = "17"
 junit = "4.13.2"
 kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"
 kotlin = "2.4.20"
 material3 = "1.12.0-alpha03"
 ktlint = "1.8.0"
@@ -39,6 +40,7 @@ compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", v
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
@@ -58,6 +60,7 @@ androidMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library",
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 aiopicKmpLibrary = { id = "aiopic.kmp.library" }
 aiopicKmpLibraryExplicit = { id = "aiopic.kmp.library.explicit" }
 aiopicKmpCompose = { id = "aiopic.kmp.compose" }
