@@ -34,7 +34,7 @@ class AnswerReportViewModelTest {
 
     private fun viewModel(answerId: String, store: FakeReportStore) = AnswerReportViewModel(
         answerId,
-        ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore, typeNames, FakeCatalog),
+        ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore, FakeCatalog),
         MarkCorrectionWrongUseCase(flagStore),
     )
 
