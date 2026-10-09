@@ -2,7 +2,7 @@
 
 `scripts/graph/render.py` 가 `dev-graph.json` 에서 만든다. 손으로 고치지 않는다.
 
-노드 41개: todo 2, doing 0, done 39, blocked 0. 색은 회색 todo, 노랑 doing, 초록 done, 빨강 blocked 이다.
+노드 46개: todo 7, doing 0, done 39, blocked 0. 색은 회색 todo, 노랑 doing, 초록 done, 빨강 blocked 이다.
 
 ```mermaid
 flowchart TD
@@ -52,6 +52,11 @@ flowchart TD
     u_flag["u-flag #33<br/>틀린 교정 표시와 내보내기"]
     u_model["u-model #54<br/>설정: 분석 모델 고르기, 제공사별 키 관리, 화면 모드"]
     g3["g3 #34<br/>확인: 화면을 목업과 대조"]
+    n_data["n-data #103<br/>앱 연결: 화면 저장소 구현, 녹음 폴더, 백업 제외"]
+    n_di["n-di #104<br/>앱 연결: DI 그래프 조립과 iOS Info.plist"]
+    u_copy["u-copy #105<br/>문구: 문항 유형 이름, 모델 표시 이름, 큰 글자 줄바꿈, 서베이 Part 1~3"]
+    u_wire["u-wire #106<br/>앱 연결: 모든 경로에 화면 연결, 시작 분기 S0, 스플래시 대기"]
+    u_settings2["u-settings2 #107<br/>설정: 동의 철회, 답변 타이머, 문항 파일 불러오기, 내보내기 행, 앱 정보와 라이선스"]
   end
   subgraph P5["P5 마무리"]
     e2e["e2e #35<br/>확인: 에뮬레이터, 시뮬레이터로 한 회"]
@@ -119,7 +124,19 @@ flowchart TD
   u_single --> g3
   u_flag --> g3
   u_model --> g3
+  g3 --> n_data
+  store --> n_data
+  n_data --> n_di
+  g3 --> u_copy
+  n_di --> u_wire
+  u_copy --> u_wire
+  u_wire --> u_settings2
   g3 --> e2e
+  n_data --> e2e
+  n_di --> e2e
+  u_copy --> e2e
+  u_wire --> e2e
+  u_settings2 --> e2e
   g3 --> docs
   n_eval --> docs
   g3 --> store
@@ -127,7 +144,7 @@ flowchart TD
   docs --> g4
   store --> g4
   classDef todo fill:#eeeeee,stroke:#999999,color:#000
-  class e2e,g4 todo
+  class n_data,n_di,u_copy,u_wire,u_settings2,e2e,g4 todo
   classDef doing fill:#fff3b0,stroke:#d4a017,color:#000
   classDef done fill:#c8f7c5,stroke:#2e7d32,color:#000
   class h0,h1,h2,h3,h4,g0,s1,s2,s3,s4,g1,c1,c2,c3,c5,c4,g2,n_state,n_db,n_gemini,n_route,n_key,n_tts,n_rec_a,n_rec_i,n_queue,n_quest,n_weak,n_eval,u_onb,u_shell,u_exam,u_single,u_report,u_flag,u_model,g3,docs,store done
