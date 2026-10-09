@@ -34,6 +34,7 @@ include(
     ":ui:design",
     ":ui:navigation",
     ":ui:feature-onboarding",
+    ":ui:feature-home",
     ":ui:feature-exam",
     ":ui:feature-practice",
     ":ui:feature-report",
