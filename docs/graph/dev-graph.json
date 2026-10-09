@@ -328,12 +328,13 @@
       ],
       "done": "./gradlew :engine:session:allTests :engine:answer:allTests :engine:question:allTests",
       "done_desc": "Answer(제공사, 모델 id, promptVersion 포함), ExamSession, ExamEvent, ExamSpec(단계 목록을 데이터로), Question, Feedback(발음 \"평가 안 함\" 표현 포함), GradeScale, ModelInfo(모델 id, 표시 이름, 음성 직접 분석 여부, 안정/미리보기) 컴파일, 직렬화 왕복 테스트",
-      "status": "doing",
+      "status": "done",
       "issue": 13,
       "start": "2026-10-09",
       "attempts": {
         "done": 2
-      }
+      },
+      "end": "2026-10-09"
     },
     {
       "id": "c2",
