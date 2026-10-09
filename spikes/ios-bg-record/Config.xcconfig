@@ -1,0 +1,2 @@
+// 서명 팀은 앱과 같은 커밋하지 않는 Local.xcconfig 에서 읽는다.
+#include? "../../apps/opic/iosApp/Configuration/Local.xcconfig"
