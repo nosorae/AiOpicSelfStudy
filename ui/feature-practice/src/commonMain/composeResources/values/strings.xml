@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="practice_title">한 문항 연습</string>
+    <string name="practice_exit">나가기</string>
+    <string name="practice_description">약점 점수가 낮은 유형에서 질문 하나를 냅니다. 답을 내면 피드백을 바로 보여 줍니다.</string>
+    <string name="practice_loading">질문을 고르는 중</string>
+    <string name="practice_ready">Play 를 누르면 질문이 나오고, 끝나면 녹음이 시작됩니다.</string>
+    <string name="practice_speaking">질문을 듣는 중</string>
+    <string name="practice_recording">녹음 중 %1$s</string>
+    <string name="practice_rules">다시 듣기는 녹음 시작 5초 안에 한 번만 됩니다. Next 는 녹음 10초 뒤에 켜집니다.</string>
+    <string name="practice_play">Play</string>
+    <string name="practice_replay">다시 듣기</string>
+    <string name="practice_next">Next</string>
+    <string name="practice_error_mic">마이크를 쓸 수 없습니다. 설정에서 이 앱의 마이크 권한을 켠 뒤 Play 를 다시 누르세요.</string>
+    <string name="practice_error_speech">질문을 읽지 못했습니다. Play 를 다시 누르세요.</string>
+    <string name="practice_error_question">낼 질문이 없습니다. 문항 파일을 불러온 뒤 다시 시작하세요.</string>
+</resources>

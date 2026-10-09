@@ -835,8 +835,10 @@
       ],
       "done": "./gradlew :ui:feature-practice:allTests :ui:feature-practice:verifyRoborazziAndroidHostTest",
       "done_desc": "스크린샷, 약점 유형에서 출제되는지",
-      "status": "todo",
-      "issue": 31
+      "status": "done",
+      "issue": 31,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "u-report",
