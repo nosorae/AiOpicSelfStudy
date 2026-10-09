@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.aiopicKmpCompose)
+    alias(libs.plugins.metro)
 }
 
 kotlin {
@@ -8,5 +9,11 @@ kotlin {
             baseName = "Shared"
             isStatic = true
         }
+    }
+    sourceSets.commonMain.dependencies {
+        implementation(project(":ui:design"))
+        implementation(project(":ui:feature-onboarding"))
+        implementation(project(":libs:keyvault"))
+        implementation(libs.androidx.lifecycle.viewmodelCompose)
     }
 }
