@@ -1,6 +1,9 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
 import androidx.activity.ComponentActivity
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -116,5 +119,24 @@ class AppShellTest {
         rule.onNodeWithText("무료 등급 안내 보기").performScrollTo().performClick()
 
         rule.onNodeWithText("음성 전송 동의").assertIsDisplayed()
+    }
+
+    @Test
+    fun `설정의 개인정보처리방침 줄을 누르면 저장소의 방침 문서를 연다`() {
+        val opened = mutableListOf<String>()
+        val uriHandler = object : UriHandler {
+            override fun openUri(uri: String) {
+                opened += uri
+            }
+        }
+        rule.setContent {
+            CompositionLocalProvider(LocalUriHandler provides uriHandler) {
+                AppShell(createAppGraph(settings), startStack = listOf(AppRoute.Home, AppRoute.Settings))
+            }
+        }
+
+        rule.onNodeWithText("개인정보처리방침").performScrollTo().performClick()
+
+        assertEquals(listOf("https://github.com/nosorae/AiOpicSelfStudy/blob/main/docs/privacy-policy.md"), opened)
     }
 }
