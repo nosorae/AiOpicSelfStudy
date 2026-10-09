@@ -1,9 +1,9 @@
 name: CI
 
+# 자동 실행은 끈다(ADR 0026). 검증은 pre-push 훅과 병합 전 로컬 ./gradlew check 가 맡는다.
+# 필요할 때 Actions 화면에서 직접 돌린다.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 # PR 은 새 커밋이 오면 이전 실행을 취소한다. main 은 커밋마다 결과를 남기려고 취소하지 않는다.
 concurrency:
