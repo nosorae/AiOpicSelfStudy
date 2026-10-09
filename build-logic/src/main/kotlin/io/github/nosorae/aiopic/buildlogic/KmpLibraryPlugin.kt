@@ -36,6 +36,8 @@ class KmpLibraryPlugin : Plugin<Project> {
 
             sourceSets.commonTest.dependencies {
                 implementation(library("kotlin-test"))
+                // suspend 로 된 포트와 라이브러리 API 를 runTest 로 부른다.
+                implementation(library("kotlinx-coroutines-test"))
             }
         }
         val jvm = JvmTarget.fromTarget(requiredVersion("jvm"))
