@@ -10,6 +10,9 @@ import kotlin.time.Clock
 public object DebugTools {
     internal val core: DebugCore = DebugCore(Clock.System)
 
+    /** 플랫폼 `install` 을 불렀는지. 앱은 이 값으로 디버그 빌드에서만 "개발자 도구" 줄을 보인다. 빈 모듈은 늘 false 다. */
+    public val installed: Boolean get() = core.installed
+
     /** 메시지와 예외는 저장하기 전에 키를 가린다. */
     public fun log(level: DebugLevel, tag: String, message: String, error: Throwable? = null) {
         core.log(level, tag, message, error)

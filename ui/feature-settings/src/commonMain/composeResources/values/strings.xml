@@ -44,6 +44,7 @@
     <string name="settings_question_file_unreadable">파일을 읽지 못했습니다. 다른 파일을 골라 주세요.</string>
     <string name="settings_question_file_invalid">불러오지 않았습니다. id, text, type, topic 이 모두 있는 문항의 JSON 목록이어야 합니다. 이유: %1$s</string>
     <string name="app_info_title">앱 정보와 라이선스</string>
+    <string name="settings_developer_tools">개발자 도구</string>
     <string name="app_info_about">말하기 시험을 실제 순서대로 연습하는 앱입니다. 서버 없이 사용자가 넣은 API 키로 답변을 분석합니다.</string>
     <string name="app_info_design">디자인 시스템: Montage by Wantedlab (MIT)</string>
     <string name="app_info_font">글꼴: Pretendard (SIL OFL 1.1)</string>

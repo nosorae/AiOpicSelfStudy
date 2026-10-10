@@ -36,6 +36,8 @@ kotlin {
         implementation(project(":packs:opic-en"))
         implementation(libs.androidx.lifecycle.viewmodelCompose)
         implementation(libs.kotlinx.serialization.json)
+        // 컴파일은 빈 모듈로 하고 디버그 실행 파일에서만 실제 모듈로 바꿔 끼운다(아래 iOS, androidApp 의 바꿔치기).
+        implementation(project(":libs:debug-noop"))
     }
     // Android 앱 틀의 하단 탭은 Material 3, 뒤로가기는 Navigation 3 와 Activity 의 뒤로가기 처리를 쓴다. iOS 는 SwiftUI 가 그린다.
     sourceSets.androidMain.dependencies {
@@ -44,10 +46,6 @@ kotlin {
         implementation(libs.androidx.lifecycle.viewmodelNavigation3)
         implementation(libs.androidx.activity.compose)
     }
-    // UI 테스트 실행 인자(UiTestLaunch)가 Gemini 대신 가짜 HTTP 엔진을 쓴다.
-    sourceSets.iosMain.dependencies {
-        implementation(libs.ktor.client.mock)
-    }
     // 분석 처리기 테스트가 Gemini 응답을 가짜 HTTP 엔진으로 돌려준다.
     sourceSets.commonTest.dependencies {
         implementation(libs.ktor.client.mock)
@@ -55,6 +53,17 @@ kotlin {
     sourceSets.getByName("androidHostTest").dependencies {
         implementation(libs.compose.uiTestJunit4)
         implementation(libs.compose.uiTestManifest)
+    }
+}
+
+// Xcode 가 Debug 구성으로 프레임워크를 만들 때(embedAndSignAppleFrameworkForXcode 가 CONFIGURATION 을 넘긴다)만 실제 디버깅 도구를 싣는다.
+// Release 구성과 Gradle 로 돌리는 iOS 테스트는 빈 모듈을 쓴다. 릴리스 프레임워크에 실제 모듈이 없는지는 apps/opic/scripts/check-release-no-debug.sh 로 본다.
+val xcodeConfiguration = providers.environmentVariable("CONFIGURATION").orNull
+if (xcodeConfiguration != null && xcodeConfiguration != "Release") {
+    configurations.matching { it.name.startsWith("ios") }.configureEach {
+        resolutionStrategy.dependencySubstitution {
+            substitute(project(":libs:debug-noop")).using(project(":libs:debug"))
+        }
     }
 }
 

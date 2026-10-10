@@ -56,6 +56,7 @@ fun SettingsRoute(
     onOpenAppInfo: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenSurvey: () -> Unit = {},
+    onOpenDeveloperTools: (() -> Unit)? = null,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onIntent(SettingsIntent.Reload) }
@@ -70,10 +71,14 @@ fun SettingsRoute(
         onPickQuestionFile = pickQuestionFile,
         modifier = modifier,
         onOpenSurvey = onOpenSurvey,
+        onOpenDeveloperTools = onOpenDeveloperTools,
     )
 }
 
-/** 상태만 받아 그리는 안쪽 겹. 미리보기와 스크린샷 테스트가 이 함수를 쓴다. */
+/**
+ * 상태만 받아 그리는 안쪽 겹. 미리보기와 스크린샷 테스트가 이 함수를 쓴다.
+ * [onOpenDeveloperTools] 는 디버그 빌드에서만 앱이 넘긴다. null 이면 "개발자 도구" 줄이 없다.
+ */
 @Composable
 fun SettingsScreen(
     state: SettingsUiState,
@@ -85,6 +90,7 @@ fun SettingsScreen(
     onPickQuestionFile: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenSurvey: () -> Unit = {},
+    onOpenDeveloperTools: (() -> Unit)? = null,
 ) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.settings_title)) }) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = MontageSpacing.spacing16)) {
@@ -193,6 +199,15 @@ fun SettingsScreen(
             // 리포트에서 "틀림"을 누른 교정을 JSON 으로 복사하는 화면(F8.3).
             MontageListCell(title = stringResource(Res.string.export_title), chevron = true, onClick = onOpenFlagExport)
             MontageListCell(title = stringResource(Res.string.app_info_title), chevron = true, onClick = onOpenAppInfo)
+            onOpenDeveloperTools?.let {
+                // 계측 테스트와 XCUITest 는 기기를 흔들 수 없어 이 줄로 디버깅 화면을 연다.
+                MontageListCell(
+                    title = stringResource(Res.string.settings_developer_tools),
+                    modifier = Modifier.testTag("settings-developer-tools"),
+                    chevron = true,
+                    onClick = it,
+                )
+            }
         }
     }
     state.deletingKey?.let { provider ->

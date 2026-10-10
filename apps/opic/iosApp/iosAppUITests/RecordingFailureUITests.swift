@@ -8,7 +8,7 @@ final class RecordingFailureUITests: XCTestCase {
 
     override func setUp() {
         continueAfterFailure = false
-        app.launchArguments = [UITestLaunch.reset, UITestLaunch.fakeGemini, UITestLaunch.recordFail]
+        app.launchArguments = UITestLaunch.reset + UITestLaunch.fakeGemini + UITestLaunch.recordFail
         app.launch()
     }
 

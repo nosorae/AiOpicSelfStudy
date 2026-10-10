@@ -46,9 +46,19 @@ dependencies {
     debugImplementation(libs.compose.uiTooling)
     // 시나리오 테스트가 Gemini 클라이언트를 가짜 HTTP 엔진으로 바꿔 넣는다.
     implementation(project(":libs:llm-gemini"))
+    // 디버깅 도구는 빈 모듈로 컴파일하고 디버그 APK 에서만 실제 모듈로 바꿔 끼운다(아래).
+    implementation(project(":libs:debug-noop"))
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation(libs.compose.uiTestJunit4)
     androidTestImplementation(libs.ktor.client.mock)
     androidTestUtil(libs.androidx.test.orchestrator)
+}
+
+// 디버그 APK 와 그 계측 테스트에만 실제 디버깅 도구(화면, 알림 권한, 흔들기)를 싣는다. 두 모듈은 공개 API 가 같아서(checkNoopAbi)
+// 빈 모듈로 컴파일한 코드가 실행할 때 실제 모듈을 그대로 부른다. 릴리스 APK 에 실제 모듈이 없는지는 apps/opic/scripts/check-release-no-debug.sh 로 본다.
+configurations.matching { it.name.startsWith("debug") && it.name.endsWith("RuntimeClasspath") }.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(project(":libs:debug-noop")).using(project(":libs:debug"))
+    }
 }

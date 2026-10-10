@@ -16,8 +16,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.core)
             // installDebugTools 가 HttpClientConfig 를 받아서 api 로 둔다.
             api(libs.ktor.client.core)
-        }
-        commonTest.dependencies {
+            // fakeHttpEngine 의 가짜 응답. 이 모듈은 디버그 빌드에만 실려서 릴리스 빌드에는 이 의존성이 없다.
             implementation(libs.ktor.client.mock)
         }
         androidMain.dependencies {

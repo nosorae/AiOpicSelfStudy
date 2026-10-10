@@ -18,7 +18,9 @@ if (slow.enabled) delay(3.seconds)         // 읽을 때마다 저장된 값을 
 DebugTools.panel("오디오") { listOf("경로" to audio.route(), "모드" to audio.mode()) }
 
 val http = HttpClient { installDebugTools() }   // io.github.nosorae.aiopic.libs.debug.network
+val fake = fakeHttpEngine(json)              // 늘 200 과 json 을 주는 엔진. noop 은 null 이라 릴리스에는 가짜 응답 코드가 없다
 DebugTools.open()                          // 앱의 설정 화면 줄이나 UI 테스트에서 연다
+if (DebugTools.installed) { /* 디버그 빌드에서만 "개발자 도구" 줄을 보인다. noop 은 늘 false */ }
 ```
 
 ## 여는 법

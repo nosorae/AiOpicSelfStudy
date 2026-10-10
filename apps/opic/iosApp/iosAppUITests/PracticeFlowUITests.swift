@@ -7,7 +7,7 @@ final class PracticeFlowUITests: XCTestCase {
 
     override func setUp() {
         continueAfterFailure = false
-        app.launchArguments = [UITestLaunch.reset, UITestLaunch.fakeGemini]
+        app.launchArguments = UITestLaunch.reset + UITestLaunch.fakeGemini
         app.launch()
     }
 

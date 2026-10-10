@@ -23,6 +23,16 @@ class DebugCoreTest {
     private val geminiKey = "AQ." + "Ab_c-1".repeat(6)
 
     @Test
+    fun isInstalledOnlyAfterInstall() {
+        val fresh = DebugCore(clock)
+        assertFalse(fresh.installed)
+
+        fresh.install(DebugConfig(), platform)
+
+        assertTrue(fresh.installed)
+    }
+
+    @Test
     fun keepsOnlyTheNewestLogsUpToTheLimit() {
         (1..5).forEach { core.log(DebugLevel.Info, "t", "m$it") }
 

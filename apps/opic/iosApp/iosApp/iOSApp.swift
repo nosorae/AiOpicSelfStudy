@@ -12,3 +12,12 @@ struct iOSApp: App {
         }
     }
 }
+
+// 기기를 흔들면 디버깅 화면을 연다. 시뮬레이터의 흔들기(Device > Shake)는 가속도 센서가 아니라 UIKit 이벤트라서 창에서 받는다.
+// 릴리스 빌드는 빈 모듈이라 아무 일도 안 한다.
+extension UIWindow {
+    open override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        super.motionEnded(motion, with: event)
+        if motion == .motionShake { IosShellKt.openDebugTools() }
+    }
+}

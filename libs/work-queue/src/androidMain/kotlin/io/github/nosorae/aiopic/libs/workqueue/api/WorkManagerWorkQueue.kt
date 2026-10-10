@@ -40,6 +40,12 @@ public class WorkManagerWorkQueue(context: Context, handler: WorkHandler) : Work
     override suspend fun cancelAll() {
         workManager.cancelUniqueWork(CHAIN).await()
     }
+
+    /** 아직 끝나지 않은 작업의 id. WorkManager 가 순서를 주지 않아 넣은 순서와 다를 수 있다. 디버깅 화면의 대기열 패널이 읽는다. */
+    public suspend fun pending(): List<String> = workManager.getWorkInfosForUniqueWorkFlow(CHAIN).first()
+        .filterNot { it.state.isFinished }
+        // 태그에는 작업 id 말고 WorkManager 가 붙인 워커 클래스 이름도 들어 있다.
+        .mapNotNull { info -> info.tags.firstOrNull { it != QueueWorker::class.java.name } }
 }
 
 private const val CHAIN = "work-queue"

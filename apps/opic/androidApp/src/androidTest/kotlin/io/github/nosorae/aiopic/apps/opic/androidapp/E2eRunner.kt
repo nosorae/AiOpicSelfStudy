@@ -4,9 +4,8 @@ import android.app.Application
 import android.content.Context
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnitRunner
+import io.github.nosorae.aiopic.libs.debug.network.installDebugTools
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
-import io.github.nosorae.aiopic.libs.recorder.api.Recorder
-import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -19,7 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * 시나리오 테스트가 앱을 [E2eApplication] 으로 띄운다. Gemini 만 가짜이고 DB, 녹음기, 기기 음성, 대기열은 실제다.
- * 계측 인자 `recordFail true` 를 주면 녹음기가 멈출 때마다 조각 쓰기에 실패했다고 알린다([RecordingFailureTest]).
+ * 계측 인자 `recordFail true` 를 주면 디버깅 스위치 "녹음 실패"를 켜서 녹음기가 멈출 때마다 조각 쓰기에 실패했다고 알린다([RecordingFailureTest]).
  */
 class E2eRunner : AndroidJUnitRunner() {
     override fun newApplication(cl: ClassLoader?, className: String?, context: Context?): Application = super.newApplication(cl, E2eApplication::class.java.name, context)
@@ -28,14 +27,13 @@ class E2eRunner : AndroidJUnitRunner() {
 /**
  * 키 확인과 답변 분석 요청에 모두 같은 저장 응답을 돌려준다. 키 확인은 200 만 보고, 분석은 이 JSON 을 읽는다.
  * 출제 요청은 [QUESTION_DELAY] 늦게 답하고 응답을 못 읽어 내장 문항으로 간다. Play 가 출제를 기다리지 않는지 볼 때 쓴다(#150).
+ * 요청과 응답은 디버깅 화면의 Network 탭에 남는다([DebugToolsTest]).
  */
 class E2eApplication : OpicApplication() {
-    override fun recorder(): Recorder {
-        val real = super.recorder()
-        if (!recordFailRequested()) return real
-        return object : Recorder by real {
-            override suspend fun stop() = real.stop().copy(failure = RecordingFailure.WriteFailed)
-        }
+    override fun onCreate() {
+        // 스위치는 libs/debug 가 SharedPreferences "debug_tools" 에 키 그대로 둔다. 그래프가 녹음기를 만들기 전에 쓴다.
+        getSharedPreferences("debug_tools", MODE_PRIVATE).edit().putBoolean("record_fail", recordFailRequested()).commit()
+        super.onCreate()
     }
 
     override fun gemini() = GeminiClient(
@@ -44,7 +42,7 @@ class E2eApplication : OpicApplication() {
                 if (QUESTION_PROMPT in it.body.toByteArray().decodeToString()) delay(QUESTION_DELAY)
                 respond(ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             },
-        ),
+        ) { installDebugTools() },
     )
 }
 

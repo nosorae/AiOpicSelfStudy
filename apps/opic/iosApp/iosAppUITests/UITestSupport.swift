@@ -1,15 +1,18 @@
 import XCTest
 
-/** 앱이 읽는 실행 인자. 값은 Kotlin 의 `UiTestLaunch` 와 같다. */
+/**
+ * 앱이 읽는 실행 인자. reset 은 Kotlin 의 `UiTestLaunch` 와 같다. 나머지는 디버깅 스위치(`DebugSwitches`)를 켠다.
+ * 스위치는 NSUserDefaults 의 `debug_tools.<key>` 라서 `-key YES` 실행 인자로 켜진다. 테스트는 Debug 구성이라 실제 디버깅 모듈이 읽는다.
+ */
 enum UITestLaunch {
     /** 저장된 키, 설정, DB, 녹음을 지우고 첫 실행처럼 시작한다. */
-    static let reset = "ui-test-reset"
+    static let reset = ["ui-test-reset"]
     /** Gemini 대신 늘 "OK" 를 돌려주는 가짜를 쓴다. 가짜 키가 키 확인을 넘고, 출제는 내장 문항으로 간다. */
-    static let fakeGemini = "ui-test-fake-gemini"
-    /** 가짜 Gemini 가 3초 늦게 답한다. 처리 중 표시를 볼 때 쓴다. */
-    static let slowGemini = "ui-test-slow-gemini"
+    static let fakeGemini = ["-debug_tools.fake_gemini", "YES"]
+    /** Gemini 요청을 3초 늦게 보낸다. 처리 중 표시를 볼 때 쓴다. */
+    static let slowGemini = ["-debug_tools.slow_response", "YES"]
     /** 녹음은 실제로 하되 멈출 때마다 조각 쓰기에 실패했다고 알린다. */
-    static let recordFail = "ui-test-record-fail"
+    static let recordFail = ["-debug_tools.record_fail", "YES"]
 }
 
 extension XCUIApplication {

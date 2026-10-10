@@ -4,11 +4,17 @@ import io.github.nosorae.aiopic.libs.debug.DebugCall
 import io.github.nosorae.aiopic.libs.debug.DebugCore
 import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.ktor.client.HttpClientConfig
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.headersOf
 
 /**
  * 이 클라이언트의 요청과 응답(주소, 메서드, 상태 코드, 걸린 시간, 헤더, 본문)을 디버깅 도구 기록에 남긴다.
@@ -65,3 +71,9 @@ private fun OutgoingContent.text(): String = when (this) {
     is OutgoingContent.NoContent -> ""
     else -> "(${this::class.simpleName} 본문은 기록하지 않는다)"
 }
+
+/**
+ * 보내지 않고 늘 200 과 [json] 을 돌려주는 HTTP 엔진. 앱이 디버깅 스위치로 실제 서버 대신 쓴다.
+ * 가짜 응답 엔진이 이 모듈에만 있어서 릴리스 빌드(debug-noop, 늘 null)에는 실리지 않는다.
+ */
+public fun fakeHttpEngine(json: String): HttpClientEngine? = MockEngine { respond(json, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }

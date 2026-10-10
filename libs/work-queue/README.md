@@ -14,6 +14,7 @@ val queue = WorkManagerWorkQueue(context) { payload ->
 }
 queue.enqueue(answerId, payload) // 같은 id 가 이미 있으면 넣지 않는다
 queue.cancelAll()                // 음성 전송 동의를 철회하면 부른다
+queue.pending()                  // 남은 작업 id. 디버깅 화면의 대기열 패널이 읽는다. Android 는 순서를 보장하지 않는다
 ```
 
 `Retry` 를 받으면 30초부터 두 배씩 늘려 최대 3번 다시 넘긴다. iOS 는 오프라인인 동안 보내지 않아 재시도 횟수를 쓰지 않는다.

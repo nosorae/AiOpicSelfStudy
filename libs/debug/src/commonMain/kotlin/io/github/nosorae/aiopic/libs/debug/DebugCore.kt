@@ -41,9 +41,13 @@ internal class DebugCore(val clock: Clock) {
     private val _panels = MutableStateFlow<Map<String, suspend () -> List<Pair<String, String>>>>(emptyMap())
     val panels: StateFlow<Map<String, suspend () -> List<Pair<String, String>>>> = _panels
 
+    @Volatile var installed = false
+        private set
+
     fun install(config: DebugConfig, platform: DebugPlatform) {
         this.config = config
         this.platform = platform
+        installed = true
     }
 
     fun log(level: DebugLevel, tag: String, message: String, error: Throwable? = null) {

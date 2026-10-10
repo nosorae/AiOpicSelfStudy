@@ -40,6 +40,8 @@ import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
+import io.github.nosorae.aiopic.libs.debug.DebugLevel
+import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmRequest
@@ -50,6 +52,7 @@ import io.github.nosorae.aiopic.libs.timer.deviceMonotonicTimer
 import io.github.nosorae.aiopic.libs.tts.api.Tts
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkHandler
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
+import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.packs.opicen.OpicPrompt
 import io.github.nosorae.aiopic.packs.opicen.OpicQuestionType
@@ -85,6 +88,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -140,6 +144,9 @@ interface AppGraph {
     /** 플랫폼 대기열이 답변 id 나 회차 등급 요청을 꺼낼 때마다 부른다(F5.1, F5.3). 대기열은 그래프보다 먼저 만들어져서 이 값을 나중에 이어 준다. */
     val analysisHandler: WorkHandler
 
+    /** 디버깅 화면의 DB 패널이 읽는다. */
+    val opicStore: OpicStore
+
     @Provides fun voiceConsent(settings: AppSettings): VoiceConsent = settings
 
     @Provides fun provideThemeModeStore(settings: AppSettings): ThemeModeStore = settings
@@ -160,7 +167,9 @@ interface AppGraph {
     @Provides
     fun keyChecker(client: GeminiClient): KeyChecker = KeyChecker { _, key ->
         // ponytail: 키 확인 전용 API 가 없어 기본 모델에 짧은 요청을 보낸다. 무료 키의 하루 한도에서 한 번을 쓴다.
-        geminiKeyCheck(client.generate(LlmRequest(apiKey = key, model = GeminiModels.defaultModel.id, prompt = "Reply with OK.")))
+        val result = client.generate(LlmRequest(apiKey = key, model = GeminiModels.defaultModel.id, prompt = "Reply with OK."))
+        DebugTools.log(if (result is LlmResult.Success) DebugLevel.Info else DebugLevel.Warn, "KeyCheck", result.toString())
+        geminiKeyCheck(result)
     }
 
     @SingleIn(AppScope::class)
@@ -235,7 +244,7 @@ interface AppGraph {
         settings = settings,
         answerRequest = { answer, model -> analysisRequest(answer, model, recorder) },
         gradeRequest = { answers, model -> gradeRequest(answers, model, recorder) },
-    )
+    ).logged()
 
     @DependencyGraph.Factory
     fun interface Factory {
@@ -429,6 +438,19 @@ private suspend fun recording(answer: Answer, recorder: Recorder): Recording {
     val output = answer.chunkPaths.firstOrNull()?.substringBeforeLast('/')?.plus("/answer.m4a")
     val resumedAt = output?.let { recorder.merge(answer.chunkPaths, it) }.orEmpty()
     return Recording(output?.let(::readFile) ?: ByteArray(0), "audio/mp4", resumedAt)
+}
+
+/** 대기열이 꺼낸 분석 작업 하나의 시작, 결과, 예외를 디버깅 로그에 남긴다. 예외는 그대로 대기열에 넘긴다. */
+private fun WorkHandler.logged() = WorkHandler { payload ->
+    DebugTools.log(DebugLevel.Info, "Analysis", "start $payload")
+    try {
+        handle(payload).also { DebugTools.log(if (it == WorkResult.Success) DebugLevel.Info else DebugLevel.Warn, "Analysis", "$it $payload") }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        DebugTools.log(DebugLevel.Error, "Analysis", "failed $payload", e)
+        throw e
+    }
 }
 
 /** 녹음 파일 하나를 통째로 읽는다. 분석 요청 한 번에 답변 하나(길어야 몇 MB)만 싣는다. */

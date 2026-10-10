@@ -6,7 +6,7 @@ final class KeyCheckMotionUITests: XCTestCase {
 
     override func setUp() {
         continueAfterFailure = false
-        app.launchArguments = [UITestLaunch.reset, UITestLaunch.fakeGemini, UITestLaunch.slowGemini]
+        app.launchArguments = UITestLaunch.reset + UITestLaunch.fakeGemini + UITestLaunch.slowGemini
         app.launch()
     }
 
