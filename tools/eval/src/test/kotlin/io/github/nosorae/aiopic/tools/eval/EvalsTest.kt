@@ -62,7 +62,6 @@ class EvalsTest {
         assertEquals("""{"type":"integer"}""", correction["properties"]!!.jsonObject["deducted"].toString())
     }
 
-    // F8.4 프롬프트를 고치기 전후로 만드는 품질 확인 보고서다. 프롬프트 버전과 모델이 보고서에 남아야 버전끼리 비교한다.
     @Test
     fun runPutsThreeTablesInOneReportWithGivenModelReplies() {
         val asked = mutableListOf<String>()
