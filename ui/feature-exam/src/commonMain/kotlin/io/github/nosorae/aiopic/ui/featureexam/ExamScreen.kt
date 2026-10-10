@@ -117,7 +117,7 @@ fun ExamRoute(viewModel: ExamViewModel, onExit: () -> Unit, onFinish: () -> Unit
         viewModel.onIntent(ExamIntent.NavigationHandled)
     }
     if (finishing) {
-        ExamFinished(state.questionCount, modifier)
+        ExamFinished(state.questionCount, viewModel.sessionId, modifier)
         return
     }
     val requestMic = rememberMicPermission()

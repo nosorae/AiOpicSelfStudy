@@ -27,10 +27,11 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * 마지막 문항까지 답한 순간 리포트로 넘어가기 전 잠깐 보이는 화면. 40분을 버틴 끝이라 큰 축하를 한 번 터뜨리고 축하 진동을 낸다.
- * 체크와 문구가 결과를 전하고 축하 조각은 꾸밈이다. 동작 줄이기면 조각이 퍼진 한 장면으로 멈춰 있다.
+ * 체크와 문구가 결과를 전하고 축하 조각은 꾸밈이다. 동작 줄이기면 조각 없이 체크와 문구, 축하 진동만 남는다.
+ * 머무는 2초 동안 화면을 돌려 다시 그려도 [sessionId] 키로 축하와 진동은 한 번만 난다.
  */
 @Composable
-internal fun ExamFinished(questionCount: Int, modifier: Modifier = Modifier) {
+internal fun ExamFinished(questionCount: Int, sessionId: String, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.fillMaxSize().background(MontageTheme.colors.backgroundNeutralPrimary).padding(horizontal = MontageSpacing.spacing24),
         verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12, Alignment.CenterVertically),
@@ -38,7 +39,7 @@ internal fun ExamFinished(questionCount: Int, modifier: Modifier = Modifier) {
     ) {
         // 조각은 체크 가운데에서 체크보다 넓게 터지되 자리를 차지하지 않아 문구가 체크 바로 밑에 붙는다.
         Box(Modifier.size(96.dp), contentAlignment = Alignment.Center) {
-            MontageCelebration(MontageCelebrationSize.Large, Modifier.requiredSize(280.dp))
+            MontageCelebration(MontageCelebrationSize.Large, Modifier.requiredSize(280.dp), playOnceKey = "exam-finished:$sessionId")
             MontageCheckMark(Modifier.fillMaxSize())
         }
         Text(
@@ -60,5 +61,5 @@ internal fun ExamFinished(questionCount: Int, modifier: Modifier = Modifier) {
 @Preview
 @Composable
 private fun ExamFinishedPreview() {
-    MontageTheme { ExamFinished(questionCount = 15) }
+    MontageTheme { ExamFinished(questionCount = 15, sessionId = "preview") }
 }

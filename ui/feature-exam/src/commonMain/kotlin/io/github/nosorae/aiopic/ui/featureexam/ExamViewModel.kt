@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 @AssistedInject
 class ExamViewModel(
-    @Assisted private val sessionId: String,
+    @Assisted val sessionId: String,
     private val loadExamUseCase: LoadExamUseCase,
     private val applyExamEventUseCase: ApplyExamEventUseCase,
     private val playQuestionUseCase: PlayQuestionUseCase,
