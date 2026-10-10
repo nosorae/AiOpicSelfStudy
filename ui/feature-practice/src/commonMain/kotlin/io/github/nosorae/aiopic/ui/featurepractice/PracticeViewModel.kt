@@ -46,8 +46,8 @@ class PracticeViewModel(
 
     init {
         viewModelScope.launch {
-            val question = pickPracticeQuestionUseCase()
-            _uiState.update { it.copy(question = question, error = if (question == null) PracticeError.QuestionUnavailable else null) }
+            val pick = pickPracticeQuestionUseCase()
+            _uiState.update { it.copy(question = pick?.question, weakness = pick?.weakness, error = if (pick == null) PracticeError.QuestionUnavailable else null) }
         }
     }
 

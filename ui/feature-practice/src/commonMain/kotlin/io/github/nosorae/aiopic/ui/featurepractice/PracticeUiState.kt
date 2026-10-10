@@ -14,6 +14,8 @@ val NextDelay = 10.seconds
 data class PracticeUiState(
     /** 낼 질문. 고르기 전이거나 고르지 못했으면 null 이다. 글자는 화면에 보이지 않는다. */
     val question: Question? = null,
+    /** 왜 이 질문인지. 고른 약한 유형과 점수다. 분석한 답변이 없어 전체에서 골랐으면 null 이다. */
+    val weakness: PracticeWeakness? = null,
     val phase: PracticePhase = PracticePhase.Ready,
     /** 지금 녹음이 시작된 뒤 흐른 시간. */
     val recorded: Duration = Duration.ZERO,

@@ -1,6 +1,7 @@
 package io.github.nosorae.aiopic.ui.featurepractice
 
 import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
+import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,6 +12,8 @@ class PickPracticeQuestionUseCaseTest {
     private val roleplay = question("p1", "roleplay")
     private val roleplay2 = question("p2", "roleplay")
 
+    private suspend fun pick(repository: FakePracticeRepository) = PickPracticeQuestionUseCase(repository, typeNames = mapOf(QuestionType("roleplay") to "롤플레이"))()
+
     @Test
     fun `약점 점수가 가장 낮은 유형에서 낸다`() = runTest {
         val repository = FakePracticeRepository(
@@ -18,7 +21,7 @@ class PickPracticeQuestionUseCaseTest {
             answers = mutableListOf(scored("a1", routine, 80), scored("a2", roleplay, 40)),
         )
 
-        assertEquals("roleplay", PickPracticeQuestionUseCase(repository)()?.type?.id)
+        assertEquals("roleplay", pick(repository)?.question?.type?.id)
     }
 
     @Test
@@ -29,7 +32,7 @@ class PickPracticeQuestionUseCaseTest {
             flags = setOf(CorrectionFlag("a2", 0)),
         )
 
-        assertEquals("routine", PickPracticeQuestionUseCase(repository)()?.type?.id)
+        assertEquals("routine", pick(repository)?.question?.type?.id)
     }
 
     @Test
@@ -39,7 +42,7 @@ class PickPracticeQuestionUseCaseTest {
             answers = mutableListOf(scored("a1", routine, 80), scored("a2", roleplay, 40)),
         )
 
-        assertEquals("p2", PickPracticeQuestionUseCase(repository)()?.id)
+        assertEquals("p2", pick(repository)?.question?.id)
     }
 
     @Test
@@ -49,16 +52,38 @@ class PickPracticeQuestionUseCaseTest {
             answers = mutableListOf(scored("a1", routine, 80), scored("a2", roleplay, 40)),
         )
 
-        assertEquals("r1", PickPracticeQuestionUseCase(repository)()?.id)
+        assertEquals("r1", pick(repository)?.question?.id)
+    }
+
+    @Test
+    fun `고른 약한 유형의 이름과 점수를 함께 돌려준다`() = runTest {
+        val repository = FakePracticeRepository(
+            pool = listOf(routine, roleplay),
+            answers = mutableListOf(scored("a1", routine, 80), scored("a2", roleplay, 42)),
+        )
+
+        assertEquals(PracticeWeakness("롤플레이", 42), pick(repository)?.weakness)
+    }
+
+    @Test
+    fun `이름을 모르는 유형은 id 를 이름으로 쓴다`() = runTest {
+        val repository = FakePracticeRepository(pool = listOf(routine), answers = mutableListOf(scored("a1", routine, 70)))
+
+        assertEquals(PracticeWeakness("routine", 70), pick(repository)?.weakness)
+    }
+
+    @Test
+    fun `분석된 답변이 없으면 약점 없이 낸다`() = runTest {
+        assertNull(pick(FakePracticeRepository(pool = listOf(routine)))?.weakness)
     }
 
     @Test
     fun `분석된 답변이 없으면 풀 전체에서 낸다`() = runTest {
-        assertEquals("r1", PickPracticeQuestionUseCase(FakePracticeRepository(pool = listOf(routine)))()?.id)
+        assertEquals("r1", pick(FakePracticeRepository(pool = listOf(routine)))?.question?.id)
     }
 
     @Test
     fun `풀이 비었으면 null 이다`() = runTest {
-        assertNull(PickPracticeQuestionUseCase(FakePracticeRepository(pool = emptyList()))())
+        assertNull(pick(FakePracticeRepository(pool = emptyList())))
     }
 }
