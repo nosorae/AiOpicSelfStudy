@@ -217,6 +217,29 @@ class MotionTest {
         assertTrue("동작 줄이기인데 선이 뻗는다", moving.sameAs(end))
     }
 
+    @Test
+    fun answerSteps() = assertNextAnswerStep(reduceMotion = false) { start, moving, end ->
+        assertFalse("단계가 바뀌었는데 그대로다", moving.sameAs(start))
+        assertFalse("다음 단계가 차오르지 않고 바로 끝이다", moving.sameAs(end))
+        rule.onRoot().captureRoboImage()
+    }
+
+    @Test
+    fun answerSteps_reduceMotion() = assertNextAnswerStep(reduceMotion = true) { _, moving, end ->
+        assertTrue("동작 줄이기인데 차오른다", moving.sameAs(end))
+    }
+
+    @Test fun playButtonPlaying() = assertKeepsMoving { MontagePlayButton(text = "Play", busy = true, onClick = {}) }
+
+    @Test fun playButtonPlaying_reduceMotion() = assertStill { MontagePlayButton(text = "Play", busy = true, onClick = {}) }
+
+    /** 듣기에서 답하기로 넘어간다. 피드백 단계까지 셋을 보인다. */
+    private fun assertNextAnswerStep(reduceMotion: Boolean, check: (Bitmap, Bitmap, Bitmap) -> Unit) {
+        var step by mutableStateOf(AnswerStep.Listen)
+        show(reduceMotion) { MontageAnswerSteps(current = step, withFeedback = true) }
+        assertChange({ step = AnswerStep.Answer }, check)
+    }
+
     /** 0.2 로 보인 막대를 0.8 로 바꾸고, 바꾸고 0.2초 뒤(400ms 움직임의 중간쯤)와 끝을 잡는다. */
     private fun assertFills(reduceMotion: Boolean, check: (Bitmap, Bitmap, Bitmap) -> Unit) {
         var progress by mutableFloatStateOf(0.2f)
