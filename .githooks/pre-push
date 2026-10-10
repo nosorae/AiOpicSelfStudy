@@ -14,6 +14,7 @@ while read -r _ local_sha remote_ref _; do
         continue
     fi
     [ "$local_sha" = "$zero" ] && continue # 브랜치 삭제
+    pushed=1
     range="origin/main..$local_sha"
 
     for commit in $(git rev-list "$range"); do
@@ -34,6 +35,7 @@ while read -r _ local_sha remote_ref _; do
 done
 
 [ $status -ne 0 ] && exit $status
+[ "${pushed:-0}" -eq 0 ] && exit 0 # 삭제만 있는 push 는 검사할 커밋이 없다
 
 # 작업 트리 기준으로 돈다. 커밋하지 않은 변경이 있으면 그것까지 포함해 검사한다.
 echo "pre-push: ./gradlew check 를 돌린다." >&2
