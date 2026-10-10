@@ -34,10 +34,12 @@ data class ExamUiState(
     /** 문항 화면에 [recorded] 를 보일지(F2.7). 기본은 꺼짐이고 설정에서 켠다. */
     val answerTimer: Boolean = false,
     val error: ExamError? = null,
+    /** 누른 버튼(다음, Next, 나가기)의 저장이 도는 중이다. 끝날 때까지 그 버튼은 진행 표시를 보이고 다른 입력은 받지 않는다. */
+    val saving: Boolean = false,
     val navigation: ExamDestination? = null,
 ) {
     val canSubmitSurvey: Boolean get() = (step as? ExamStep.Survey)?.let { selectedTopics.size >= it.minTopics } ?: false
-    val canReplay: Boolean get() = phase == QuestionPhase.Recording && !replayUsed && recorded < ReplayWindow
+    val canReplay: Boolean get() = phase == QuestionPhase.Recording && !replayUsed && recorded < ReplayWindow && !saving
     val canNext: Boolean get() = phase == QuestionPhase.Recording && recorded >= NextDelay
 }
 

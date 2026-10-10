@@ -20,8 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
@@ -96,8 +99,9 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
                 entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator(), rememberViewModelStoreNavEntryDecorator()),
                 entryProvider = { route ->
                     NavEntry(route) {
-                        // 시험 중에는 시스템 뒤로가기(예측 뒤로가기 포함)가 시험을 벗어나지 않게 받아서 버린다.
-                        BackHandler(enabled = route.blocksBack) {}
+                        // 시험 중과 화면이 처리 중일 때는 시스템 뒤로가기(예측 뒤로가기 포함)가 화면을 벗어나지 않게 받아서 버린다.
+                        var busy by remember { mutableStateOf(false) }
+                        BackHandler(enabled = route.blocksBack || busy) {}
                         RouteContent(
                             route = route,
                             graph = graph,
@@ -105,6 +109,7 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
                             onExit = { backStack.retainAll { it == AppRoute.Home } },
                             onBack = { backStack.removeAt(backStack.lastIndex) },
                             onRestart = { first -> backStack.replaceAll(listOf(first)) },
+                            onBlockBack = { busy = it },
                         )
                     }
                 },

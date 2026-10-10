@@ -151,6 +151,27 @@ class ExamViewModelTest {
     }
 
     @Test
+    fun `다음을 누르면 저장이 끝날 때까지 처리 중이고 그동안 다른 입력을 받지 않는다`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        repository.saveTime = 1.seconds
+        viewModel.onIntent(ExamIntent.ToggleTopic("영화"))
+        viewModel.onIntent(ExamIntent.ToggleTopic("공원"))
+
+        viewModel.onIntent(ExamIntent.SubmitSurvey)
+        runCurrent()
+        viewModel.onIntent(ExamIntent.ToggleTopic("요리"))
+        viewModel.onIntent(ExamIntent.SubmitSurvey)
+
+        assertTrue(viewModel.uiState.value.saving)
+        assertEquals(setOf("영화", "공원"), viewModel.uiState.value.selectedTopics)
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.saving)
+        assertEquals(ExamStep.LevelSelect, viewModel.uiState.value.step)
+        assertEquals(listOf("영화", "공원"), repository.sessions.getValue("s1").surveyTopics)
+    }
+
+    @Test
     fun `F2_1 수준을 고르고 다음을 누르면 점검으로 간다`() = runTest(dispatcher) {
         repository.sessions["s1"] = ExamSession(id = "s1", stepIndex = 1, surveyTopics = listOf("영화", "공원"))
         val viewModel = viewModel()
@@ -290,6 +311,24 @@ class ExamViewModelTest {
         assertEquals(listOf(answer.id), repository.sessions.getValue("s1").answerIds)
         assertEquals(ExamStep.Recalibrate, viewModel.uiState.value.step)
         assertNull(recorder.recording)
+    }
+
+    @Test
+    fun `Next 를 누르면 답변 저장이 끝날 때까지 처리 중이다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(10.seconds)
+        repository.saveTime = 500.milliseconds
+
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.saving)
+        assertFalse(viewModel.uiState.value.canReplay)
+        advance(1.seconds)
+        assertFalse(viewModel.uiState.value.saving)
+        assertEquals(ExamStep.Recalibrate, viewModel.uiState.value.step)
     }
 
     @Test

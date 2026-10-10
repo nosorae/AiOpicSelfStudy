@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 class ObserveHomeUseCase(private val examSessionSource: ExamSessionSource) {
     operator fun invoke(): Flow<HomeUiState> = examSessionSource.sessions().map { sessions ->
         HomeUiState(
-            canResume = sessions.any { it.status == ExamStatus.InProgress },
+            resumeSessionId = sessions.lastOrNull { it.status == ExamStatus.InProgress }?.id,
             pastSessions = sessions
                 .mapIndexed { index, session ->
                     PastSession(

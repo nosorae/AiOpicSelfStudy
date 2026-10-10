@@ -23,11 +23,14 @@ import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
 import org.jetbrains.compose.resources.stringResource
 
-/** ViewModel 을 관측하는 바깥 겹. 어디로 갈지는 화면을 등록한 앱 틀이 람다로 정한다. */
+/**
+ * ViewModel 을 관측하는 바깥 겹. 어디로 갈지는 화면을 등록한 앱 틀이 람다로 정한다.
+ * [onExamClick] 은 이어 볼 회차 id 를 받고, 진행 중인 회차가 없으면 null 을 받는다(F3).
+ */
 @Composable
 fun HomeRoute(
     viewModel: HomeViewModel,
-    onExamClick: () -> Unit,
+    onExamClick: (resumeSessionId: String?) -> Unit,
     onPracticeClick: () -> Unit,
     onSessionClick: (sessionId: String) -> Unit,
     modifier: Modifier = Modifier,
@@ -40,7 +43,7 @@ fun HomeRoute(
 @Composable
 fun HomeScreen(
     state: HomeUiState,
-    onExamClick: () -> Unit,
+    onExamClick: (resumeSessionId: String?) -> Unit,
     onPracticeClick: () -> Unit,
     onSessionClick: (sessionId: String) -> Unit,
     modifier: Modifier = Modifier,
@@ -55,7 +58,8 @@ fun HomeScreen(
                 ) {
                     MontageButton(
                         text = stringResource(if (state.canResume) Res.string.home_resume_exam else Res.string.home_start_exam),
-                        onClick = onExamClick,
+                        onClick = { onExamClick(state.resumeSessionId) },
+                        loading = state.loading,
                         modifier = Modifier.fillMaxWidth().testTag("home-exam"),
                     )
                     MontageButton(
@@ -104,7 +108,7 @@ internal object HomeSamples {
     val loading = HomeUiState()
     val empty = HomeUiState(pastSessions = emptyList())
     val history = HomeUiState(
-        canResume = true,
+        resumeSessionId = "d",
         pastSessions = listOf(
             PastSession(id = "c", number = 3, gradeRange = null, timeUp = false),
             PastSession(id = "b", number = 2, gradeRange = "IM2~IH", timeUp = true),

@@ -18,10 +18,15 @@ data class PracticeUiState(
     val recorded: Duration = Duration.ZERO,
     val replayUsed: Boolean = false,
     val error: PracticeError? = null,
+    /** 누른 버튼(Next, 나가기)의 저장이 도는 중이다. 끝날 때까지 그 버튼은 진행 표시를 보이고 다른 입력은 받지 않는다. */
+    val saving: Boolean = false,
     val navigation: PracticeDestination? = null,
 ) {
     val canPlay: Boolean get() = question != null && phase == PracticePhase.Ready
-    val canReplay: Boolean get() = phase == PracticePhase.Recording && !replayUsed && recorded < ReplayWindow
+
+    /** 질문을 고르는 중이거나 질문을 읽는 중이다. Play 가 진행 표시를 보인다. */
+    val preparing: Boolean get() = (question == null && error == null) || phase == PracticePhase.Speaking
+    val canReplay: Boolean get() = phase == PracticePhase.Recording && !replayUsed && recorded < ReplayWindow && !saving
     val canNext: Boolean get() = phase == PracticePhase.Recording && recorded >= NextDelay
 }
 

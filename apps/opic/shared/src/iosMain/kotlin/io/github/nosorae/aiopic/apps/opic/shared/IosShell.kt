@@ -49,11 +49,19 @@ class IosShell {
         MainScope().launch { onDecided(AppRoute.start(graph.decideStartUseCase())) }
     }
 
-    fun controller(route: AppRoute, onOpen: (AppRoute) -> Unit, onExit: () -> Unit, onBack: () -> Unit, onRestart: (AppRoute) -> Unit): UIViewController = ComposeUIViewController {
+    /** [onBlockBack] 은 화면이 처리 중이라 뒤로 버튼과 가장자리 스와이프를 숨길 때 true, 다시 보일 때 false 를 받는다. */
+    fun controller(
+        route: AppRoute,
+        onOpen: (AppRoute) -> Unit,
+        onExit: () -> Unit,
+        onBack: () -> Unit,
+        onRestart: (AppRoute) -> Unit,
+        onBlockBack: (Boolean) -> Unit,
+    ): UIViewController = ComposeUIViewController {
         val themeMode by graph.themeModeStore.themeMode.collectAsState()
         // SwiftUI 가 그리는 탭 바와 내비게이션 바도 같은 모드를 따르게 창의 모드를 바꾼다(F9.1).
         LaunchedEffect(themeMode) { applyToWindows(themeMode) }
-        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) { RouteContent(route, graph, onOpen, onExit, onBack, onRestart) }
+        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) { RouteContent(route, graph, onOpen, onExit, onBack, onRestart, onBlockBack = onBlockBack) }
     }
 
     fun showsTabBar(route: AppRoute): Boolean = route.showsTabBar(Platform.Ios)

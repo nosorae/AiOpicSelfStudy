@@ -36,28 +36,47 @@ class KeyEntryViewModelTest {
     }
 
     @Test
-    fun `제공사를 정하지 않고 들어오면 아무 제공사도 골라져 있지 않다`() {
+    fun `제공사가 하나뿐이면 정하지 않고 들어와도 그 제공사가 골라져 있다`() {
         val viewModel = viewModel()
 
-        assertNull(viewModel.uiState.value.selectedProvider)
+        assertEquals(KeyProvider.Gemini, viewModel.uiState.value.provider)
+    }
+
+    @Test
+    fun `제공사가 둘 이상일 때 정하지 않고 들어오면 아무 제공사도 골라져 있지 않다`() {
+        // 첫 버전은 제공사가 하나라 같은 값을 둘 넣어 개수 규칙만 본다.
+        val state = KeyEntryUiState(providers = List(2) { KeyProvider.Gemini })
+
+        assertNull(state.provider)
+        assertFalse(state.copy(key = "good-key").canSubmit)
     }
 
     @Test
     fun `화면 인자로 제공사를 받으면 그 제공사가 골라져 있다`() {
         val viewModel = viewModel(provider = KeyProvider.Gemini)
 
-        assertEquals(KeyProvider.Gemini, viewModel.uiState.value.selectedProvider)
+        assertEquals(KeyProvider.Gemini, viewModel.uiState.value.provider)
     }
 
     @Test
-    fun `제공사를 고르고 키를 넣어야 보낼 수 있다`() {
+    fun `키를 넣어야 보낼 수 있다`() {
+        val viewModel = viewModel()
+        assertFalse(viewModel.uiState.value.canSubmit)
+
+        viewModel.onIntent(KeyEntryIntent.ChangeKey("good-key"))
+
+        assertTrue(viewModel.uiState.value.canSubmit)
+    }
+
+    @Test
+    fun `제공사를 정하지 않고 들어와도 하나뿐인 제공사로 키를 저장한다`() = runTest(dispatcher) {
         val viewModel = viewModel()
 
         viewModel.onIntent(KeyEntryIntent.ChangeKey("good-key"))
-        assertFalse(viewModel.uiState.value.canSubmit)
-        viewModel.onIntent(KeyEntryIntent.SelectProvider(KeyProvider.Gemini))
+        viewModel.onIntent(KeyEntryIntent.SubmitKey)
+        advanceUntilIdle()
 
-        assertTrue(viewModel.uiState.value.canSubmit)
+        assertEquals("good-key", vault.get("gemini"))
     }
 
     @Test

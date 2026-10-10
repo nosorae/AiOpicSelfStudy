@@ -32,13 +32,15 @@ val testContent = ExamContent(
     surveyParts = listOf(SurveyPart("하는 일", listOf("회사원", "학생")), SurveyPart("사는 곳", listOf("혼자", "가족과"))),
 )
 
-class FakeExamRepository(var lastTopics: List<String> = emptyList()) : ExamRepository {
+/** [saveTime] 은 회차 저장 한 번에 걸리는 시간이다. 처리 중 표시를 볼 때 늘린다. */
+class FakeExamRepository(var lastTopics: List<String> = emptyList(), var saveTime: Duration = Duration.ZERO) : ExamRepository {
     val sessions = mutableMapOf<String, ExamSession>()
     val answers = mutableListOf<Answer>()
 
     override suspend fun session(id: String): ExamSession? = sessions[id]
 
     override suspend fun save(session: ExamSession) {
+        delay(saveTime)
         sessions[session.id] = session
     }
 

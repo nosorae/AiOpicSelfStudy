@@ -36,6 +36,10 @@ class ExamScreenshotTest {
 
     @Test fun questionNextable() = shot(ExamSamples.questionNextable)
 
+    @Test fun questionSaving() = shot(ExamSamples.questionSaving)
+
+    @Test fun surveySaving() = shot(ExamSamples.surveySaving)
+
     /** 설정에서 답변 타이머를 켰을 때(F2.7). 꺼져 있으면 "녹음 중"만 보인다. */
     @Test fun questionTimer() = shot(ExamSamples.questionTimer)
 

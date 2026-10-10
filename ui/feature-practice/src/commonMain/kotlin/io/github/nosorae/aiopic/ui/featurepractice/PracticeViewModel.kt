@@ -48,6 +48,7 @@ class PracticeViewModel(
     }
 
     fun onIntent(intent: PracticeIntent) {
+        if (_uiState.value.saving && intent != PracticeIntent.NavigationHandled) return
         when (intent) {
             PracticeIntent.PlayQuestion -> if (_uiState.value.canPlay) play(stopFirst = false)
             PracticeIntent.ReplayQuestion -> replay()
@@ -97,7 +98,7 @@ class PracticeViewModel(
         if (timer.elapsed() - startedAt < NextDelay) return
         recordingStartedAt = null
         clock?.cancel()
-        viewModelScope.launch {
+        save {
             submitPracticeAnswerUseCase(question, answerId)
             _uiState.update { it.copy(navigation = PracticeDestination.Feedback(answerId)) }
         }
@@ -108,9 +109,21 @@ class PracticeViewModel(
         clock?.cancel()
         val recording = recordingStartedAt != null
         recordingStartedAt = null
-        viewModelScope.launch {
+        save {
             if (recording) stopRecordingUseCase()
             _uiState.update { it.copy(navigation = PracticeDestination.Exit) }
+        }
+    }
+
+    /** 사용자가 누른 저장을 하는 동안 [PracticeUiState.saving] 을 켜 둔다. */
+    private fun save(block: suspend () -> Unit) {
+        _uiState.update { it.copy(saving = true) }
+        viewModelScope.launch {
+            try {
+                block()
+            } finally {
+                _uiState.update { it.copy(saving = false) }
+            }
         }
     }
 

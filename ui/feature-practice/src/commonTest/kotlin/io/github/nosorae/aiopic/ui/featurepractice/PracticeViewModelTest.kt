@@ -170,6 +170,38 @@ class PracticeViewModelTest {
     }
 
     @Test
+    fun `Next 를 누르면 답변 저장이 끝날 때까지 처리 중이고 그동안 나가기를 받지 않는다`() = practiceTest {
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(10.seconds)
+        repository.saveTime = 1.seconds
+
+        viewModel.onIntent(PracticeIntent.SubmitAnswer)
+        runCurrent()
+        viewModel.onIntent(PracticeIntent.ExitPractice)
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.saving)
+        assertNull(viewModel.uiState.value.navigation)
+        advance(1.seconds)
+        assertEquals(PracticeDestination.Feedback("a1"), viewModel.uiState.value.navigation)
+        assertEquals(1, repository.answers.size)
+    }
+
+    @Test
+    fun `질문을 고르는 동안과 질문을 읽는 동안 Play 는 처리 중이다`() = practiceTest {
+        val viewModel = viewModel()
+        assertTrue(viewModel.uiState.value.preparing)
+        runCurrent()
+        assertFalse(viewModel.uiState.value.preparing)
+
+        viewModel.onIntent(PracticeIntent.PlayQuestion)
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.preparing)
+    }
+
+    @Test
     fun `마이크를 열지 못하면 녹음하지 않고 이유를 보여 준다`() = practiceTest {
         recorder.micAvailable = false
         val viewModel = viewModel()
