@@ -8,3 +8,7 @@ import androidx.compose.runtime.Composable
  */
 @Composable
 internal expect fun rememberMicPermission(): suspend () -> Boolean
+
+/** 이 앱의 시스템 설정 화면을 여는 함수를 돌려준다. 권한을 한 번 거절하면 요청 창이 다시 뜨지 않아 설정에서 켜야 한다. */
+@Composable
+internal expect fun rememberOpenAppSettings(): () -> Unit

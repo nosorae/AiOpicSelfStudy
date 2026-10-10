@@ -14,7 +14,6 @@ class PlayPracticeQuestionUseCase(
 ) {
     suspend operator fun invoke(question: Question, answerId: String): PracticeError? = when {
         !tts.speak(question.text) -> PracticeError.SpeechFailed
-        !recorder.start(repository.recordingDirectory(answerId)) -> PracticeError.MicUnavailable
-        else -> null
+        else -> recorder.start(repository.recordingDirectory(answerId))?.toPracticeError()
     }
 }

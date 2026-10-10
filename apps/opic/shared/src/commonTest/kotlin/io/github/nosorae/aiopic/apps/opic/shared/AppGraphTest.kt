@@ -5,6 +5,8 @@ import io.github.nosorae.aiopic.apps.opic.shared.data.inMemoryDatabase
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmResult
 import io.github.nosorae.aiopic.libs.recorder.api.Recorder
+import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
+import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.github.nosorae.aiopic.libs.tts.api.Tts
 import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
 import io.github.nosorae.aiopic.ui.featureonboarding.DomainResult
@@ -49,9 +51,9 @@ class FakeKeyVault : KeyVault {
 }
 
 object FakeRecorder : Recorder {
-    override suspend fun start(directory: String) = true
+    override suspend fun start(directory: String): RecordingFailure? = null
 
-    override suspend fun stop() = emptyList<String>()
+    override suspend fun stop() = StoppedRecording(emptyList())
 
     override suspend fun chunks(directory: String) = emptyList<String>()
 

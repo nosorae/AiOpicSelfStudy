@@ -23,6 +23,8 @@ struct TabRoot: View {
     let root: AppRoute
     @Binding var path: [AppRoute]
     var onRestart: (AppRoute) -> Void = { _ in }
+    /** 이 탭의 화면 하나라도 처리 중인지. 앱 틀이 받아 그동안 탭 전환을 막는다. */
+    var onBusy: (Bool) -> Void = { _ in }
     /** 처리 중이라 뒤로 버튼과 가장자리 스와이프를 숨긴 화면(키 확인 중). */
     @State private var backBlocked: Set<AppRoute> = []
 
@@ -36,6 +38,7 @@ struct TabRoot: View {
     private func destination(_ route: AppRoute) -> some View {
         RouteView(shell: shell, route: route, onOpen: { path.append($0) }, onExit: { path.removeAll() }, onBack: { path.removeLast() }, onRestart: onRestart, onBlockBack: { blocked in
             if blocked { backBlocked.insert(route) } else { backBlocked.remove(route) }
+            onBusy(blocked)
         })
             // 한 번에 빼고 쌓으면(연습의 Next, 시험 끝) SwiftUI 가 같은 칸의 RouteView 를 다시 쓴다. Compose 화면은 만들 때 한 번만 정하므로
             // 경로를 identity 로 줘서 경로가 바뀌면 화면을 새로 만든다. 없으면 탭만 바뀌고 앞 화면이 남는다(#134).
@@ -80,6 +83,8 @@ struct Tabs: View {
     let shell: IosShell
     @State private var tab: AppRoute = AppRoute.Home.shared
     @State private var paths: [AppRoute: [AppRoute]] = [:]
+    /** 키 확인처럼 처리 중인 화면이 있다. 그동안 탭 바를 눌러도 탭이 바뀌지 않는다. */
+    @State private var busy = false
 
     var body: some View {
         TabView(selection: $tab) {
@@ -88,10 +93,25 @@ struct Tabs: View {
                     TabRoot(shell: shell, root: root, path: Binding(
                         get: { paths[root] ?? [] },
                         set: { paths[root] = $0 }
-                    ))
+                    ), onBusy: { busy = $0 })
                 }
             }
         }
+        .onChange(of: busy) { _, busy in setTabBarEnabled(!busy) }
+    }
+
+    /**
+     * 처리 중에는 탭 바가 눌리지 않게 한다. 탭을 옮기면 처리 중인 화면이 가려져 결과를 놓친다.
+     * 선택 바인딩에서 값을 무시해도 UIKit 탭 바는 먼저 탭을 바꿔 버려서 탭 바 자체의 입력을 끈다.
+     */
+    private func setTabBarEnabled(_ enabled: Bool) {
+        func find(_ controller: UIViewController?) -> UITabBarController? {
+            guard let controller else { return nil }
+            if let tabs = controller as? UITabBarController { return tabs }
+            return controller.children.lazy.compactMap { find($0) }.first ?? find(controller.presentedViewController)
+        }
+        let roots = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).map(\.rootViewController)
+        roots.compactMap { find($0) }.forEach { $0.tabBar.isUserInteractionEnabled = enabled }
     }
 
     private func icon(_ tab: AppRoute) -> String {

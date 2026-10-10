@@ -37,31 +37,37 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
     private var file: AVAudioFile? = null
     private var framesInFile = 0.0
     private var segmentStart = false
+
+    /** [start] 뒤로 처음 생긴 실패. 오디오 스레드에서 생겨도 [stop] 이 돌려준다. */
+    private var failure: RecordingFailure? = null
     private var interruptions: NSObjectProtocol? = null
 
-    override suspend fun start(directory: String): Boolean {
-        NSFileManager.defaultManager.createDirectoryAtPath(directory, withIntermediateDirectories = true, attributes = null, error = null)
+    override suspend fun start(directory: String): RecordingFailure? {
+        if (!NSFileManager.defaultManager.createDirectoryAtPath(directory, withIntermediateDirectories = true, attributes = null, error = null)) {
+            return RecordingFailure.WriteFailed
+        }
         locked {
             this.directory = directory
             segmentStart = true
+            failure = null
         }
         if (!mic.start(::write)) {
             locked { this.directory = null }
-            return false
+            return RecordingFailure.MicUnavailable
         }
         interruptions = NSNotificationCenter.defaultCenter.addObserverForName(AVAudioSessionInterruptionNotification, null, null, ::onInterruption)
-        return true
+        return null
     }
 
-    override suspend fun stop(): List<String> {
+    override suspend fun stop(): StoppedRecording {
         mic.stop()
         interruptions?.let(NSNotificationCenter.defaultCenter::removeObserver)
         interruptions = null
-        val stopped = locked {
+        val (stopped, failed) = locked {
             closeChunk()
-            directory.also { directory = null }
+            (directory to failure).also { directory = null }
         }
-        return chunks(checkNotNull(stopped) { "녹음 중이 아니다" })
+        return StoppedRecording(chunks(checkNotNull(stopped) { "녹음 중이 아니다" }), failed)
     }
 
     override suspend fun chunks(directory: String): List<String> = names(directory).map { "$directory/$it" }
@@ -95,8 +101,8 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
 
     private fun write(buffer: AVAudioPCMBuffer) = locked {
         val directory = directory ?: return@locked
-        val out = file ?: openChunk(directory, buffer.format)?.also { file = it } ?: return@locked
-        out.writeFromBuffer(buffer, error = null)
+        val out = file ?: openChunk(directory, buffer.format)?.also { file = it } ?: return@locked fail(RecordingFailure.WriteFailed)
+        if (!out.writeFromBuffer(buffer, error = null)) fail(RecordingFailure.WriteFailed)
         framesInFile += buffer.frameLength.toDouble()
         if (framesInFile >= chunkLength.inWholeMilliseconds * buffer.format.sampleRate / 1_000) closeChunk()
     }
@@ -112,7 +118,7 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
             }
 
             // 끝났다는 알림이 오면 마이크를 다시 연다. 다음 버퍼가 새 조각을 연다.
-            AVAudioSessionInterruptionTypeEnded -> if (locked { directory } != null) mic.start(::write)
+            AVAudioSessionInterruptionTypeEnded -> if (locked { directory } != null && !mic.start(::write)) locked { fail(RecordingFailure.MicUnavailable) }
         }
     }
 
@@ -134,6 +140,10 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
                 error = null,
             )
         }.getOrNull()
+    }
+
+    private fun fail(reason: RecordingFailure) {
+        if (failure == null) failure = reason
     }
 
     private fun closeChunk() {

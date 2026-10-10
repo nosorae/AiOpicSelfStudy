@@ -27,6 +27,8 @@ class PracticeScreenshotTest {
 
     @Test fun micError() = shot(PracticeSamples.micError)
 
+    @Test fun recordingError() = shot(PracticeSamples.recordingError)
+
     @Test fun noQuestion() = shot(PracticeSamples.noQuestion)
 
     @Test fun replayable_dark() = shot(PracticeSamples.replayable, dark = true)

@@ -28,6 +28,8 @@ class ExamScreenshotTest {
 
     @Test fun micError() = shot(ExamSamples.micError)
 
+    @Test fun recordingError() = shot(ExamSamples.recordingError)
+
     @Test fun questionReady() = shot(ExamSamples.questionReady)
 
     @Test fun questionSpeaking() = shot(ExamSamples.questionSpeaking)

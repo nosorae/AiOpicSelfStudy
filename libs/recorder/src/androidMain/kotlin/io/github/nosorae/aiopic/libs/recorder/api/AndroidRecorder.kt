@@ -15,6 +15,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import java.io.File
+import java.io.IOException
 import java.nio.ByteBuffer
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.microseconds
@@ -37,27 +38,32 @@ public class AndroidRecorder(context: Context) : Recorder {
     private var directory: File? = null
     private var recorder: MediaRecorder? = null
 
+    /** [start] 뒤로 처음 생긴 실패. 조각 넘김과 포커스 콜백에서 생겨도 [stop] 이 돌려준다. */
+    private var failure: RecordingFailure? = null
+
     // 오디오 포커스 콜백과 조각 넘김 콜백이 메인 스레드에서 같은 상태를 건드리므로 상태를 바꾸는 곳은 모두 this 로 잠근다.
-    override suspend fun start(directory: String): Boolean = synchronized(this) {
+    override suspend fun start(directory: String): RecordingFailure? = synchronized(this) {
         val dir = File(directory).apply { mkdirs() }
+        if (!dir.isDirectory) return RecordingFailure.WriteFailed
         try {
             context.startForegroundService(Intent(context, RecordingService::class.java))
         } catch (_: RuntimeException) {
             // 백그라운드에서는 마이크 서비스를 시작할 수 없다. 녹음이 도중에 끊길 수 있으니 시작하지 않는다.
-            return false
+            return RecordingFailure.MicUnavailable
         }
         this.directory = dir
+        failure = null
         audio.requestAudioFocus(focus)
-        if (!open(dir)) {
+        open(dir)?.let {
             finish()
-            return false
+            return it
         }
-        true
+        null
     }
 
-    override suspend fun stop(): List<String> {
-        val dir = synchronized(this) { checkNotNull(directory) { "녹음 중이 아니다" }.also { finish() } }
-        return chunks(dir.path)
+    override suspend fun stop(): StoppedRecording {
+        val (dir, failed) = synchronized(this) { (checkNotNull(directory) { "녹음 중이 아니다" } to failure).also { finish() } }
+        return StoppedRecording(chunks(dir.path), failed)
     }
 
     private fun finish() {
@@ -111,7 +117,8 @@ public class AndroidRecorder(context: Context) : Recorder {
         return resumes
     }
 
-    private fun open(dir: File): Boolean {
+    /** 녹음기를 열어 새 조각부터 쓴다. 열었으면 null 이다. */
+    private fun open(dir: File): RecordingFailure? {
         val next = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             MediaRecorder(context)
         } else {
@@ -131,23 +138,39 @@ public class AndroidRecorder(context: Context) : Recorder {
             setOnInfoListener { _, what, _ ->
                 if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_FILESIZE_APPROACHING) nextChunk()
             }
+            // 쓰던 파일에 더 쓰지 못하면(저장 공간 부족 등) 녹음기가 멈춘다.
+            setOnErrorListener { _, _, _ -> fail(RecordingFailure.WriteFailed) }
         }
         return try {
             next.prepare()
             next.start()
             recorder = next
-            true
-        } catch (_: Exception) {
+            null
+        } catch (_: IOException) {
+            // 조각 파일을 열지 못했다.
+            next.release()
+            RecordingFailure.WriteFailed
+        } catch (_: RuntimeException) {
             // 마이크 권한이 없거나 다른 앱이 마이크를 쥐고 있다.
             next.release()
-            false
+            RecordingFailure.MicUnavailable
         }
     }
 
     @Synchronized
     private fun nextChunk() {
         val dir = directory ?: return
-        recorder?.setNextOutputFile(newChunk(dir, resumed = false))
+        try {
+            recorder?.setNextOutputFile(newChunk(dir, resumed = false))
+        } catch (_: IOException) {
+            // 다음 조각을 만들지 못하면 지금 조각이 가득 찬 뒤로는 녹음되지 않는다.
+            fail(RecordingFailure.WriteFailed)
+        }
+    }
+
+    @Synchronized
+    private fun fail(reason: RecordingFailure) {
+        if (directory != null && failure == null) failure = reason
     }
 
     private fun close() {
@@ -163,7 +186,7 @@ public class AndroidRecorder(context: Context) : Recorder {
         val dir = directory ?: return
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> close()
-            AudioManager.AUDIOFOCUS_GAIN -> if (recorder == null) open(dir)
+            AudioManager.AUDIOFOCUS_GAIN -> if (recorder == null) open(dir)?.let(::fail)
         }
     }
 

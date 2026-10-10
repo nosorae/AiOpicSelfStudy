@@ -20,7 +20,7 @@ class PlayQuestionUseCase(
         val directory = repository.recordingDirectory(session)
         val resumed = recorder.chunks(directory).isNotEmpty()
         if (!(resumed && session.replayUsed) && !tts.speak(question.text)) return PlayResult.Failed(ExamError.SpeechFailed)
-        if (!recorder.start(directory)) return PlayResult.Failed(ExamError.MicUnavailable)
+        recorder.start(directory)?.let { return PlayResult.Failed(it.toExamError()) }
         return PlayResult.Recording(resumed)
     }
 }

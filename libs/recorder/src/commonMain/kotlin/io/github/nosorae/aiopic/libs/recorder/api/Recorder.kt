@@ -10,12 +10,16 @@ import kotlin.time.Duration
 public interface Recorder {
     /**
      * [directory] 에 조각을 녹음한 순서대로 쓰기 시작한다. 이미 조각이 있으면 그 뒤 번호부터 이어 쓴다.
-     * 마이크를 열지 못하면 false 다.
+     * 시작했으면 null, 못 했으면 그 이유다.
      */
-    public suspend fun start(directory: String): Boolean
+    public suspend fun start(directory: String): RecordingFailure?
 
-    /** 녹음을 멈추고 지금 폴더의 조각 경로를 녹음한 순서대로 돌려준다. */
-    public suspend fun stop(): List<String>
+    /**
+     * 녹음을 멈추고 지금 폴더의 조각 경로를 녹음한 순서대로 돌려준다.
+     * [start] 뒤로 조각을 쓰지 못했거나 끼어듦 뒤 마이크를 다시 열지 못한 적이 있으면 [StoppedRecording.failure] 에 담는다.
+     * 그 사이 소리는 조각에 없다.
+     */
+    public suspend fun stop(): StoppedRecording
 
     /** [directory] 에 남아 있는 조각 경로를 녹음한 순서대로 돌려준다. 앱이 죽었다 켜진 뒤 조각 목록을 되찾을 때 쓴다. */
     public suspend fun chunks(directory: String): List<String>
@@ -26,4 +30,14 @@ public interface Recorder {
      * 분석이 이 위치를 말 멈춤으로 세지 않게 요청에 넣는다(F3.4). 조각 길이와 끊긴 곳은 녹음기만 알아서 여기서 계산한다.
      */
     public suspend fun merge(chunks: List<String>, output: String): List<Duration>
+}
+
+public data class StoppedRecording(val chunks: List<String>, val failure: RecordingFailure? = null)
+
+public enum class RecordingFailure {
+    /** 마이크 권한이 없거나 다른 앱이 마이크를 쓰고 있어 열지 못했다. */
+    MicUnavailable,
+
+    /** 조각 파일을 만들거나 쓰지 못했다. 저장 공간이 모자랄 때 생긴다. */
+    WriteFailed,
 }

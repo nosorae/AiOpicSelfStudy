@@ -8,6 +8,8 @@ enum UITestLaunch {
     static let fakeGemini = "ui-test-fake-gemini"
     /** 가짜 Gemini 가 3초 늦게 답한다. 처리 중 표시를 볼 때 쓴다. */
     static let slowGemini = "ui-test-slow-gemini"
+    /** 녹음은 실제로 하되 멈출 때마다 조각 쓰기에 실패했다고 알린다. */
+    static let recordFail = "ui-test-record-fail"
 }
 
 extension XCUIApplication {

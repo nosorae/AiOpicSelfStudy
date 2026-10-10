@@ -5,6 +5,9 @@ import androidx.compose.runtime.remember
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.AVFAudio.AVAudioApplication
 import platform.AVFAudio.AVAudioApplicationRecordPermissionGranted
+import platform.Foundation.NSURL
+import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationOpenSettingsURLString
 import kotlin.coroutines.resume
 
 @Composable
@@ -19,4 +22,9 @@ internal actual fun rememberMicPermission(): suspend () -> Boolean = remember {
             }
         }
     }
+}
+
+@Composable
+internal actual fun rememberOpenAppSettings(): () -> Unit = remember {
+    { NSURL.URLWithString(UIApplicationOpenSettingsURLString)?.let { UIApplication.sharedApplication.openURL(it, options = emptyMap<Any?, Any>(), completionHandler = null) } }
 }

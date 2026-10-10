@@ -100,7 +100,7 @@ class ExamViewModel(
 
             ExamIntent.SubmitAnswer -> submit()
 
-            ExamIntent.MicDenied -> _uiState.update { it.copy(phase = QuestionPhase.Ready, error = ExamError.MicUnavailable) }
+            ExamIntent.MicDenied -> _uiState.update { it.copy(phase = QuestionPhase.Ready, error = ExamError.MicDenied) }
 
             ExamIntent.ExitExam -> exit()
 
@@ -136,8 +136,8 @@ class ExamViewModel(
         recordingStartedAt = null
         _uiState.update { it.copy(phase = QuestionPhase.Speaking) }
         playing = viewModelScope.launch {
-            stopRecordingUseCase()
-            recordingStarted(playQuestionUseCase(session))
+            val failed = stopRecordingUseCase()
+            recordingStarted(failed?.let(PlayResult::Failed) ?: playQuestionUseCase(session))
         }
     }
 
@@ -162,7 +162,16 @@ class ExamViewModel(
         if (timer.elapsed() - startedAt < NextDelay) return
         recordingStartedAt = null
         val scored = _uiState.value.step is ExamStep.Ask
-        save { commit { submitAnswerUseCase(it, scored) } }
+        save {
+            sessionLock.withLock {
+                when (val result = submitAnswerUseCase(session, scored)) {
+                    is SubmitResult.Moved -> changed(result.session)
+
+                    // 같은 문항에 남는다. Play 를 다시 누르면 남은 조각 뒤에 이어 녹음한다(F3.3).
+                    is SubmitResult.Failed -> _uiState.update { it.copy(phase = QuestionPhase.Ready, error = result.error) }
+                }
+            }
+        }
     }
 
     private fun exit() = save {

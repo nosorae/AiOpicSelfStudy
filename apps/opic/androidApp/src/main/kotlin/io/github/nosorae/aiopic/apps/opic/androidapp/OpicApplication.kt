@@ -9,6 +9,7 @@ import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
 import io.github.nosorae.aiopic.libs.keyvault.api.KeystoreKeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.recorder.api.AndroidRecorder
+import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.tts.AndroidTts
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkManagerWorkQueue
 
@@ -28,13 +29,16 @@ open class OpicApplication : Application() {
             keyVault = KeystoreKeyVault(this),
             database = opicDatabase(this),
             recordingsRoot = recordingsRoot(this),
-            recorder = AndroidRecorder(this),
+            recorder = recorder(),
             tts = AndroidTts(this),
             // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다.
             workQueue = WorkManagerWorkQueue(this) { graph.analysisHandler.handle(it) },
             gemini = gemini(),
         )
     }
+
+    /** 시나리오 테스트가 녹음 실패를 일으키는 녹음기로 바꾼다. */
+    protected open fun recorder(): Recorder = AndroidRecorder(this)
 
     /** 시나리오 테스트가 저장해 둔 응답을 돌려주는 클라이언트로 바꾼다. */
     protected open fun gemini(): GeminiClient = GeminiClient()

@@ -53,7 +53,7 @@ class PracticeViewModel(
             PracticeIntent.PlayQuestion -> if (_uiState.value.canPlay) play(stopFirst = false)
             PracticeIntent.ReplayQuestion -> replay()
             PracticeIntent.SubmitAnswer -> submit()
-            PracticeIntent.MicDenied -> _uiState.update { it.copy(phase = PracticePhase.Ready, error = PracticeError.MicUnavailable) }
+            PracticeIntent.MicDenied -> _uiState.update { it.copy(phase = PracticePhase.Ready, error = PracticeError.MicDenied) }
             PracticeIntent.ExitPractice -> exit()
             PracticeIntent.NavigationHandled -> _uiState.update { it.copy(navigation = null) }
         }
@@ -65,8 +65,7 @@ class PracticeViewModel(
         clock?.cancel()
         _uiState.update { it.copy(phase = PracticePhase.Speaking, error = null) }
         playing = viewModelScope.launch {
-            if (stopFirst) stopRecordingUseCase()
-            val error = playPracticeQuestionUseCase(question, answerId)
+            val error = (if (stopFirst) stopRecordingUseCase() else null) ?: playPracticeQuestionUseCase(question, answerId)
             if (error != null) {
                 _uiState.update { it.copy(phase = PracticePhase.Ready, error = error) }
                 return@launch
@@ -99,8 +98,12 @@ class PracticeViewModel(
         recordingStartedAt = null
         clock?.cancel()
         save {
-            submitPracticeAnswerUseCase(question, answerId)
-            _uiState.update { it.copy(navigation = PracticeDestination.Feedback(answerId)) }
+            when (val error = submitPracticeAnswerUseCase(question, answerId)) {
+                // ponytail: 다시 녹음은 남은 조각 뒤에 이어 쓴다. 앞 답변이 겹쳐 들리는 게 문제가 되면 녹음 폴더를 비우고 시작한다.
+                null -> _uiState.update { it.copy(navigation = PracticeDestination.Feedback(answerId)) }
+
+                else -> _uiState.update { it.copy(phase = PracticePhase.Ready, error = error) }
+            }
         }
     }
 

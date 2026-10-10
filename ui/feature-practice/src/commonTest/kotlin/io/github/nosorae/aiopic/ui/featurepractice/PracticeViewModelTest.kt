@@ -218,7 +218,7 @@ class PracticeViewModelTest {
 
         viewModel.onIntent(PracticeIntent.MicDenied)
 
-        assertEquals(PracticeError.MicUnavailable, viewModel.uiState.value.error)
+        assertEquals(PracticeError.MicDenied, viewModel.uiState.value.error)
         assertTrue(viewModel.uiState.value.canPlay)
     }
 
@@ -243,5 +243,36 @@ class PracticeViewModelTest {
         assertNull(recorder.recording)
         assertTrue(repository.answers.isEmpty())
         assertEquals(PracticeDestination.Exit, viewModel.uiState.value.navigation)
+    }
+
+    @Test
+    fun `녹음 조각을 쓰지 못했으면 Next 에서 답변을 저장하지 않고 이유를 보여 준다`() = practiceTest {
+        recorder.writeFails = true
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(NextDelay)
+
+        viewModel.onIntent(PracticeIntent.SubmitAnswer)
+        runCurrent()
+
+        assertEquals(PracticeError.RecordingFailed, viewModel.uiState.value.error)
+        assertEquals(PracticePhase.Ready, viewModel.uiState.value.phase)
+        assertTrue(repository.answers.isEmpty())
+        assertNull(viewModel.uiState.value.navigation)
+        assertTrue(viewModel.uiState.value.canPlay)
+    }
+
+    @Test
+    fun `다시 듣기 전에 녹음 조각을 쓰지 못했으면 이어 녹음하지 않고 이유를 보여 준다`() = practiceTest {
+        recorder.writeFails = true
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+
+        viewModel.onIntent(PracticeIntent.ReplayQuestion)
+        runCurrent()
+
+        assertEquals(PracticeError.RecordingFailed, viewModel.uiState.value.error)
+        assertEquals(PracticePhase.Ready, viewModel.uiState.value.phase)
+        assertNull(recorder.recording)
     }
 }

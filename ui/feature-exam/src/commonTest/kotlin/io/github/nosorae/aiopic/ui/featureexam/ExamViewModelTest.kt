@@ -433,7 +433,57 @@ class ExamViewModelTest {
 
         viewModel.onIntent(ExamIntent.MicDenied)
 
-        assertEquals(ExamError.MicUnavailable, viewModel.uiState.value.error)
+        assertEquals(ExamError.MicDenied, viewModel.uiState.value.error)
+    }
+
+    @Test
+    fun `녹음 조각을 쓰지 못했으면 Next 에서 답변을 저장하지 않고 이유를 보여 준다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        recorder.writeFails = true
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(NextDelay)
+
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+
+        assertEquals(ExamError.RecordingFailed, viewModel.uiState.value.error)
+        assertEquals(QuestionPhase.Ready, viewModel.uiState.value.phase)
+        assertTrue(repository.answers.isEmpty())
+        assertEquals(3, repository.sessions.getValue("s1").stepIndex)
+    }
+
+    @Test
+    fun `녹음 조각을 쓰지 못한 뒤 다시 녹음하면 같은 문항에 이어 녹음한다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        recorder.writeFails = true
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(NextDelay)
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+        recorder.writeFails = false
+
+        playUntilRecording(viewModel)
+
+        assertNull(viewModel.uiState.value.error)
+        assertEquals(QuestionPhase.Recording, viewModel.uiState.value.phase)
+        assertEquals("rec/s1/3", recorder.recording)
+    }
+
+    @Test
+    fun `다시 듣기 전에 녹음 조각을 쓰지 못했으면 이어 녹음하지 않고 이유를 보여 준다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        recorder.writeFails = true
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+
+        viewModel.onIntent(ExamIntent.ReplayQuestion)
+        runCurrent()
+
+        assertEquals(ExamError.RecordingFailed, viewModel.uiState.value.error)
+        assertEquals(QuestionPhase.Ready, viewModel.uiState.value.phase)
+        assertNull(recorder.recording)
     }
 
     @Test
