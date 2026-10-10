@@ -49,6 +49,7 @@ class ExamViewModelTest {
             playQuestionUseCase = PlayQuestionUseCase(repository, tts, recorder),
             submitAnswerUseCase = SubmitAnswerUseCase(repository, recorder, apply),
             stopRecordingUseCase = StopRecordingUseCase(recorder),
+            observeVoiceLevelUseCase = ObserveVoiceLevelUseCase(recorder),
             submitSurveyUseCase = SubmitSurveyUseCase(SaveSurveyAnswersUseCase(surveyStore), apply),
             timer = MonotonicTimer { dispatcher.scheduler.currentTime.milliseconds },
         )
@@ -226,6 +227,29 @@ class ExamViewModelTest {
 
         assertEquals(Recalibration.Harder, repository.sessions.getValue("s1").recalibration)
         assertIs<ExamStep.Ask>(viewModel.uiState.value.step)
+    }
+
+    @Test
+    fun `녹음하는 동안만 마이크 음량을 목소리 띠에 넘기고 녹음이 끝나면 0 으로 돌린다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        val viewModel = viewModel()
+        recorder.level.value = 0.9f
+        runCurrent()
+        assertEquals(0f, viewModel.uiState.value.voiceLevel)
+        assertEquals(40.minutes, viewModel.uiState.value.timeLimit)
+
+        playUntilRecording(viewModel)
+        recorder.level.value = 0.6f
+        runCurrent()
+        assertEquals(0.6f, viewModel.uiState.value.voiceLevel)
+
+        advance(NextDelay)
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+        recorder.level.value = 0.8f
+        runCurrent()
+
+        assertEquals(0f, viewModel.uiState.value.voiceLevel)
     }
 
     @Test

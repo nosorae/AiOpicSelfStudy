@@ -41,6 +41,7 @@ class PracticeViewModelTest {
         playPracticeQuestionUseCase = PlayPracticeQuestionUseCase(repository, tts, recorder),
         submitPracticeAnswerUseCase = SubmitPracticeAnswerUseCase(repository, recorder),
         stopRecordingUseCase = StopRecordingUseCase(recorder),
+        observeVoiceLevelUseCase = ObserveVoiceLevelUseCase(recorder),
         timer = MonotonicTimer { dispatcher.scheduler.currentTime.milliseconds },
     ).also { created += it }
 
@@ -63,6 +64,26 @@ class PracticeViewModelTest {
     private fun TestScope.advance(duration: Duration) {
         advanceTimeBy(duration)
         runCurrent()
+    }
+
+    @Test
+    fun `녹음하는 동안만 마이크 음량을 목소리 띠에 넘기고 다시 듣기로 녹음을 멈추면 0 으로 돌린다`() = practiceTest {
+        val viewModel = viewModel()
+        recorder.level.value = 0.9f
+        runCurrent()
+        assertEquals(0f, viewModel.uiState.value.voiceLevel)
+
+        playUntilRecording(viewModel)
+        recorder.level.value = 0.4f
+        runCurrent()
+        assertEquals(0.4f, viewModel.uiState.value.voiceLevel)
+
+        viewModel.onIntent(PracticeIntent.ReplayQuestion)
+        runCurrent()
+        recorder.level.value = 0.7f
+        runCurrent()
+
+        assertEquals(0f, viewModel.uiState.value.voiceLevel)
     }
 
     @Test
