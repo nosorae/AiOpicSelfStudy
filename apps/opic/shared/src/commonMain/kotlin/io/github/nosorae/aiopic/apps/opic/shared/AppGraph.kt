@@ -13,6 +13,8 @@ import io.github.nosorae.aiopic.engine.aigemini.GeminiAnalyzer
 import io.github.nosorae.aiopic.engine.aigemini.GeminiModels
 import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
 import io.github.nosorae.aiopic.engine.answer.analysis.AnswerAnalysisHandler
+import io.github.nosorae.aiopic.engine.answer.analysis.GradeRequest
+import io.github.nosorae.aiopic.engine.answer.analysis.SessionGradeHandler
 import io.github.nosorae.aiopic.engine.answer.check.choose
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
@@ -75,6 +77,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
+import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.MissingResourceException
 import kotlin.time.DurationUnit
 
@@ -116,7 +119,7 @@ interface AppGraph {
     /** 앱 틀이 구독해서 화면 모드를 고르는 즉시 테마를 바꾼다(F9.1). */
     val themeModeStore: ThemeModeStore
 
-    /** 플랫폼 대기열이 답변 id 를 꺼낼 때마다 부른다(F5.1). 대기열은 그래프보다 먼저 만들어져서 이 값을 나중에 이어 준다. */
+    /** 플랫폼 대기열이 답변 id 나 회차 등급 요청을 꺼낼 때마다 부른다(F5.1, F5.3). 대기열은 그래프보다 먼저 만들어져서 이 값을 나중에 이어 준다. */
     val analysisHandler: WorkHandler
 
     @Provides fun voiceConsent(settings: AppSettings): VoiceConsent = settings
@@ -185,7 +188,15 @@ interface AppGraph {
     fun practiceRepository(store: OpicStore, queue: WorkQueue, settings: AppSettings, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, { practicePool(settings) }, recordingsRoot)
 
     @Provides
-    fun analysisHandler(store: OpicStore, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): WorkHandler = answerAnalysisHandler(store, client, keyVault, settings) { answer, model -> analysisRequest(answer, model, recorder) }
+    fun analysisHandler(store: OpicStore, queue: WorkQueue, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): WorkHandler = analysisQueueHandler(
+        store = store,
+        queue = queue,
+        client = client,
+        keyVault = keyVault,
+        settings = settings,
+        answerRequest = { answer, model -> analysisRequest(answer, model, recorder) },
+        gradeRequest = { answers, model -> gradeRequest(answers, model, recorder) },
+    )
 
     @DependencyGraph.Factory
     fun interface Factory {
@@ -263,6 +274,28 @@ internal fun answerAnalysisHandler(
 }
 
 /**
+ * 분석 대기열 하나의 처리기. 답변 분석을 처리하고, 회차 답변이 모두 분석되면 등급 요청을 같은 대기열에 넣어 처리한다(F5.3).
+ * 등급도 설정에서 고른 모델로 보낸다. 요청을 따로 받는 이유는 [answerAnalysisHandler] 와 같다.
+ */
+// ponytail: 등급 요청은 고른 모델이 내려가도 기본 모델로 돌리지 않고 버린다. 다음 답변 분석이 기본 모델로 바꿔 두므로, 등급을 다시 요청하는 길이 생기면 그때 돌린다.
+internal fun analysisQueueHandler(
+    store: OpicStore,
+    queue: WorkQueue,
+    client: GeminiClient,
+    keyVault: KeyVault,
+    settings: AppSettings,
+    answerRequest: suspend (Answer, ModelInfo) -> AnalysisRequest,
+    gradeRequest: suspend (List<Answer>, ModelInfo) -> GradeRequest,
+): WorkHandler = SessionGradeHandler(
+    store = store,
+    queue = queue,
+    answers = answerAnalysisHandler(store, client, keyVault, settings, answerRequest),
+    grader = GeminiAnalyzer(client) { keyVault.get(GeminiModels.PROVIDER) },
+    consented = settings::isGiven,
+    request = { answers -> gradeRequest(answers, GeminiModels.choose(settings.selectedModelId()).model) },
+)
+
+/**
  * 고른 모델이 내려가 분석이 [AnalysisError.ModelUnavailable] 로 끝나면 기본 모델을 저장하고 다시 보내게 한다(F5.8).
  * 다시 보낼 때 [answerAnalysisHandler] 가 저장된 모델을 읽어서 기본 모델로 간다. 설정 화면은 [AppSettings.takeFellBackFrom] 으로 알린다.
  * 기본 모델마저 없으면 돌릴 곳이 없어 그대로 실패로 둔다.
@@ -282,18 +315,34 @@ private class FallBackToDefaultModel(private val analyzer: AudioAnswerAnalyzer, 
  * 시험 팩의 답변 프롬프트에 문항과 이어 녹음 위치를 채운다(F3.4, F5.7).
  */
 private suspend fun analysisRequest(answer: Answer, model: ModelInfo, recorder: Recorder): AnalysisRequest {
-    // 조각이 없는 답변(마이크를 못 연 경우)은 빈 녹음으로 보낸다. 여기서 예외가 나면 대기열 사슬 전체가 멈춘다.
-    val output = answer.chunkPaths.firstOrNull()?.substringBeforeLast('/')?.plus("/answer.m4a")
-    val resumedAt = output?.let { recorder.merge(answer.chunkPaths, it) }.orEmpty()
+    val recording = recording(answer, recorder)
     val prompt = OpicPrompt.Answer.load()
     val text = prompt.fill(
         mapOf(
             "question" to answer.question.text,
             "questionType" to answer.question.type.id,
-            "resumedAt" to resumedAt.joinToString { it.toDouble(DurationUnit.SECONDS).toString() }.ifEmpty { "none" },
+            "resumedAt" to recording.resumedAt.joinToString { it.toDouble(DurationUnit.SECONDS).toString() }.ifEmpty { "none" },
         ),
     )
-    return AnalysisRequest(model, Prompt(prompt.version, text, OpicPrompt.Answer.responseSchema.toString()), Recording(output?.let(::readFile) ?: ByteArray(0), "audio/mp4", resumedAt))
+    return AnalysisRequest(model, Prompt(prompt.version, text, OpicPrompt.Answer.responseSchema.toString()), recording)
+}
+
+/**
+ * 회차 등급 요청을 만든다(F5.3). 시험 팩의 등급 프롬프트에 답한 순서의 답변 분석 결과(평가할 수 없음 포함)를 JSON 으로 채우고
+ * 같은 순서의 녹음을 붙인다. 녹음은 답변 분석 때와 같은 방법으로 이어 붙인다.
+ */
+private suspend fun gradeRequest(answers: List<Answer>, model: ModelInfo, recorder: Recorder): GradeRequest {
+    val prompt = OpicPrompt.SessionGrade.load()
+    val text = prompt.fill(mapOf("answers" to Json.encodeToString(answers.map { it.analysis })))
+    return GradeRequest(model, Prompt(prompt.version, text, OpicPrompt.SessionGrade.responseSchema.toString()), OpicEn.gradeScale, answers.map { recording(it, recorder) })
+}
+
+/** 답변의 조각을 같은 폴더의 `answer.m4a` 하나로 이어 붙여 읽는다. */
+private suspend fun recording(answer: Answer, recorder: Recorder): Recording {
+    // 조각이 없는 답변(마이크를 못 연 경우)은 빈 녹음으로 보낸다. 여기서 예외가 나면 대기열 사슬 전체가 멈춘다.
+    val output = answer.chunkPaths.firstOrNull()?.substringBeforeLast('/')?.plus("/answer.m4a")
+    val resumedAt = output?.let { recorder.merge(answer.chunkPaths, it) }.orEmpty()
+    return Recording(output?.let(::readFile) ?: ByteArray(0), "audio/mp4", resumedAt)
 }
 
 /** 녹음 파일 하나를 통째로 읽는다. 분석 요청 한 번에 답변 하나(길어야 몇 MB)만 싣는다. */
