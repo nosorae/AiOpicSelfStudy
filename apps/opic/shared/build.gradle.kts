@@ -62,3 +62,10 @@ configurations.matching { it.name.contains("HostTest") && it.name.endsWith("Runt
         substitute(module("androidx.sqlite:sqlite-bundled")).using(module(libs.sqlite.bundled.jvm.get().toString()))
     }
 }
+
+// 실제 Gemini 를 부르는 테스트(live/)는 요청마다 키의 한도와 요금을 쓴다. `--tests '*LiveGeminiTest*'` 로 이름을 집어 부를 때만 돌고 `./gradlew check` 에서는 빠진다.
+// 부를 때는 지난 결과를 다시 쓰지 않고 매번 실제로 보낸다.
+val liveRequested = gradle.startParameter.taskRequests.any { request -> request.args.any { "LiveGeminiTest" in it } }
+tasks.withType<Test>().configureEach {
+    if (liveRequested) outputs.upToDateWhen { false } else filter.excludeTestsMatching("*LiveGeminiTest")
+}
