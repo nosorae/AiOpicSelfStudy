@@ -49,7 +49,7 @@ class ExamViewModelTest {
             playQuestionUseCase = PlayQuestionUseCase(repository, tts, recorder),
             submitAnswerUseCase = SubmitAnswerUseCase(repository, recorder, apply),
             stopRecordingUseCase = StopRecordingUseCase(recorder),
-            saveSurveyAnswersUseCase = SaveSurveyAnswersUseCase(surveyStore),
+            submitSurveyUseCase = SubmitSurveyUseCase(SaveSurveyAnswersUseCase(surveyStore), apply),
             timer = MonotonicTimer { dispatcher.scheduler.currentTime.milliseconds },
         )
     }

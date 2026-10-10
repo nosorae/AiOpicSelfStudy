@@ -37,7 +37,7 @@ class ExamViewModel(
     private val playQuestionUseCase: PlayQuestionUseCase,
     private val submitAnswerUseCase: SubmitAnswerUseCase,
     private val stopRecordingUseCase: StopRecordingUseCase,
-    private val saveSurveyAnswersUseCase: SaveSurveyAnswersUseCase,
+    private val submitSurveyUseCase: SubmitSurveyUseCase,
     private val timer: MonotonicTimer,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ExamUiState())
@@ -83,11 +83,7 @@ class ExamViewModel(
             ExamIntent.PreviousSurveyScreen -> updateSurvey { it.back() }
 
             ExamIntent.SubmitSurvey -> state.survey?.takeIf { state.canSubmitSurvey }?.answers()?.let { answers ->
-                // 출제는 주제만 보고 Part 1~3 답은 저장한 서베이 답에만 남긴다.
-                save {
-                    saveSurveyAnswersUseCase(answers)
-                    commit { applyExamEventUseCase(it, ExamEvent.SurveySubmitted(answers.topics)) }
-                }
+                save { commit { submitSurveyUseCase(it, answers) } }
             }
 
             is ExamIntent.SelectLevel -> _uiState.update { it.copy(selectedLevel = intent.level) }
