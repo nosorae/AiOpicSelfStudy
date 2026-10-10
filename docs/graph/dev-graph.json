@@ -1276,9 +1276,10 @@
       ],
       "done": "./gradlew :engine:answer:allTests :engine:ai-gemini:allTests :packs:opic-en:allTests :tools:eval:test && ./gradlew :engine:answer:testAndroidHostTest --tests '*WeaknessTest*'",
       "done_desc": "지금 weaknessScores 는 틀림 표시가 하나라도 붙은 답변을 통째로 뺀다(ponytail 주석). 교정 하나 단위로 빼려면 교정과 점수를 잇는 규칙이 필요하다. 답변 프롬프트와 응답 스키마에 교정마다 깎은 점수(0 이상 정수)를 받고, 출력 검사가 범위와 합(100 - score 이하)을 확인하고, 약점 계산은 표시된 교정의 깎은 점수만 되돌린다. 프롬프트 버전을 올리고 결정은 adr 스킬로 기록한다. WeaknessTest(F8.2): 교정 둘 중 하나만 표시하면 그 교정 몫만 점수가 오르는지, 둘 다 표시하면 둘 다 오르는지, 깎은 점수가 없는 옛 답변은 지금처럼 답변을 빼는지, 범위 밖 값은 출력 검사가 버리는지",
-      "status": "doing",
+      "status": "done",
       "issue": 120,
-      "start": "2026-10-10"
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "n-gen",
