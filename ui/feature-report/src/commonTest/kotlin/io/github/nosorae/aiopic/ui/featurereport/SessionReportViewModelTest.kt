@@ -5,6 +5,7 @@ import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
+import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -34,7 +35,7 @@ class SessionReportViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(store: FakeReportStore) = SessionReportViewModel("s1", ObserveSessionReportUseCase(store, spec, typeNames, FakeCatalog))
+    private fun viewModel(store: FakeReportStore) = SessionReportViewModel("s1", ObserveSessionReportUseCase(store, spec, typeNames, FakeCatalog, GradeScale(listOf("NL", "IM", "AL"))))
 
     @Test
     fun `F2_6 시간이 다 된 회차는 답하지 못한 문항 수를 시간 부족으로 센다`() = runTest(dispatcher) {
@@ -140,5 +141,22 @@ class SessionReportViewModelTest {
 
         assertFalse(viewModel.uiState.value.loading)
         assertNull(viewModel.uiState.value.report)
+    }
+
+    @Test
+    fun `등급 눈금은 시험 팩의 등급 이름을 낮은 것부터 쓴다`() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 1)), answers("s1", 1)))
+        advanceUntilIdle()
+
+        assertEquals(listOf("NL", "IM", "AL"), viewModel.uiState.value.report!!.names.grades)
+    }
+
+    @Test
+    fun `F5_3 등급을 기다리는 동안 답한 수 중 분석이 끝난 수를 센다`() = runTest(dispatcher) {
+        val list = answers("s1", 3).mapIndexed { i, a -> if (i == 2) a.copy(analysis = AnswerAnalysis.Pending) else a }
+        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 3)), list))
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.report!!.analyzedCount)
     }
 }

@@ -14,6 +14,7 @@ import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
+import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -43,7 +44,7 @@ class HistoryViewModelTest {
     }
     private val typeNames = mapOf(QuestionType("routine") to "습관", QuestionType("roleplay") to "롤플레이")
 
-    private fun useCase(store: FakeHistoryStore) = ObserveHistoryUseCase(store, typeNames, catalog)
+    private fun useCase(store: FakeHistoryStore) = ObserveHistoryUseCase(store, typeNames, catalog, GradeScale(listOf("NL", "IM", "AL")))
 
     private fun TestScope.subscribed(store: FakeHistoryStore) = HistoryViewModel(useCase(store)).also { viewModel ->
         backgroundScope.launch { viewModel.uiState.collect {} }
@@ -129,6 +130,29 @@ class HistoryViewModelTest {
         val viewModel = HistoryViewModel(useCase(FakeHistoryStore()))
 
         assertTrue(viewModel.uiState.value.loading)
+    }
+
+    @Test
+    fun `등급을 기다리는 회차는 답한 수와 분석이 끝난 수를 센다`() = runTest(dispatcher) {
+        val store = FakeHistoryStore(
+            sessions = listOf(ExamSession(id = "s1", status = ExamStatus.Finished)),
+            answers = listOf(answer("a1", "s1"), answer("a2", "s1").copy(analysis = AnswerAnalysis.Pending), answer("a3", "other")),
+        )
+
+        val viewModel = subscribed(store)
+        advanceUntilIdle()
+
+        val row = viewModel.uiState.value.sessions.single()
+        assertEquals(2, row.answered)
+        assertEquals(1, row.analyzed)
+    }
+
+    @Test
+    fun `등급 눈금은 시험 팩의 등급 이름을 낮은 것부터 쓴다`() = runTest(dispatcher) {
+        val viewModel = subscribed(FakeHistoryStore(sessions = listOf(ExamSession(id = "s1", status = ExamStatus.Finished))))
+        advanceUntilIdle()
+
+        assertEquals(listOf("NL", "IM", "AL"), viewModel.uiState.value.grades)
     }
 
     private fun answer(id: String, sessionId: String?, model: String = "model-a", score: Int = 70, type: String = "t") = Answer(

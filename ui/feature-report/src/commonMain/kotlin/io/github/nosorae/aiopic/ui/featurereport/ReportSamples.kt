@@ -32,6 +32,7 @@ internal object ReportSamples {
             ModelInfo(flash.provider, flash.modelId, "Gemini 3.8 Flash", hearsAudio = true, stability = Stability.Stable),
             ModelInfo(lite.provider, lite.modelId, "Gemini 3.5 Flash Lite", hearsAudio = true, stability = Stability.Stable),
         ),
+        grades = listOf("NL", "NM", "NH", "IL", "IM1", "IM2", "IM3", "IH", "AL"),
     )
 
     private val feedback = Feedback(
@@ -96,6 +97,9 @@ internal object ReportSamples {
         status = ExamStatus.TimeUp,
         grade = null,
     )
+
+    /** 답변 7개를 모두 분석했고 회차 등급만 기다린다(등급 요청이 대기열에 있거나 모델이 내는 중). */
+    val grading = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null)
 
     /** 첫 교정에 "틀림"을 누른 상태(F8.1). */
     val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)), wrongCorrections = setOf(0), names = names)

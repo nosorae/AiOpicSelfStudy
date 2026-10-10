@@ -1,4 +1,4 @@
-// 테마 값은 화면 어디서나 꺼내 쓰므로 CompositionLocal 셋(색, 글자, 동작 줄이기)으로 내린다. 이 셋 말고는 만들지 않는다.
+// 테마 값은 화면 어디서나 꺼내 쓰므로 CompositionLocal 넷(색, 글자, 동작 줄이기, 이미 움직인 표시)으로 내린다. 이 넷 말고는 만들지 않는다.
 @file:Suppress("ktlint:compose:compositionlocal-allowlist")
 
 package io.github.nosorae.aiopic.ui.design
@@ -19,6 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +29,7 @@ import org.jetbrains.compose.resources.Font
 
 private val LocalMontageColors = staticCompositionLocalOf { MontageLightColors }
 private val LocalReduceMotion = staticCompositionLocalOf { false }
+private val LocalPlayedMotions = staticCompositionLocalOf { mutableSetOf<String>() }
 private val LocalMontageTypography = staticCompositionLocalOf<MontageTypography> {
     error("MontageTheme 안에서만 글자 스타일을 쓸 수 있다")
 }
@@ -34,11 +37,20 @@ private val LocalMontageTypography = staticCompositionLocalOf<MontageTypography>
 /**
  * Montage 색과 Pretendard 글자를 내려 준다. [darkTheme] 은 설정의 화면 모드(F9.1)에서 정해 넘긴다.
  * [reduceMotion] 은 Android 애니메이션 제거, iOS 동작 줄이기 설정이다. 켜지면 [MontageMotion.spec] 이 바로 끝 값으로 건너뛴다.
+ * [playedMotions] 는 한 번만 움직이는 부품(등급 눈금, 점수 숫자)이 이미 움직인 표시다. 앱이 떠 있는 동안 하나를 써야
+ * 스크롤, 뒤로 가기, 탭 다시 열기로 다시 그려도 같은 등급과 점수가 또 움직이지 않는다. 화면마다 테마를 따로 띄우는 iOS 는 앱 틀이 하나를 들고 넘긴다.
  *
  * Material 3 색 역할에도 Montage 색을 넣는다. 앱 틀의 네이티브 하단 탭(Android Material 3)이 같은 색을 쓰게 하려는 것이다.
  */
+// 이미 움직인 표시는 화면이 바뀌어도 다시 그릴 일이 없는 기록이라(처음 그릴 때 한 번 읽고, 움직이기 시작할 때 넣는다) 상태로 만들지 않는다.
+@Suppress("ktlint:compose:mutable-params-check")
 @Composable
-fun MontageTheme(darkTheme: Boolean = isSystemInDarkTheme(), reduceMotion: Boolean = false, content: @Composable () -> Unit) {
+fun MontageTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    reduceMotion: Boolean = false,
+    playedMotions: MutableSet<String> = rememberSaveable(saver = playedSaver) { mutableSetOf() },
+    content: @Composable () -> Unit,
+) {
     val colors = if (darkTheme) MontageDarkColors else MontageLightColors
     val family = FontFamily(
         Font(Res.font.pretendard_regular, FontWeight.Normal),
@@ -52,6 +64,7 @@ fun MontageTheme(darkTheme: Boolean = isSystemInDarkTheme(), reduceMotion: Boole
         LocalMontageColors provides colors,
         LocalMontageTypography provides typography,
         LocalReduceMotion provides reduceMotion,
+        LocalPlayedMotions provides playedMotions,
     ) {
         MaterialTheme(colorScheme = scheme) {
             CompositionLocalProvider(LocalContentColor provides colors.foregroundNeutralPrimary) {
@@ -112,7 +125,14 @@ object MontageMotion {
     /** 등급 구슬, 진행 점처럼 정해진 위치로 가서 멈추는 것. 한 번 살짝 지나쳤다 1초 안에 멈춘다. 동작 줄이기면 바로 끝 값이다. */
     @Composable @ReadOnlyComposable
     fun <T> settle(): FiniteAnimationSpec<T> = if (reduceMotion) snap() else spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessLow)
+
+    /** [MontageTheme] 의 이미 움직인 표시. 부품은 처음 그릴 때 자기 키가 여기 있으면 끝 장면부터 그리고, 움직이기 시작할 때 키를 넣는다. */
+    internal val played: MutableSet<String>
+        @Composable @ReadOnlyComposable
+        get() = LocalPlayedMotions.current
 }
+
+private val playedSaver = listSaver<MutableSet<String>, String>(save = { it.toList() }, restore = { it.toMutableSet() })
 
 /** Montage 모서리 반경 토큰. */
 object MontageRadius {

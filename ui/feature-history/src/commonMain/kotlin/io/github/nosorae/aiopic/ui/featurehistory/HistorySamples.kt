@@ -17,13 +17,14 @@ internal object HistorySamples {
             HistorySession(session("s1", "IM1", "IM2"), listOf(FLASH)),
             HistorySession(session("s2", "IM2", "IM3", ExamStatus.TimeUp), listOf(FLASH, LITE)),
             HistorySession(session("s3", "IH", "IH"), listOf(FLASH)),
-            HistorySession(ExamSession(id = "s4", status = ExamStatus.Finished), emptyList()),
+            HistorySession(ExamSession(id = "s4", status = ExamStatus.Finished), listOf(FLASH), answered = 7, analyzed = 4),
         ),
         weaknesses = listOf(
             HistoryWeakness("롤플레이 문제 해결", 48),
             HistoryWeakness("과거 경험", 61),
             HistoryWeakness("습관", 77),
         ),
+        grades = listOf("NL", "NM", "NH", "IL", "IM1", "IM2", "IM3", "IH", "AL"),
     )
 
     val empty = HistoryUiState(loading = false)

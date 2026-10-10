@@ -12,6 +12,7 @@ data class HistoryUiState(
     val loading: Boolean = true,
     val sessions: List<HistorySession> = emptyList(),
     val weaknesses: List<HistoryWeakness> = emptyList(),
+    val grades: List<String> = emptyList(),
 ) {
     val empty: Boolean get() = !loading && sessions.isEmpty() && weaknesses.isEmpty()
 }
@@ -20,6 +21,6 @@ data class HistoryUiState(
 @Inject
 class HistoryViewModel(observeHistoryUseCase: ObserveHistoryUseCase) : ViewModel() {
     val uiState: StateFlow<HistoryUiState> = observeHistoryUseCase()
-        .map { HistoryUiState(loading = false, sessions = it.sessions, weaknesses = it.weaknesses) }
+        .map { HistoryUiState(loading = false, sessions = it.sessions, weaknesses = it.weaknesses, grades = it.grades) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 }

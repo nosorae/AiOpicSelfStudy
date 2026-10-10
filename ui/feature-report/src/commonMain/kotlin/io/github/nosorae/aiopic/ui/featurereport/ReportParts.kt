@@ -41,9 +41,9 @@ internal fun Paragraph(text: String, secondary: Boolean = false) {
 
 /**
  * 리포트에 보일 문항 유형 이름과 분석 모델 이름. 유형 이름은 시험 팩이 정해서 앱 층이 넣고, 모델은 앱이 들고 있는 목록의 표시 이름을 쓴다(F5.7).
- * 이름을 모르는 유형과 목록에서 빠진 모델은 id 를 그대로 보인다.
+ * 이름을 모르는 유형과 목록에서 빠진 모델은 id 를 그대로 보인다. [grades] 는 등급 눈금에 늘어놓을 시험 팩의 등급 이름(낮은 것부터)이다.
  */
-data class ReportNames(val types: Map<QuestionType, String> = emptyMap(), val models: List<ModelInfo> = emptyList()) {
+data class ReportNames(val types: Map<QuestionType, String> = emptyMap(), val models: List<ModelInfo> = emptyList(), val grades: List<String> = emptyList()) {
     fun type(type: QuestionType): String = types[type] ?: type.id
 
     fun model(by: AnalyzedBy): String = models.firstOrNull { it.provider == by.provider && it.id == by.modelId }?.displayName ?: by.modelId

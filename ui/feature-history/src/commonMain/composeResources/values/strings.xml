@@ -7,6 +7,8 @@
     <string name="history_models_mixed">분석 모델 섞임, %1$s</string>
     <string name="history_models_none">분석 대기 중</string>
     <string name="history_grade_pending">등급 내는 중</string>
+    <string name="history_grade_waiting">분석 %1$d/%2$d</string>
+    <string name="history_latest">최근 회차 %1$s</string>
     <string name="history_weakness">문항 유형별 약점</string>
     <string name="history_weakness_help">점수가 낮을수록 약한 유형입니다. 한 문항 연습 답변도 함께 셉니다.</string>
     <string name="history_score">%1$d점</string>

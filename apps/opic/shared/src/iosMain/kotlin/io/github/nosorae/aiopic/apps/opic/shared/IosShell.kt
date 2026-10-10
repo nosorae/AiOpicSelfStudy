@@ -18,6 +18,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import platform.Foundation.NSUserDefaults
+import platform.UIKit.UIAccessibilityIsReduceMotionEnabled
 import platform.UIKit.UIApplication
 import platform.UIKit.UIUserInterfaceStyle
 import platform.UIKit.UIViewController
@@ -48,6 +49,9 @@ class IosShell {
 
     private val haptics = graph.settings.haptics(iosHaptics())
 
+    /** 화면마다 테마를 따로 띄워서, 등급 구슬과 점수 숫자가 한 번 움직였는지는 앱이 떠 있는 동안 여기 하나로 모은다. */
+    private val playedMotions = mutableSetOf<String>()
+
     /** 시작 분기(S0, F1.0). 저장된 키와 동의만 읽어 첫 화면을 [onDecided] 로 넘긴다. 그 전까지 Swift 는 실행 화면과 같은 빈 화면만 둔다. */
     fun decideStart(onDecided: (AppRoute) -> Unit) {
         MainScope().launch { onDecided(AppRoute.start(graph.decideStartUseCase())) }
@@ -65,7 +69,8 @@ class IosShell {
         val themeMode by graph.themeModeStore.themeMode.collectAsState()
         // SwiftUI 가 그리는 탭 바와 내비게이션 바도 같은 모드를 따르게 창의 모드를 바꾼다(F9.1).
         LaunchedEffect(themeMode) { applyToWindows(themeMode) }
-        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) {
+        // 동작 줄이기는 화면을 그릴 때 읽는다. 설정을 바꾸면 다음에 다시 그리는 화면부터 따른다.
+        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme()), reduceMotion = UIAccessibilityIsReduceMotionEnabled(), playedMotions = playedMotions) {
             CompositionLocalProvider(LocalHaptics provides haptics) { RouteContent(route, graph, onOpen, onExit, onBack, onRestart, onBlockBack = onBlockBack) }
         }
     }
