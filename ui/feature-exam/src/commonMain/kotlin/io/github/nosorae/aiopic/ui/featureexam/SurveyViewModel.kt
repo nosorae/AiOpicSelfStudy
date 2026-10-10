@@ -24,7 +24,7 @@ class SurveyViewModel(
     init {
         viewModelScope.launch {
             val survey = loadSurveyAnswersUseCase()
-            _uiState.update { it.copy(survey = survey) }
+            _uiState.update { it.copy(survey = survey, loaded = survey) }
         }
     }
 
@@ -60,7 +60,12 @@ data class SurveyUiState(
     val saving: Boolean = false,
     /** 저장을 마쳤다. 화면이 설정으로 돌아간다. */
     val done: Boolean = false,
-)
+    /** 처음 읽은 저장한 답. [edited] 를 가른다. */
+    val loaded: SurveyState? = null,
+) {
+    /** 저장한 답과 다른 답이 있다. 저장하지 않고 나가면 버려지므로 나가기 전에 묻는다. */
+    val edited: Boolean get() = survey != null && survey.answers() != loaded?.answers()
+}
 
 sealed interface SurveyIntent {
     data class ChooseOption(val option: String) : SurveyIntent

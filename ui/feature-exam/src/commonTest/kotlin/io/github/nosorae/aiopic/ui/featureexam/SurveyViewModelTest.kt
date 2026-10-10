@@ -55,4 +55,17 @@ class SurveyViewModelTest {
         assertFalse(viewModel.uiState.value.done)
         assertEquals(listOf("영화", "요리"), store.saved?.topics)
     }
+
+    @Test
+    fun `답을 바꾸기 전에는 바꾼 답이 없고 바꿨다가 되돌리면 다시 없다`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.edited)
+
+        viewModel.onIntent(SurveyIntent.ToggleTopic("공원"))
+        assertTrue(viewModel.uiState.value.edited)
+
+        viewModel.onIntent(SurveyIntent.ToggleTopic("공원"))
+        assertFalse(viewModel.uiState.value.edited)
+    }
 }

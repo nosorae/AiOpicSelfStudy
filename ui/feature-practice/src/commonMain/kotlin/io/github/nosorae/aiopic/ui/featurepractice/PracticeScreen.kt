@@ -15,10 +15,15 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.semantics
@@ -39,6 +44,9 @@ import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
+import io.github.nosorae.aiopic.ui.design.MontageConfirmDialog
+import io.github.nosorae.aiopic.ui.design.MontageIconButton
+import io.github.nosorae.aiopic.ui.design.MontageMotion
 import io.github.nosorae.aiopic.ui.design.MontagePlayButton
 import io.github.nosorae.aiopic.ui.design.MontageProgressBar
 import io.github.nosorae.aiopic.ui.design.MontageRadius
@@ -49,8 +57,10 @@ import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
 import io.github.nosorae.aiopic.ui.design.MontageVoiceRibbon
 import io.github.nosorae.aiopic.ui.design.RecordHaptics
+import io.github.nosorae.aiopic.ui.design.icon_normal_close
 import io.github.nosorae.aiopic.ui.design.icon_normal_play
 import io.github.nosorae.aiopic.ui.design.icon_normal_refresh
+import io.github.nosorae.aiopic.ui.design.rememberElapsedFraction
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -96,23 +106,39 @@ fun PracticeRoute(viewModel: PracticeViewModel, onExit: () -> Unit, onFeedback: 
  * 상태만 받아 그리는 안쪽 겹. 질문 글자는 보이지 않는다. 미리보기와 스크린샷 테스트가 이 함수를 쓴다.
  * 위에서부터 단계 표시(듣기, 답하기, 피드백), 왜 이 질문인지(약한 유형과 점수), 가운데 주인공(Play 또는 목소리 띠)이다.
  * 규칙은 Play 전에 한 줄 안내로만 보이고, 녹음이 시작되면 버튼 채움이 대신 보인다.
+ * 녹음 중에 X 나 시스템 뒤로가기로 나가면 그 답변은 저장되지 않아서 먼저 묻는다. 녹음 전에는 잃을 것이 없어 바로 나간다.
  */
 @Composable
 fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, modifier: Modifier = Modifier, onOpenSettings: () -> Unit = {}) {
     val haptics = LocalHaptics.current
     val recording = state.phase == PracticePhase.Recording
     RecordHaptics(recording)
+    var confirmingExit by rememberSaveable { mutableStateOf(false) }
+    // ponytail: 실험 API 다. 바뀌면 navigationevent 의 NavigationBackHandler 로 옮긴다.
+    @OptIn(ExperimentalComposeUiApi::class)
+    BackHandler(enabled = recording) { confirmingExit = true }
+    if (confirmingExit) {
+        MontageConfirmDialog(
+            title = stringResource(Res.string.practice_exit_title),
+            message = stringResource(Res.string.practice_exit_message),
+            confirm = stringResource(Res.string.practice_exit),
+            cancel = stringResource(Res.string.practice_exit_cancel),
+            onConfirm = {
+                confirmingExit = false
+                onIntent(PracticeIntent.ExitPractice)
+            },
+            onCancel = { confirmingExit = false },
+        )
+    }
     MontageScreen(
         modifier = modifier,
         topBar = {
             MontageTopBar(title = stringResource(Res.string.practice_title)) {
-                MontageButton(
-                    text = stringResource(Res.string.practice_exit),
-                    onClick = { onIntent(PracticeIntent.ExitPractice) },
-                    variant = MontageButtonVariant.Text,
-                    type = MontageButtonType.Assistive,
-                    size = MontageButtonSize.Medium,
-                    loading = state.saving && !state.submitting,
+                MontageIconButton(
+                    icon = DesignRes.drawable.icon_normal_close,
+                    contentDescription = stringResource(Res.string.practice_exit),
+                    onClick = { if (recording) confirmingExit = true else onIntent(PracticeIntent.ExitPractice) },
+                    modifier = Modifier.testTag("practice-exit"),
                 )
             }
         },

@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -37,6 +38,12 @@ class AppShellTest {
 
     /** 시험 화면은 회차를 DB 에서 읽은 뒤에 서베이를 그린다. */
     private fun waitForExam() = rule.waitUntil(5_000) { rule.onAllNodes(hasText("지금 하는 일은 어느 쪽에", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+
+    /** 상단 X 를 누르고 확인 대화상자의 나가기를 누른다. */
+    private fun exitExam() {
+        rule.onNodeWithContentDescription("나가기").performClick()
+        rule.onNodeWithText("나가기").performClick()
+    }
 
     private fun pressBack() = rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
 
@@ -92,7 +99,7 @@ class AppShellTest {
         waitForExam()
 
         rule.onNodeWithText("기록").assertDoesNotExist()
-        rule.onNodeWithText("나가기").assertIsDisplayed()
+        rule.onNodeWithContentDescription("나가기").assertIsDisplayed()
     }
 
     @Test
@@ -102,18 +109,30 @@ class AppShellTest {
 
         pressBack()
 
-        rule.onNodeWithText("나가기").assertIsDisplayed()
+        rule.onNodeWithContentDescription("나가기").assertIsDisplayed()
     }
 
     @Test
-    fun `시험 화면의 나가기를 누르면 홈으로 돌아간다`() {
+    fun `시험 화면의 나가기 X 를 누르고 확인하면 홈으로 돌아간다`() {
         start(AppRoute.Home, AppRoute.Exam("s"))
         waitForExam()
 
-        rule.onNodeWithText("나가기").performClick()
+        exitExam()
 
         // 저장하고 나간 회차가 남아 있어 홈의 시작 버튼이 이어 보기가 된다.
         rule.waitUntil(5_000) { rule.onAllNodes(hasText("이어 보기")).fetchSemanticsNodes().isNotEmpty() }
+    }
+
+    @Test
+    fun `시험 화면의 나가기 확인에서 취소를 누르면 시험에 머문다`() {
+        start(AppRoute.Home, AppRoute.Exam("s"))
+        waitForExam()
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+        rule.onNodeWithText("취소").performClick()
+
+        rule.onNodeWithText("모의시험을 나갈까요?").assertDoesNotExist()
+        rule.onNodeWithText("지금 하는 일은 어느 쪽에", substring = true).assertExists()
     }
 
     @Test
@@ -121,13 +140,13 @@ class AppShellTest {
         start(AppRoute.Home, AppRoute.Exam("s"))
         waitForExam()
         rule.onNodeWithText("지금 하는 일은 어느 쪽에", substring = true).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("나가기").performClick()
+        exitExam()
         rule.waitUntil(5_000) { rule.onAllNodes(hasText("이어 보기")).fetchSemanticsNodes().isNotEmpty() }
 
         rule.onNodeWithText("이어 보기").performClick()
         waitForExam()
 
-        rule.onNodeWithText("나가기").assertIsDisplayed()
+        rule.onNodeWithContentDescription("나가기").assertIsDisplayed()
         assertEquals(listOf("s"), runBlocking { graph.examSessionSource.sessions().first() }.map { it.id })
     }
 

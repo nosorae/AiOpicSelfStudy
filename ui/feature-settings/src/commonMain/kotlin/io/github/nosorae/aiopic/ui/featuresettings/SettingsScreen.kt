@@ -21,12 +21,12 @@ import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
-import io.github.nosorae.aiopic.ui.design.MontageAlert
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
 import io.github.nosorae.aiopic.ui.design.MontageCheckbox
+import io.github.nosorae.aiopic.ui.design.MontageConfirmDialog
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
@@ -228,25 +228,23 @@ fun SettingsScreen(
         }
     }
     state.deletingKey?.let { provider ->
-        MontageAlert(
+        MontageConfirmDialog(
             title = stringResource(Res.string.settings_key_delete_title, provider.label),
             message = stringResource(Res.string.settings_key_delete_message),
             confirm = stringResource(Res.string.settings_key_delete),
-            onConfirm = { onIntent(SettingsIntent.DeleteKey) },
             cancel = stringResource(Res.string.settings_key_delete_cancel),
-            onDismissRequest = { onIntent(SettingsIntent.CancelKeyDeletion) },
-            negative = true,
+            onConfirm = { onIntent(SettingsIntent.DeleteKey) },
+            onCancel = { onIntent(SettingsIntent.CancelKeyDeletion) },
         )
     }
     if (state.revokingConsent) {
-        MontageAlert(
+        MontageConfirmDialog(
             title = stringResource(Res.string.settings_consent_revoke_title),
             message = stringResource(Res.string.settings_consent_revoke_message),
             confirm = stringResource(Res.string.settings_consent_revoke),
-            onConfirm = { onIntent(SettingsIntent.RevokeConsent) },
             cancel = stringResource(Res.string.settings_key_delete_cancel),
-            onDismissRequest = { onIntent(SettingsIntent.CancelConsentRevoke) },
-            negative = true,
+            onConfirm = { onIntent(SettingsIntent.RevokeConsent) },
+            onCancel = { onIntent(SettingsIntent.CancelConsentRevoke) },
         )
     }
 }
