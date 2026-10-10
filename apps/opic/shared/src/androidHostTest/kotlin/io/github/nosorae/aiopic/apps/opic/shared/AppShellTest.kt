@@ -107,7 +107,7 @@ class AppShellTest {
     fun `F3 나갔던 시험이 있으면 홈의 이어 보기가 같은 회차를 연다`() {
         start(AppRoute.Home, AppRoute.Exam("s"))
         waitForExam()
-        rule.onNodeWithText("관심 있는 항목을", substring = true).assertIsDisplayed()
+        rule.onNodeWithText("관심 있는 항목을", substring = true).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("나가기").performClick()
         rule.waitUntil(5_000) { rule.onAllNodes(hasText("이어 보기")).fetchSemanticsNodes().isNotEmpty() }
 

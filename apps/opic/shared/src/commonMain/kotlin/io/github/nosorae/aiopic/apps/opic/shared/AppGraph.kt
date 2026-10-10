@@ -56,6 +56,7 @@ import io.github.nosorae.aiopic.packs.opicen.PromptFile
 import io.github.nosorae.aiopic.ui.featureexam.ExamContent
 import io.github.nosorae.aiopic.ui.featureexam.ExamRepository
 import io.github.nosorae.aiopic.ui.featureexam.ExamViewModel
+import io.github.nosorae.aiopic.ui.featureexam.SurveyPart
 import io.github.nosorae.aiopic.ui.featurehistory.HistoryStore
 import io.github.nosorae.aiopic.ui.featurehistory.HistoryViewModel
 import io.github.nosorae.aiopic.ui.featurehome.ExamSessionSource
@@ -180,11 +181,14 @@ interface AppGraph {
         OpicQuestionType.SocialIssue to "사회 이슈",
     ).mapKeys { it.key.type }
 
-    // ponytail: 시험 팩에 서베이 Part 1~3 질문이 아직 없어 주제 고르기만 보인다. 팩이 Part 질문을 내면 여기서 넘긴다
-
     /** 시험 화면을 열 때마다 만들어서 설정의 답변 타이머(F2.7)를 그때 값으로 읽는다. */
     @Provides
-    fun examContent(spec: ExamSpec, settings: AppSettings): ExamContent = ExamContent(spec, OpicEn.surveyTopics, surveyParts = emptyList(), answerTimer = settings.answerTimer)
+    fun examContent(spec: ExamSpec, settings: AppSettings): ExamContent = ExamContent(
+        spec,
+        OpicEn.surveyTopics,
+        surveyParts = OpicEn.surveyParts.map { (question, options) -> SurveyPart(question, options) },
+        answerTimer = settings.answerTimer,
+    )
 
     @Provides
     fun examRepository(
