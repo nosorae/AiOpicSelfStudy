@@ -25,7 +25,7 @@ class RouteContentTest {
         is AppRoute.AnswerReport -> "이 답변을 찾을 수 없습니다."
         is AppRoute.Exam -> "지금 하는 일은 어느 쪽에"
         AppRoute.Survey -> "지금 하는 일은 어느 쪽에"
-        is AppRoute.Practice -> "약점 점수가 낮은 유형에서"
+        is AppRoute.Practice -> "피드백"
         is AppRoute.KeyEntry, AppRoute.StartKeyEntry -> "키 확인하고 저장"
         AppRoute.FreeTierNotice, AppRoute.StartConsent -> "동의하고 계속하기"
         AppRoute.FlagExport -> "아직 \"틀림\"을 누른 교정이 없습니다"

@@ -15,10 +15,17 @@ final class PracticeFlowUITests: XCTestCase {
         app.passFirstLaunch()
 
         tapWhenReady(app.buttons["한 문항 풀기"])
+        // 규칙 문단 대신 단계 표시(듣기, 답하기, 피드백)가 보인다(#186).
+        for step in ["듣기", "답하기", "피드백"] {
+            XCTAssertTrue(app.staticTexts[step].waitForExistence(timeout: 10), "단계 \(step) 가 보이지 않는다")
+        }
+        attachScreenshot("연습 시작")
         tapWhenReady(app.buttons["Play"])
 
         // 질문 읽기와 녹음 10초가 지나야 Next 가 켜진다.
         let next = app.buttons["Next"]
+        XCTAssertTrue(waitUntil(60) { next.exists }, "녹음이 시작되지 않았다")
+        attachScreenshot("녹음 중")
         XCTAssertTrue(waitUntil(60) { next.exists && next.isEnabled }, "Next 가 60초 안에 켜지지 않았다")
         next.tap()
 
