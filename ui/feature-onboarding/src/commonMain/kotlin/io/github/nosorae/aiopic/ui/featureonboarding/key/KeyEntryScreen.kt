@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,9 +35,13 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
+import io.github.nosorae.aiopic.ui.design.MontageCelebration
+import io.github.nosorae.aiopic.ui.design.MontageCelebrationSize
 import io.github.nosorae.aiopic.ui.design.MontageCheckMark
 import io.github.nosorae.aiopic.ui.design.MontageIconButton
 import io.github.nosorae.aiopic.ui.design.MontageListCell
@@ -110,6 +117,7 @@ fun KeyEntryScreen(
     val uriHandler = LocalUriHandler.current
     // 확인 중이거나 확인돼 넘어가기 직전이면 다른 입력을 막는다.
     val locked = state.checking || state.saved
+    ErrorHaptics(state.error != null)
     MontageScreen(
         modifier = modifier,
         topBar = { MontageTopBar(title = stringResource(Res.string.key_entry_title)) },
@@ -224,7 +232,7 @@ fun KeyEntryScreen(
     }
 }
 
-/** 저장 버튼 자리에 버튼과 같은 높이로 체크와 결과 문구를 보인다. 체크는 그림뿐이라 문구를 화면 읽기 도구가 읽게 한다. */
+/** 저장 버튼 자리에 버튼과 같은 높이로 체크와 결과 문구를 보인다. 키 저장 성공 진동은 체크가 다 그려질 때 여기서 낸다. 체크는 그림뿐이라 문구를 화면 읽기 도구가 읽게 한다. */
 @Composable
 private fun SavedCheck() {
     Row(
@@ -232,13 +240,28 @@ private fun SavedCheck() {
         horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MontageCheckMark(Modifier.size(MontageSpacing.spacing48))
+        // 체크가 다 그려지는 때 작은 축하가 터지며 성공 진동을 낸다. 조각은 체크보다 넓게 퍼지되 줄 높이를 바꾸지 않는다.
+        Box(Modifier.size(MontageSpacing.spacing48), contentAlignment = Alignment.Center) {
+            MontageCheckMark(Modifier.fillMaxSize())
+            MontageCelebration(MontageCelebrationSize.Small, Modifier.requiredSize(MontageSpacing.spacing48 * 2), delayMillis = MontageMotion.LONG_MILLIS)
+        }
         Text(
             text = stringResource(Res.string.key_entry_saved),
             style = MontageTheme.typography.body1.bold,
             color = MontageTheme.colors.foregroundBrandPrimary,
             modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         )
+    }
+}
+
+/** 키 확인 오류 안내가 새로 뜨면 오류 진동을 낸다. 처음 그릴 때와 화면을 돌려 다시 그릴 때는 바뀐 것이 없어 내지 않는다. */
+@Composable
+private fun ErrorHaptics(error: Boolean) {
+    val haptics = LocalHaptics.current
+    val last = remember { booleanArrayOf(error) }
+    LaunchedEffect(error) {
+        if (error && !last[0]) haptics.play(HapticEffect.Error)
+        last[0] = error
     }
 }
 
@@ -297,7 +320,7 @@ private fun Step(number: Int, text: StringResource) {
 }
 
 /** 확인 체크를 그리고(400ms) 물결이 퍼지는(400ms) 동안 머문다. */
-private const val CHECK_HOLD_MILLIS = MontageMotion.LONG_MILLIS * 2L
+private const val CHECK_HOLD_MILLIS = MontageMotion.LONG_MILLIS * 3L
 
 /** 미리보기와 스크린샷 테스트가 함께 쓰는 고정 상태. */
 internal object KeyEntrySamples {

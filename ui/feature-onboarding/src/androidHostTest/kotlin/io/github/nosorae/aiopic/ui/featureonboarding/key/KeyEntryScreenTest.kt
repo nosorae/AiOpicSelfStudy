@@ -1,6 +1,9 @@
 package io.github.nosorae.aiopic.ui.featureonboarding.key
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
@@ -13,6 +16,9 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.libs.haptics.api.Haptics
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -37,8 +43,10 @@ class KeyEntryScreenTest {
         }
     }
 
+    private val played = mutableListOf<HapticEffect>()
+
     private fun show(state: KeyEntryUiState) = rule.setContent {
-        CompositionLocalProvider(LocalUriHandler provides uriHandler) {
+        CompositionLocalProvider(LocalUriHandler provides uriHandler, LocalHaptics provides Haptics { played += it }) {
             MontageTheme { KeyEntryScreen(state = state, onIntent = { intents += it }, onOpenFreeTierNotice = {}) }
         }
     }
@@ -130,5 +138,33 @@ class KeyEntryScreenTest {
         rule.mainClock.advanceTimeBy(2_000)
 
         assertTrue(first.sameAs(rule.onRoot().captureToImage().asAndroidBitmap()))
+    }
+
+    @Test
+    fun `키가 저장돼 체크가 다 그려지면 성공 진동을 낸다`() {
+        rule.mainClock.autoAdvance = false
+        show(KeyEntrySamples.saved)
+        rule.mainClock.advanceTimeBy(300)
+        val beforeCheckDrawn = played.toList()
+
+        rule.mainClock.advanceTimeBy(300)
+
+        assertEquals(emptyList<HapticEffect>(), beforeCheckDrawn)
+        assertEquals(listOf(HapticEffect.Success), played)
+    }
+
+    @Test
+    fun `키 확인이 실패해 오류 안내가 뜨면 오류 진동을 낸다`() {
+        var state by mutableStateOf(KeyEntrySamples.ready)
+        rule.setContent {
+            CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) {
+                MontageTheme { KeyEntryScreen(state = state, onIntent = {}, onOpenFreeTierNotice = {}) }
+            }
+        }
+
+        state = KeyEntrySamples.invalid
+        rule.waitForIdle()
+
+        assertEquals(listOf(HapticEffect.Error), played)
     }
 }
