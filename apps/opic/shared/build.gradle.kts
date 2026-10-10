@@ -42,6 +42,10 @@ kotlin {
         implementation(libs.androidx.lifecycle.viewmodelNavigation3)
         implementation(libs.androidx.activity.compose)
     }
+    // UI 테스트 실행 인자(UiTestLaunch)가 Gemini 대신 가짜 HTTP 엔진을 쓴다.
+    sourceSets.iosMain.dependencies {
+        implementation(libs.ktor.client.mock)
+    }
     // 분석 처리기 테스트가 Gemini 응답을 가짜 HTTP 엔진으로 돌려준다.
     sourceSets.commonTest.dependencies {
         implementation(libs.ktor.client.mock)

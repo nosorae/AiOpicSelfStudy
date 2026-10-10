@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.ui.design.MontageButton
@@ -55,7 +56,7 @@ fun HomeScreen(
                     MontageButton(
                         text = stringResource(if (state.canResume) Res.string.home_resume_exam else Res.string.home_start_exam),
                         onClick = onExamClick,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag("home-exam"),
                     )
                     MontageButton(
                         text = stringResource(Res.string.home_practice),

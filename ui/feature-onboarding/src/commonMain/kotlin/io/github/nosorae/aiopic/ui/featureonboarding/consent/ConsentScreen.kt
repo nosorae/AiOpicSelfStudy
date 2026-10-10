@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.ui.design.MontageButton
@@ -56,7 +57,7 @@ fun ConsentScreen(onIntent: (ConsentIntent) -> Unit, modifier: Modifier = Modifi
             MontageButton(
                 text = stringResource(Res.string.consent_agree),
                 onClick = { onIntent(ConsentIntent.GiveConsent) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = gutter, vertical = MontageSpacing.spacing12),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = gutter, vertical = MontageSpacing.spacing12).testTag("consent-agree"),
             )
         },
     ) {

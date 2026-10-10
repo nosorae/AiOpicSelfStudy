@@ -27,6 +27,12 @@ fun recordingsRoot(): String {
     return root
 }
 
+/** 앱 지원 폴더를 통째로 지운다(DB, 녹음). UI 테스트의 첫 실행 초기화만 쓴다. */
+@OptIn(ExperimentalForeignApi::class)
+internal fun deleteAppData() {
+    NSFileManager.defaultManager.removeItemAtPath(applicationSupport(), error = null)
+}
+
 @OptIn(ExperimentalForeignApi::class)
 private fun applicationSupport(): String {
     val url = NSFileManager.defaultManager.URLForDirectory(NSApplicationSupportDirectory, NSUserDomainMask, null, create = true, error = null)

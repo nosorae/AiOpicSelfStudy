@@ -27,18 +27,21 @@ import platform.UIKit.UIWindowScene
  * 탭 표시와 뒤로 버튼은 Swift 가 [AppRoute] 표를 읽어 정한다. 그래프는 앱에 하나다.
  */
 class IosShell {
+    private val keyVault = KeychainKeyVault().also(UiTestLaunch::resetIfAsked)
+
     private val graph: AppGraph = createAppGraph(
         settings = AppSettings(
             read = { NSUserDefaults.standardUserDefaults.stringForKey(it) },
             write = { key, value -> NSUserDefaults.standardUserDefaults.setObject(value, forKey = key) },
         ),
-        keyVault = KeychainKeyVault(),
+        keyVault = keyVault,
         database = opicDatabase(),
         recordingsRoot = recordingsRoot(),
         recorder = IosRecorder(),
         tts = IosTts(),
         // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다. 앱이 떠 있는 동안만 보낸다(F5.1).
         workQueue = ForegroundWorkQueue(handler = { graph.analysisHandler.handle(it) }, scope = MainScope()),
+        gemini = UiTestLaunch.geminiClient(),
     )
 
     /** 시작 분기(S0, F1.0). 저장된 키와 동의만 읽어 첫 화면을 [onDecided] 로 넘긴다. 그 전까지 Swift 는 실행 화면과 같은 빈 화면만 둔다. */

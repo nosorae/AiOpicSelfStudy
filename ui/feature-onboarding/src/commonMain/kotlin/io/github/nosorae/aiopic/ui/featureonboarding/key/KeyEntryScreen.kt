@@ -21,6 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -105,7 +106,7 @@ fun KeyEntryScreen(
                 // 확인하는 동안 버튼은 진행 표시를 보이고, 다른 입력(제공사, 입력칸, 키 받기, 안내)은 모두 막는다.
                 enabled = state.canSubmit || state.checking,
                 loading = state.checking,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = gutter, vertical = MontageSpacing.spacing12),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = gutter, vertical = MontageSpacing.spacing12).testTag("key-submit"),
             )
         },
     ) {
@@ -122,6 +123,7 @@ fun KeyEntryScreen(
                         selected = provider == state.selectedProvider,
                         enabled = !state.checking,
                         onClick = { onIntent(KeyEntryIntent.SelectProvider(provider)) },
+                        modifier = Modifier.testTag("key-provider-${provider.id}"),
                     )
                 }
             }
@@ -176,7 +178,7 @@ fun KeyEntryScreen(
                 } else {
                     null
                 },
-                modifier = Modifier.padding(start = gutter, end = gutter, top = MontageSpacing.spacing16),
+                modifier = Modifier.padding(start = gutter, end = gutter, top = MontageSpacing.spacing16).testTag("key-field"),
             )
             MontageButton(
                 text = stringResource(Res.string.key_entry_free_tier_link),
