@@ -4,9 +4,12 @@ import android.graphics.Bitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import io.github.nosorae.aiopic.engine.session.model.ExamSession
+import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -50,6 +53,14 @@ class HistoryScreenshotTest {
         val first = frame()
         rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
         assertTrue("동작 줄이기인데 움직인다", first.sameAs(frame()))
+    }
+
+    @Test
+    fun `답변이 모두 분석되고 등급만 기다리는 회차는 등급 내는 중이다`() {
+        val row = HistorySession(ExamSession(id = "s9", status = ExamStatus.Finished), emptyList(), answered = 12, analyzed = 12)
+        show(HistoryUiState(loading = false, sessions = listOf(row)))
+        rule.onNodeWithText("등급 내는 중").assertExists()
+        rule.onNodeWithText("분석 12/12").assertDoesNotExist()
     }
 
     private fun show(state: HistoryUiState, dark: Boolean = false, reduceMotion: Boolean = false) {

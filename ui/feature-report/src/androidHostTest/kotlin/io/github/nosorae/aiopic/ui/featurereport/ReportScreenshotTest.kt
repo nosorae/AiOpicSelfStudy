@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -43,6 +44,19 @@ class ReportScreenshotTest {
     @Config(qualifiers = "w360dp-h1000dp-xhdpi")
     @Test
     fun session_timeShort() = session(ReportSamples.timeUp)
+
+    @Test fun session_grading() = shot(dark = false, settleMillis = 0) { SessionReport(ReportSamples.grading) }
+
+    @Test
+    fun `분석이 다 끝나고 등급만 기다리면 등급을 내는 중이라고 쓰고 점이 계속 움직인다`() {
+        show { SessionReport(ReportSamples.grading) }
+        rule.onNodeWithText("답변 분석이 끝났습니다. 예상 등급을 내고 있습니다.").assertExists()
+        rule.onNodeWithText("답변 7개 중 7개를", substring = true).assertDoesNotExist()
+        rule.mainClock.advanceTimeBy(1_200)
+        val now = frame()
+        rule.mainClock.advanceTimeBy(300)
+        assertFalse("등급을 기다리는데 멈춰 있다", now.sameAs(frame()))
+    }
 
     @Test fun answer_evaluated() = answer(ReportSamples.answerEvaluated)
 

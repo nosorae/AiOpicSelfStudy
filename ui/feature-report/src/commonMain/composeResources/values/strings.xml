@@ -2,6 +2,7 @@
 <resources>
     <string name="session_title">회차 리포트</string>
     <string name="session_grade">예상 등급</string>
+    <string name="session_grade_grading">답변 분석이 끝났습니다. 예상 등급을 내고 있습니다.</string>
     <string name="session_grade_waiting">답변 %1$d개 중 %2$d개를 분석했습니다. 예상 등급은 모든 분석이 끝나면 나옵니다.</string>
     <string name="session_models_mixed">분석 모델 섞임</string>
     <string name="session_models">분석 모델 %1$s</string>

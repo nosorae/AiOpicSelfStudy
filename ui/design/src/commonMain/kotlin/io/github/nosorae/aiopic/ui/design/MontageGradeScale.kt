@@ -30,18 +30,23 @@ private const val SPARKS = 10
  * 멈추는 순간 작은 불꽃이 한 번 튀고, 범위 막대가 구슬에서 양옆으로 펴진다. 내 등급이 전체 중 어디쯤인지 글자를 읽기 전에 보이게 한다.
  * 리포트 화면의 주인공 움직임으로 쓴다. 동작 줄이기면 구슬과 범위가 처음부터 그 위치에 있다.
  * [low], [high] 는 [grades] 의 번호(0 부터)다. 화면 읽기 프로그램은 [description] 을 읽는다.
+ * [playOnceKey] 를 주면 그 키로 한 번 움직인 뒤에는 스크롤, 뒤로 가기, 탭 다시 열기로 다시 그려도 끝 장면부터 그린다.
+ * 같은 등급을 다시 보는 것은 상태가 바뀐 게 아니어서다. 키에는 무엇의 어떤 등급인지(회차 id 와 범위)를 넣는다.
  */
 @Composable
-fun MontageGradeScale(grades: List<String>, low: Int, high: Int, description: String, modifier: Modifier = Modifier) {
+fun MontageGradeScale(grades: List<String>, low: Int, high: Int, description: String, modifier: Modifier = Modifier, playOnceKey: String? = null) {
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
     val reduceMotion = MontageMotion.reduceMotion
     val target = (low + high) / 2f
     val slideSpec = MontageMotion.settle<Float>()
     val burstSpec = MontageMotion.spec<Float>(MontageMotion.LONG_MILLIS)
-    val orb = remember { Animatable(if (reduceMotion) target else 0f) }
-    val burst = remember { Animatable(if (reduceMotion) 1f else 0f) }
+    val played = MontageMotion.played
+    val still = remember { reduceMotion || (playOnceKey != null && playOnceKey in played) }
+    val orb = remember { Animatable(if (still) target else 0f) }
+    val burst = remember { Animatable(if (still) 1f else 0f) }
     LaunchedEffect(target) {
+        playOnceKey?.let(played::add)
         orb.animateTo(target, slideSpec)
         burst.animateTo(1f, burstSpec)
     }

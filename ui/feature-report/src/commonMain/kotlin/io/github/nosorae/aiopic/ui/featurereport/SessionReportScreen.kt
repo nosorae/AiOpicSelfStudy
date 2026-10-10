@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
+import io.github.nosorae.aiopic.ui.design.MontageGatheringDots
 import io.github.nosorae.aiopic.ui.design.MontageGradeScale
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageRadius
@@ -42,7 +43,8 @@ fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerI
 
 /**
  * 등급 범위와 근거, 무너진 문항, 답변 목록 순으로 그린다(F7.2). 시간이 다 된 회차는 답하지 못한 문항을 끝에 "시간 부족"으로 붙인다.
- * 이 화면의 움직임은 하나다. 등급이 나왔으면 등급 눈금의 구슬, 기다리는 중이면 분석한 답변 수만큼 차는 진행 점이다.
+ * 이 화면의 움직임은 하나다. 등급이 나왔으면 등급 눈금의 구슬, 분석을 기다리는 중이면 분석한 답변 수만큼 차는 진행 점,
+ * 분석은 다 끝나고 등급만 기다리면 모이는 점이다. 등급 구슬은 회차와 등급마다 한 번만 움직인다.
  */
 @Composable
 fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, modifier: Modifier = Modifier) {
@@ -89,8 +91,16 @@ private fun GradeHeader(report: SessionReport) {
         SectionTitle(stringResource(Res.string.session_grade))
         val names = report.names.grades
         when {
-            grade != null && grade.low in names && grade.high in names ->
-                MontageGradeScale(names, names.indexOf(grade.low), names.indexOf(grade.high), description = grade.range, modifier = scale)
+            grade != null && grade.low in names && grade.high in names -> MontageGradeScale(
+                names,
+                names.indexOf(grade.low),
+                names.indexOf(grade.high),
+                description = grade.range,
+                modifier = scale,
+                playOnceKey = "session-grade:${report.session.id}:${grade.range}",
+            )
+
+            report.grading -> MontageGatheringDots(stringResource(Res.string.session_grade_grading), scale)
 
             grade == null && report.answers.isNotEmpty() -> MontageStepTrail(total = report.answers.size, done = report.analyzedCount, modifier = scale)
         }
@@ -103,7 +113,12 @@ private fun GradeHeader(report: SessionReport) {
             if (grade != null) {
                 Text(grade.range, style = typography.title1.bold, color = colors.foregroundNeutralStrong)
             } else {
-                Text(stringResource(Res.string.session_grade_waiting, report.answers.size, report.analyzedCount), style = typography.body1Reading.regular, color = colors.foregroundNeutralSecondary)
+                val waiting = if (report.grading) {
+                    stringResource(Res.string.session_grade_grading)
+                } else {
+                    stringResource(Res.string.session_grade_waiting, report.answers.size, report.analyzedCount)
+                }
+                Text(waiting, style = typography.body1Reading.regular, color = colors.foregroundNeutralSecondary)
             }
             if (report.mixedModels) {
                 Text(

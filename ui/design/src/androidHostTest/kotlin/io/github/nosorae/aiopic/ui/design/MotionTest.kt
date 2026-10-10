@@ -3,22 +3,31 @@ package io.github.nosorae.aiopic.ui.design
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -101,13 +110,13 @@ class MotionTest {
     }
 
     @Composable
-    private fun CountUp() = MontageCountUp(77, style = MontageTheme.typography.display1.bold)
+    private fun CountUp(key: String? = null) = MontageCountUp(77, style = MontageTheme.typography.display1.bold, playOnceKey = key)
 
     @Composable
     private fun CheckMark() = MontageCheckMark(Modifier.size(96.dp))
 
     @Composable
-    private fun GradeScale() = MontageGradeScale(listOf("NL", "NM", "NH", "IL", "IM", "IH", "AL"), low = 4, high = 5, description = "IM~IH")
+    private fun GradeScale(key: String? = null) = MontageGradeScale(listOf("NL", "NM", "NH", "IL", "IM", "IH", "AL"), low = 4, high = 5, description = "IM~IH", playOnceKey = key)
 
     @Composable
     private fun VoiceRibbon() = MontageVoiceRibbon(level = 0.7f)
@@ -134,6 +143,55 @@ class MotionTest {
     @Test fun gatheringDots() = assertKeepsMoving { GatheringDots() }
 
     @Test fun gatheringDots_reduceMotion() = assertStill { GatheringDots() }
+
+    @Test
+    fun `한 번 움직인 등급 눈금은 스크롤로 나갔다 돌아와도 끝 장면 그대로다`() = assertTrue(backFromScroll { GradeScale(key = "s1:IM~IH") })
+
+    @Test
+    fun `한 번 굴러간 점수 숫자는 스크롤로 나갔다 돌아와도 끝 값 그대로다`() = assertTrue(backFromScroll { CountUp(key = "a1:77") })
+
+    @Test
+    fun `키가 없으면 스크롤로 나갔다 돌아올 때 다시 움직인다`() = assertFalse(backFromScroll { GradeScale() })
+
+    @Test
+    fun `한 번 움직인 등급 눈금은 화면을 떠났다 다시 그려도 끝 장면 그대로다`() {
+        var visible by mutableStateOf(true)
+        rule.mainClock.autoAdvance = false
+        rule.setContent { MontageTheme { if (visible) Box(Modifier.width(360.dp).testTag(PART)) { GradeScale(key = "s1:IM~IH") } } }
+        settle()
+        val end = part()
+        change { visible = false }
+        rule.mainClock.advanceTimeByFrame()
+        change { visible = true }
+        rule.mainClock.advanceTimeByFrame()
+
+        assertTrue("다시 그리니 처음부터 움직인다", end.sameAs(part()))
+    }
+
+    /**
+     * 목록 맨 위 부품이 움직여 멈춘 뒤 스크롤로 화면 밖에 나갔다(그 칸이 버려진다) 돌아온다. 돌아온 첫 프레임이 끝 장면과 같으면 true 다.
+     * 회차 리포트와 기록의 등급 구슬, 답변 리포트의 점수가 모두 LazyColumn 칸 안에 있어서 이 경우를 본다.
+     */
+    private fun backFromScroll(content: @Composable () -> Unit): Boolean {
+        rule.mainClock.autoAdvance = false
+        rule.setContent {
+            MontageTheme {
+                LazyColumn(Modifier.width(360.dp).height(300.dp).testTag(LIST)) {
+                    item { Box(Modifier.fillMaxWidth().testTag(PART)) { content() } }
+                    items(30) { Spacer(Modifier.height(100.dp)) }
+                }
+            }
+        }
+        settle()
+        val end = part()
+        rule.onNodeWithTag(LIST).performScrollToIndex(30)
+        settle()
+        rule.onNodeWithTag(LIST).performScrollToIndex(0)
+        rule.mainClock.advanceTimeByFrame()
+        return end.sameAs(part())
+    }
+
+    private fun part(): Bitmap = rule.onNodeWithTag(PART).captureToImage().asAndroidBitmap()
 
     @Test
     fun progressBar() = assertFills(reduceMotion = false) { start, moving, end ->
@@ -180,5 +238,10 @@ class MotionTest {
         val moving = frame()
         settle()
         check(start, moving, frame())
+    }
+
+    private companion object {
+        const val LIST = "list"
+        const val PART = "part"
     }
 }

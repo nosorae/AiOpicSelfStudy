@@ -27,6 +27,9 @@ data class SessionReport(val session: ExamSession, val answers: List<Answer>, va
 
     /** 분석이 끝난 답변 수(평가 불가 포함). 회차 등급은 모든 답변이 끝나야 나와서, 기다리는 동안 이 수만큼 진행을 보인다. */
     val analyzedCount: Int get() = answers.count { it.analysis != AnswerAnalysis.Pending }
+
+    /** 답변 분석은 다 끝났고 회차 등급만 기다리는 중. 등급은 모든 답변이 분석된 뒤에야 요청해서, 대기열에 있거나 모델이 내는 동안 이 상태다. */
+    val grading: Boolean get() = session.grade == null && answers.isNotEmpty() && analyzedCount == answers.size
 }
 
 /** 분석 대기 중이면 null 이다. */

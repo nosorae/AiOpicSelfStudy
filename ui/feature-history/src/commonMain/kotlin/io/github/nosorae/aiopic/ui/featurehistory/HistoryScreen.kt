@@ -70,7 +70,7 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
                         Text(
                             text = when {
                                 grade != null -> grade.range
-                                row.answered > 0 -> stringResource(Res.string.history_grade_waiting, row.analyzed, row.answered)
+                                row.analyzed < row.answered -> stringResource(Res.string.history_grade_waiting, row.analyzed, row.answered)
                                 else -> stringResource(Res.string.history_grade_pending)
                             },
                             style = if (grade == null) MontageTheme.typography.label1.regular else MontageTheme.typography.headline2.bold,
@@ -99,10 +99,11 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
     }
 }
 
-/** 등급이 나온 가장 최근 회차를 등급 눈금에 놓는다. 등급 이름이 시험 팩 눈금에 없으면 그리지 않는다. */
+/** 등급이 나온 가장 최근 회차를 등급 눈금에 놓는다. 등급 이름이 시험 팩 눈금에 없으면 그리지 않는다. 구슬은 회차와 등급마다 한 번만 움직인다. */
 @Composable
 private fun LatestGrade(state: HistoryUiState) {
-    val grade = state.sessions.lastOrNull { it.session.grade != null }?.session?.grade ?: return
+    val latest = state.sessions.lastOrNull { it.session.grade != null }?.session ?: return
+    val grade = latest.grade ?: return
     val names = state.grades
     if (grade.low !in names || grade.high !in names) return
     val label = stringResource(Res.string.history_latest, grade.range)
@@ -113,6 +114,7 @@ private fun LatestGrade(state: HistoryUiState) {
             names.indexOf(grade.high),
             description = label,
             modifier = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8),
+            playOnceKey = "history-grade:${latest.id}:${grade.range}",
         )
         Body(label)
     }

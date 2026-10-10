@@ -36,7 +36,7 @@ fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Mod
 /**
  * 답변 하나의 피드백(F5.2, F7.1). 모의시험과 한 문항 연습이 같은 화면을 쓴다. 분석한 제공사와 모델을 맨 위에 둔다(F5.7).
  * 받아쓴 글만 분석한 경로면 발음 칸에 "평가 안 함"을 쓴다(F5.9). 교정마다 "틀림"을 누를 수 있다(F8.1).
- * 이 화면의 움직임은 하나다. 분석을 기다리는 동안은 모이는 점, 분석이 끝났으면 굴러 올라가는 점수다.
+ * 이 화면의 움직임은 하나다. 분석을 기다리는 동안은 모이는 점, 분석이 끝났으면 굴러 올라가는 점수다(답변마다 한 번만).
  */
 @Composable
 fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent) -> Unit, modifier: Modifier = Modifier) {
@@ -72,16 +72,16 @@ private fun LazyListScope.answerContent(answer: Answer, names: ReportNames, wron
             Paragraph(stringResource(Res.string.answer_unscorable_help), secondary = true)
         }
 
-        is AnswerAnalysis.Done -> feedback(analysis.feedback, wrongCorrections, onWrongClick)
+        is AnswerAnalysis.Done -> feedback(answer.id, analysis.feedback, wrongCorrections, onWrongClick)
     }
 }
 
-private fun LazyListScope.feedback(feedback: Feedback, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
+private fun LazyListScope.feedback(answerId: String, feedback: Feedback, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
     item {
         SectionTitle(stringResource(Res.string.answer_score))
         Row(Modifier.padding(horizontal = MontageSpacing.spacing20), verticalAlignment = Alignment.Bottom) {
             val style = MontageTheme.typography.title1.bold
-            MontageCountUp(feedback.score, style = style, color = MontageTheme.colors.foregroundNeutralStrong)
+            MontageCountUp(feedback.score, style = style, color = MontageTheme.colors.foregroundNeutralStrong, playOnceKey = "answer-score:$answerId:${feedback.score}")
             Text(stringResource(Res.string.answer_score_unit), style = style, color = MontageTheme.colors.foregroundNeutralStrong)
         }
     }
