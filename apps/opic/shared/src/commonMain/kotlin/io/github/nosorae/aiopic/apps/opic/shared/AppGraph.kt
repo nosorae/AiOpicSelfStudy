@@ -250,7 +250,7 @@ interface AppGraph {
     ): ExamRepository {
         val writer = GeminiQuestionWriter(client) { keyVault.get(GeminiModels.PROVIDER) }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope, OpicEn.survey::nearTopics, voice::prepare) { session, part, asked ->
+        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope, OpicEn.survey::nearTopics, voice::prepare, voice::clean) { session, part, asked ->
             examQuestions(session, part, asked, store, settings, writer, pack.questionsPrompt)
         }
     }
@@ -491,6 +491,12 @@ internal expect fun readFileOrNull(path: String): ByteArray?
 
 /** 폴더가 없으면 만들고 통째로 쓴다. */
 internal expect fun writeFile(path: String, bytes: ByteArray)
+
+/** 폴더 바로 아래 파일의 경로. 폴더가 없으면 빈 목록이다. */
+internal expect fun listFiles(directory: String): List<String>
+
+/** 없으면 아무것도 안 한다. */
+internal expect fun deleteFile(path: String)
 
 // ponytail: Gemini 목록은 모두 음성을 직접 들어서 두 단계 경로(받아쓰기, 글 분석)를 쓰지 않는다. 음성을 못 듣는 모델을 더할 때 실제 구현을 넣는다.
 private object NoTwoStepPath : Transcriber, TranscriptAnalyzer {

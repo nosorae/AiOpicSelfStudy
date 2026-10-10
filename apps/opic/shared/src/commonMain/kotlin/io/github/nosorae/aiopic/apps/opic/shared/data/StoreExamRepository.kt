@@ -49,6 +49,8 @@ class StoreExamRepository(
     private val near: (List<String>) -> List<String> = { emptyList() },
     /** 질문 하나의 음성을 받아 둔다. 이미 있으면 아무것도 안 한다. */
     private val prepareVoice: suspend (Question) -> Unit = {},
+    /** 넘긴 질문 글의 음성만 남기고 받아 둔 질문 음성을 지운다(#185). */
+    private val cleanVoices: (List<String>) -> Unit = {},
     /** 회차(재조정 포함), 받을 문항의 (번호, 유형), 이미 낸 질문으로 모델에 질문을 받는다. 키, 동의가 없거나 실패하면 null 이다. */
     private val generate: suspend (ExamSession, List<IndexedValue<QuestionType>>, List<Question>) -> List<Question>?,
 ) : ExamRepository {
@@ -57,10 +59,16 @@ class StoreExamRepository(
 
     override suspend fun session(id: String): ExamSession? = store.session(id).first()
 
-    /** 회차가 끝날 때 답변 분석이 이미 다 끝나 있으면(시간 부족으로 끝난 경우 등) 여기서 등급을 요청한다(F5.3). */
+    /**
+     * 회차가 끝날 때 답변 분석이 이미 다 끝나 있으면(시간 부족으로 끝난 경우 등) 여기서 등급을 요청한다(F5.3).
+     * 질문 음성은 다시 듣기와 이어 보기에만 쓰여서 진행 중인 회차의 질문 음성만 남긴다(#185). 녹음은 리포트가 쓰므로 그대로 둔다.
+     */
     override suspend fun save(session: ExamSession) {
         store.save(session)
-        if (session.status != ExamStatus.InProgress) requestGradeIfReady(store, queue, session.id)
+        if (session.status == ExamStatus.InProgress) return
+        requestGradeIfReady(store, queue, session.id)
+        val running = store.sessions().first().filter { it.status == ExamStatus.InProgress }
+        cleanVoices(running.flatMap { settings.examQuestions(it.id).orEmpty() }.map { it.text })
     }
 
     /**

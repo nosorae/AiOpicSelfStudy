@@ -14,3 +14,9 @@ internal actual fun writeFile(path: String, bytes: ByteArray) {
     partial.writeBytes(bytes)
     partial.renameTo(file)
 }
+
+internal actual fun listFiles(directory: String): List<String> = File(directory).listFiles()?.filter { it.isFile }?.map { it.path }.orEmpty()
+
+internal actual fun deleteFile(path: String) {
+    File(path).delete()
+}

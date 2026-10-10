@@ -28,3 +28,11 @@ internal actual fun writeFile(path: String, bytes: ByteArray) {
     // atomically: 다 쓴 뒤에 이름을 바꿔서, 쓰는 중에 앱이 꺼져도 반쯤 쓴 파일을 틀지 않는다.
     bytes.usePinned { NSData.create(bytes = it.addressOf(0), length = bytes.size.toULong()) }.writeToFile(path, atomically = true)
 }
+
+@OptIn(ExperimentalForeignApi::class)
+internal actual fun listFiles(directory: String): List<String> = NSFileManager.defaultManager.contentsOfDirectoryAtPath(directory, error = null).orEmpty().map { "$directory/$it" }
+
+@OptIn(ExperimentalForeignApi::class)
+internal actual fun deleteFile(path: String) {
+    NSFileManager.defaultManager.removeItemAtPath(path, error = null)
+}

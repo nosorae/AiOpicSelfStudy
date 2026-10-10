@@ -32,6 +32,8 @@ class QuestionVoiceTest {
         },
         read = { files[it] },
         write = { path, bytes -> files[path] = bytes },
+        list = { dir -> files.keys.filter { it.startsWith("$dir/") } },
+        delete = { files.remove(it) },
     )
 
     @Test
@@ -77,6 +79,21 @@ class QuestionVoiceTest {
 
         assertEquals(emptyList(), synthesized)
         assertNull(device.audio.single())
+    }
+
+    @Test
+    fun `185 남길 질문 말고 받아 둔 음성을 모두 지운다`() = runTest {
+        val other = generated.copy(id = "s1-3", text = "Tell me about your last trip.")
+        voice.prepare(generated)
+        voice.prepare(other)
+        files["voices/leftover.wav.partial"] = byteArrayOf(0)
+
+        voice.clean(keep = listOf(other.text))
+        voice.speak(generated.text)
+        voice.speak(other.text)
+
+        assertEquals(1, files.size)
+        assertEquals(listOf(null, byteArrayOf(9).toList()), device.audio.map { it?.toList() })
     }
 
     /** 받은 글과 음성을 모은다. 음성이 null 이면 기기 음성으로 읽은 것이다. */
