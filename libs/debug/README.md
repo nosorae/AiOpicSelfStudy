@@ -19,6 +19,7 @@ DebugTools.panel("오디오") { listOf("경로" to audio.route(), "모드" to au
 
 val http = HttpClient { installDebugTools() }   // io.github.nosorae.aiopic.libs.debug.network
 DebugTools.open()                          // 앱의 설정 화면 줄이나 UI 테스트에서 연다
+if (DebugTools.installed) { /* 디버그 빌드에서만 "개발자 도구" 줄을 보인다. noop 은 늘 false */ }
 ```
 
 ## 여는 법
