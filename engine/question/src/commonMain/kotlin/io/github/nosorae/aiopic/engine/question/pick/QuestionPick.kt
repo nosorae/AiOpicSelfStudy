@@ -6,11 +6,13 @@ import kotlinx.serialization.json.Json
 import kotlin.random.Random
 
 /**
- * 한 회차의 질문을 고른다. 먼저 [generate] 로 만든 질문(F6.1)을 쓰고, 생성이 실패(null)했거나 [checkQuestions] 를 통과 못하면
- * [pool] 에서 서베이 주제로 고른다(F6.2). 풀에도 채울 문항이 없는 유형이 있으면 null 이다.
+ * 한 회차 질문 가운데 [part] 위치의 몫을 고른다. 먼저 [generate] 로 만든 질문(F6.1)을 쓰고, 생성이 실패(null)했거나
+ * [checkQuestions] 를 통과 못하면 회차 전체를 [pool] 에서 서베이 주제로 고른 목록의 같은 위치를 쓴다(F6.2).
+ * 풀에서 고를 때 늘 회차 전체를 같은 [random] 씨앗으로 고르므로, 몫마다 따로 불러도 몫끼리 같은 문항이 겹치지 않는다.
+ * 풀에도 채울 문항이 없는 유형이 있으면 null 이다.
  *
- * [order] 는 이번 회차에 낼 문항 유형 순서다. 시험 팩의 단계와 고른 수준으로 부르는 쪽이 만든다.
- * [generate] 는 부르는 쪽이 주제, 수준, 재조정, 약점 유형을 프롬프트에 채워 모델을 부르는 함수다.
+ * [order] 는 이번 회차에 낼 문항 유형 순서 전체다. 시험 팩의 단계와 고른 수준으로 부르는 쪽이 만든다.
+ * [generate] 는 부르는 쪽이 주제, 수준, 재조정, 약점 유형을 프롬프트에 채워 [part] 몫만 모델에 받는 함수다.
  * 엔진은 시험 이름도 제공사도 모르고 결과 모양만 본다.
  */
 suspend fun pickQuestions(
@@ -19,9 +21,10 @@ suspend fun pickQuestions(
     pool: List<Question>,
     maxOutsideTopics: Int,
     random: Random = Random,
+    part: IntRange = order.indices,
     generate: suspend () -> List<Question>?,
-): List<Question>? = generate()?.takeIf { checkQuestions(it, order, topics, maxOutsideTopics).isEmpty() }
-    ?: pickFromPool(pool, order, topics, random)
+): List<Question>? = generate()?.takeIf { checkQuestions(it, order.slice(part), topics, maxOutsideTopics).isEmpty() }
+    ?: pickFromPool(pool, order, topics, random)?.slice(part)
 
 /**
  * 생성한 질문이 [order] 와 같은 유형 순서인지, 빈 질문이 없는지, 서베이 밖 주제가 [maxOutsideTopics] 개 이하인지 본다.

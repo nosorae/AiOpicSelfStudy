@@ -48,7 +48,14 @@ class FakeExamRepository(var lastTopics: List<String> = emptyList(), var saveTim
 
     override suspend fun lastSurveyTopics(): List<String> = lastTopics
 
-    override suspend fun question(session: ExamSession): Question = Question(id = "q${session.stepIndex}", text = "질문 ${session.stepIndex}", type = QuestionType("t"), topic = "영화")
+    /** 질문 하나를 받는 데 걸리는 시간과 그 질문이 내장 문항으로 바꾼 것인지. 불러오는 중 안내를 볼 때 바꾼다. */
+    var questionTime: Duration = Duration.ZERO
+    var fellBack = false
+
+    override suspend fun question(session: ExamSession): ExamQuestion {
+        delay(questionTime)
+        return ExamQuestion(Question(id = "q${session.stepIndex}", text = "질문 ${session.stepIndex}", type = QuestionType("t"), topic = "영화"), fellBack)
+    }
 
     override fun recordingDirectory(session: ExamSession): String = "rec/${session.id}/${session.stepIndex}"
 

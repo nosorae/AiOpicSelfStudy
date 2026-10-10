@@ -80,7 +80,7 @@ class SessionGradeWiringTest {
             gradeRequest = { answers, model -> GradeRequest(model, Prompt("grade-v1", "grade", "{\"brokeAt\":{}}"), OpicEn.gradeScale, answers.map { silence }) },
         )
 
-        val repository = StoreExamRepository(store, queue, OpicEn.examSpec, { emptyList() }, "recordings", settings, OpicEn.MAX_OUTSIDE_TOPICS) { _, _ -> null }
+        val repository = StoreExamRepository(store, queue, OpicEn.examSpec, { emptyList() }, "recordings", settings, OpicEn.MAX_OUTSIDE_TOPICS, this) { _, _, _ -> null }
         val ids = (1..15).map { "a$it" }
         repository.save(ExamSession("s1", answerIds = ids))
         ids.forEach { repository.save(Answer(it, Question("q-$it", "Tell me.", QuestionType("description"), "home"), "s1", chunkPaths = emptyList())) }

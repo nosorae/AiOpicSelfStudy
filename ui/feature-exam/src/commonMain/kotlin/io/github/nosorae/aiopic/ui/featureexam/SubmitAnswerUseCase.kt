@@ -20,7 +20,7 @@ class SubmitAnswerUseCase(
     suspend operator fun invoke(session: ExamSession, scored: Boolean): SubmitResult {
         val (chunks, failure) = recorder.stop()
         failure?.let { return SubmitResult.Failed(it.toExamError()) }
-        val question = repository.question(session)
+        val question = repository.question(session)?.question
         if (!scored || question == null) return SubmitResult.Moved(applyExamEventUseCase(session, ExamEvent.Next()))
         // 단계마다 id 가 하나라서 저장 뒤 앱이 죽어 다시 Next 를 눌러도 답변이 둘로 늘지 않는다.
         val answer = Answer(id = "${session.id}-${session.stepIndex}", question = question, examSessionId = session.id, chunkPaths = chunks)

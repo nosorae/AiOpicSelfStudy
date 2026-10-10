@@ -2,6 +2,7 @@ package io.github.nosorae.aiopic.apps.opic.androidapp
 
 import android.Manifest
 import android.os.Process
+import android.util.Log
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Before
 import org.junit.FixMethodOrder
@@ -65,13 +67,16 @@ class ExamE2eTest {
         click("1단계")
         click("다음")
 
+        // 점검과 1번은 내장 문항, 2번은 1번 Play 때 보낸 출제 요청(3초 늦게 답한다)을 1번 답하는 동안 받는다.
+        // 세 Play 모두 질문을 만들고 있다는 안내 없이 녹음까지 간다(#150).
         await("장비 점검")
-        answer()
+        playWithoutLoading()
+        next()
         await("문항 1 / 12")
-        answer()
+        playWithoutLoading()
+        next()
         await("문항 2 / 12")
-        click("Play")
-        await("녹음 중")
+        playWithoutLoading()
         // 녹음 조각은 약 5초마다 끊긴다. 하나는 온전히 남게 기다린 뒤 녹음 중에 끝낸다.
         Thread.sleep(8_000)
         pidFile.writeText(Process.myPid().toString())
@@ -122,6 +127,19 @@ class ExamE2eTest {
     private fun answer() {
         click("Play")
         next()
+    }
+
+    /** Play 를 누르고 녹음이 시작될 때까지 질문을 만들고 있다는 안내가 한 번도 안 보여야 한다. 걸린 시간을 로그에 남긴다. */
+    private fun playWithoutLoading() {
+        val start = System.currentTimeMillis()
+        click("Play")
+        var sawLoading = false
+        compose.waitUntil(QUESTION_TIMEOUT) {
+            sawLoading = sawLoading || exists("질문을 만들고 있어요")
+            exists("녹음 중")
+        }
+        Log.i("ExamE2eTest", "FIRST_PLAY Play 에서 녹음 시작까지 ${System.currentTimeMillis() - start}ms")
+        assertFalse("Play 가 질문을 불러오느라 기다렸다", sawLoading)
     }
 
     private fun next() {

@@ -34,6 +34,8 @@ class ExamScreenshotTest {
 
     @Test fun questionSpeaking() = shot(ExamSamples.questionSpeaking)
 
+    @Test fun questionBuiltIn() = shot(ExamSamples.questionBuiltIn)
+
     @Test fun questionReplayable() = shot(ExamSamples.questionReplayable)
 
     @Test fun questionNextable() = shot(ExamSamples.questionNextable)

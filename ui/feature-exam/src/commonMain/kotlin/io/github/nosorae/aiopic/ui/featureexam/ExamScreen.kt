@@ -287,7 +287,7 @@ private fun QuestionStep(
                     )
                 }
             } else {
-                // 첫 문항은 이때 질문을 받아 오고(F6.1) 질문을 다 읽어야 녹음이 시작돼서 그동안 Play 가 진행 표시를 보인다.
+                // 질문을 다 읽어야 녹음이 시작돼서 그동안 Play 가 진행 표시를 보인다. 모델 질문을 기다리면 위에 불러오는 중 안내가 뜬다(F6.1).
                 MontageButton(
                     text = stringResource(if (state.error in RetryErrors) Res.string.exam_retry else Res.string.exam_play),
                     onClick = onPlay,
@@ -306,22 +306,16 @@ private fun QuestionStep(
             )
         }
         description?.let { Description(it) }
-        Text(
-            text = when (state.phase) {
-                QuestionPhase.Ready -> stringResource(Res.string.exam_ready)
-
-                QuestionPhase.Speaking -> stringResource(Res.string.exam_speaking)
-
-                QuestionPhase.Recording -> if (state.answerTimer) {
-                    stringResource(Res.string.exam_recording_timer, state.recorded.clockText())
-                } else {
-                    stringResource(Res.string.exam_recording)
-                }
-            },
-            style = MontageTheme.typography.heading2.bold,
-            color = if (state.phase == QuestionPhase.Recording) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralPrimary,
-            modifier = Modifier.padding(horizontal = Gutter).testTag("exam-phase"),
-        )
+        val notice = state.questionNotice
+        if (notice is QuestionNotice.Making) {
+            val making = if (notice.recalibrated) Res.string.exam_question_making_difficulty else Res.string.exam_question_making_topics
+            QuestionLoading(stringResource(making, notice.first, notice.last), modifier = Modifier.padding(horizontal = Gutter))
+        } else if (notice == QuestionNotice.Slow) {
+            QuestionLoading(stringResource(Res.string.exam_question_slow), modifier = Modifier.padding(horizontal = Gutter))
+        } else {
+            PhaseText(state)
+        }
+        if (state.questionNotice == QuestionNotice.BuiltIn) Description(stringResource(Res.string.exam_question_built_in))
         state.error?.let {
             Text(
                 text = stringResource(it.message),
@@ -342,6 +336,27 @@ private fun QuestionStep(
         }
         Description(stringResource(Res.string.exam_rules))
     }
+}
+
+/** 문항의 지금 진행(대기, 질문 듣기, 녹음). */
+@Composable
+private fun PhaseText(state: ExamUiState) {
+    Text(
+        text = when (state.phase) {
+            QuestionPhase.Ready -> stringResource(Res.string.exam_ready)
+
+            QuestionPhase.Speaking -> stringResource(Res.string.exam_speaking)
+
+            QuestionPhase.Recording -> if (state.answerTimer) {
+                stringResource(Res.string.exam_recording_timer, state.recorded.clockText())
+            } else {
+                stringResource(Res.string.exam_recording)
+            }
+        },
+        style = MontageTheme.typography.heading2.bold,
+        color = if (state.phase == QuestionPhase.Recording) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralPrimary,
+        modifier = Modifier.padding(horizontal = Gutter).testTag("exam-phase"),
+    )
 }
 
 @Composable
@@ -429,7 +444,11 @@ internal object ExamSamples {
     val check = ExamUiState(step = ExamStep.Check)
     val questionReady = ExamUiState(step = ask, questionNumber = 3, questionCount = 15, remaining = 36.minutes + 12.seconds)
     val questionSpeaking = questionReady.copy(phase = QuestionPhase.Speaking)
+    val questionLoading = questionSpeaking.copy(questionNumber = 2, questionNotice = QuestionNotice.Making(2, 7, recalibrated = false))
+    val questionLoadingRecalibrated = questionSpeaking.copy(questionNumber = 8, questionNotice = QuestionNotice.Making(8, 15, recalibrated = true))
+    val questionSlow = questionSpeaking.copy(questionNotice = QuestionNotice.Slow)
     val questionReplayable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 3.seconds)
+    val questionBuiltIn = questionReplayable.copy(questionNotice = QuestionNotice.BuiltIn)
     val questionNextable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 12.seconds, replayUsed = true)
     val questionSaving = questionNextable.copy(saving = true)
     val surveySaving = surveyReady.copy(saving = true)

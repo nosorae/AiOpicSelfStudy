@@ -29,8 +29,8 @@ class OpicPromptFileTest {
     }
 
     @Test
-    fun `F6_1 출제 프롬프트의 빈칸은 주제 수준 재조정 약점 유형 순서다`() = runTest {
-        assertEquals(setOf("topics", "level", "recalibration", "weakTypes", "order"), OpicPrompt.Questions.load().placeholders)
+    fun `F6_1 출제 프롬프트의 빈칸은 주제 수준 재조정 약점 유형 이미 낸 질문 순서다`() = runTest {
+        assertEquals(setOf("topics", "level", "recalibration", "weakTypes", "asked", "order"), OpicPrompt.Questions.load().placeholders)
     }
 
     @Test

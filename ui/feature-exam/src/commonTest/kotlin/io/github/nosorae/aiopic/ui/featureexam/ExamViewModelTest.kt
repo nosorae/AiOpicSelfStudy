@@ -6,6 +6,7 @@ import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
 import io.github.nosorae.aiopic.libs.timer.api.MonotonicTimer
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -213,6 +214,64 @@ class ExamViewModelTest {
 
         assertEquals(QuestionPhase.Recording, viewModel.uiState.value.phase)
         assertEquals(listOf("질문 3"), tts.spoken)
+    }
+
+    @Test
+    fun `F6_1 질문이 바로 오면 불러오는 중 안내 없이 질문을 읽는다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        val viewModel = viewModel()
+        val notices = mutableListOf<QuestionNotice?>()
+        backgroundScope.launch { viewModel.uiState.collect { notices += it.questionNotice } }
+
+        playUntilRecording(viewModel)
+
+        assertEquals(QuestionPhase.Recording, viewModel.uiState.value.phase)
+        assertEquals(listOf<QuestionNotice?>(null), notices.distinct())
+    }
+
+    @Test
+    fun `F6_1 질문을 기다리면 무엇을 만드는지 보이고 10초가 넘으면 오래 걸린다는 안내로 바뀌며 질문이 오면 지운다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        repository.questionTime = 12.seconds
+        val viewModel = viewModel()
+        runCurrent()
+
+        viewModel.onIntent(ExamIntent.PlayQuestion)
+        advance(1.seconds)
+        assertEquals(QuestionNotice.Making(1, 1, recalibrated = false), viewModel.uiState.value.questionNotice, "1번부터 재조정 앞까지 서베이 주제로")
+        advance(9.seconds)
+        assertEquals(QuestionNotice.Slow, viewModel.uiState.value.questionNotice)
+        advance(2.seconds)
+        assertNull(viewModel.uiState.value.questionNotice)
+        assertEquals(QuestionPhase.Speaking, viewModel.uiState.value.phase)
+    }
+
+    @Test
+    fun `F6_1 재조정 뒤 문항에서 기다리면 고른 난이도로 끝까지 만든다고 보인다`() = runTest(dispatcher) {
+        repository.sessions["s1"] = ExamSession("s1", stepIndex = 5, surveyTopics = listOf("영화", "공원"), level = 3, recalibration = Recalibration.Harder, remaining = 30.minutes)
+        repository.questionTime = 2.seconds
+        val viewModel = viewModel()
+        runCurrent()
+
+        viewModel.onIntent(ExamIntent.PlayQuestion)
+        advance(1.seconds)
+
+        assertEquals(QuestionNotice.Making(2, 3, recalibrated = true), viewModel.uiState.value.questionNotice)
+    }
+
+    @Test
+    fun `F6_2 모델 출제가 실패해 내장 문항으로 바꾸면 그 문항 동안 알리고 다음 단계에서 지운다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        repository.fellBack = true
+        val viewModel = viewModel()
+
+        playUntilRecording(viewModel)
+        assertEquals(QuestionNotice.BuiltIn, viewModel.uiState.value.questionNotice)
+        advance(11.seconds)
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+
+        assertNull(viewModel.uiState.value.questionNotice)
     }
 
     @Test

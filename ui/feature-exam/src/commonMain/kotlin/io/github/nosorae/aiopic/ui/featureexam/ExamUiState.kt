@@ -35,6 +35,8 @@ data class ExamUiState(
     /** 문항 화면에 [recorded] 를 보일지(F2.7). 기본은 꺼짐이고 설정에서 켠다. */
     val answerTimer: Boolean = false,
     val error: ExamError? = null,
+    /** 질문을 불러오는 중이거나 내장 문항으로 바꿨다는 안내. 단계가 바뀌면 지운다. */
+    val questionNotice: QuestionNotice? = null,
     /** 누른 버튼(다음, Next, 나가기)의 저장이 도는 중이다. 끝날 때까지 그 버튼은 진행 표시를 보이고 다른 입력은 받지 않는다. */
     val saving: Boolean = false,
     val navigation: ExamDestination? = null,
@@ -46,6 +48,18 @@ data class ExamUiState(
 
 /** 문항 화면의 진행. 질문 글자는 보이지 않고 읽기와 녹음만 있다(F2.3). */
 enum class QuestionPhase { Ready, Speaking, Recording }
+
+/** 문항 화면의 질문 안내. 기다리는 동안 무엇을 만드는지 보이고, 오래 걸리거나 내장 문항으로 바꾸면 알린다. */
+sealed interface QuestionNotice {
+    /** 모델이 [first]~[last] 번 질문을 만드는 중이다. [recalibrated] 면 재조정에서 고른 난이도에 맞추고, 아니면 서베이 주제로 만든다. */
+    data class Making(val first: Int, val last: Int, val recalibrated: Boolean) : QuestionNotice
+
+    /** [SlowNoticeDelay] 넘게 기다리고 있다. */
+    data object Slow : QuestionNotice
+
+    /** 모델 출제가 실패해서 내장 문항을 낸다(F6.2). */
+    data object BuiltIn : QuestionNotice
+}
 
 enum class ExamError {
     /** 사용자가 마이크 권한을 주지 않았다. 설정에서 켜야 한다. */

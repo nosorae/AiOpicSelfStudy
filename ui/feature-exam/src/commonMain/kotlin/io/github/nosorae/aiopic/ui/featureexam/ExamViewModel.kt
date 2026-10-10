@@ -126,7 +126,7 @@ class ExamViewModel(
         val state = _uiState.value
         if (state.phase != QuestionPhase.Ready || (state.step !is ExamStep.Ask && state.step !is ExamStep.Check)) return
         _uiState.update { it.copy(phase = QuestionPhase.Speaking, error = null) }
-        playing = viewModelScope.launch { recordingStarted(playQuestionUseCase(session)) }
+        playing = viewModelScope.launch { recordingStarted(playQuestionUseCase(session, making(), ::showNotice)) }
     }
 
     /** 녹음 시작 5초 안에 한 번만 된다(F2.4). 녹음을 멈추고 질문을 다시 들은 뒤 같은 폴더에 이어 녹음한다. */
@@ -137,8 +137,19 @@ class ExamViewModel(
         _uiState.update { it.copy(phase = QuestionPhase.Speaking) }
         playing = viewModelScope.launch {
             val failed = stopRecordingUseCase()
-            recordingStarted(failed?.let(PlayResult::Failed) ?: playQuestionUseCase(session))
+            recordingStarted(failed?.let(PlayResult::Failed) ?: playQuestionUseCase(session, making(), ::showNotice))
         }
+    }
+
+    private fun showNotice(notice: QuestionNotice?) = _uiState.update { it.copy(questionNotice = notice) }
+
+    /** 지금 문항부터 다음 재조정(없으면 끝) 앞까지가 한 번에 만드는 질문이다. 재조정을 지났으면 고른 난이도에 맞춘다. */
+    private fun making(): QuestionNotice.Making {
+        val steps = content.spec.steps
+        val until = (session.stepIndex until steps.size).firstOrNull { steps[it] == ExamStep.Recalibrate } ?: steps.size
+        val asks = steps.indices.filter { i -> (steps[i] as? ExamStep.Ask)?.let { it.minLevel <= (session.level ?: 1) } == true }
+        val first = _uiState.value.questionNumber.coerceAtLeast(1)
+        return QuestionNotice.Making(first, asks.count { it < until }.coerceAtLeast(first), session.recalibration != null)
     }
 
     private suspend fun recordingStarted(result: PlayResult) {
@@ -208,7 +219,7 @@ class ExamViewModel(
                 questionCount = asks.size,
                 remaining = next.remaining,
                 replayUsed = next.replayUsed,
-            ).let { state -> if (stepChanged) state.copy(phase = QuestionPhase.Ready, recorded = Duration.ZERO, error = null) else state }
+            ).let { state -> if (stepChanged) state.copy(phase = QuestionPhase.Ready, recorded = Duration.ZERO, error = null, questionNotice = null) else state }
         }
         if (next.status != ExamStatus.InProgress) {
             stopAll()

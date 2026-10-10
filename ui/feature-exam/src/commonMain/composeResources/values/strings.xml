@@ -16,6 +16,11 @@
     <string name="exam_ready">Play 를 누르면 질문이 나오고, 끝나면 녹음이 시작됩니다.</string>
     <string name="exam_speaking">질문을 듣는 중</string>
     <string name="exam_recording">녹음 중</string>
+    <string name="exam_question_making_topics">고른 주제로 %1$d~%2$d번 질문을 만들고 있어요</string>
+    <string name="exam_question_making_difficulty">고른 난이도에 맞춰 %1$d~%2$d번 질문을 만들고 있어요</string>
+    <string name="exam_question_slow">조금 더 걸리고 있습니다. 연결 상태를 확인하세요</string>
+    <string name="exam_question_loading_description">질문을 불러오는 중</string>
+    <string name="exam_question_built_in">내장 문항으로 진행합니다</string>
     <string name="exam_recording_timer">녹음 중 %1$s</string>
     <string name="exam_rules">다시 듣기는 녹음 시작 5초 안에 한 번만 됩니다. Next 는 녹음 10초 뒤에 켜집니다.</string>
     <string name="exam_play">Play</string>

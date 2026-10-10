@@ -10,9 +10,12 @@ import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 시나리오 테스트가 앱을 [E2eApplication] 으로 띄운다. Gemini 만 가짜이고 DB, 녹음기, 기기 음성, 대기열은 실제다.
@@ -22,7 +25,10 @@ class E2eRunner : AndroidJUnitRunner() {
     override fun newApplication(cl: ClassLoader?, className: String?, context: Context?): Application = super.newApplication(cl, E2eApplication::class.java.name, context)
 }
 
-/** 키 확인과 답변 분석 요청에 모두 같은 저장 응답을 돌려준다. 키 확인은 200 만 보고, 분석은 이 JSON 을 읽는다. */
+/**
+ * 키 확인과 답변 분석 요청에 모두 같은 저장 응답을 돌려준다. 키 확인은 200 만 보고, 분석은 이 JSON 을 읽는다.
+ * 출제 요청은 [QUESTION_DELAY] 늦게 답하고 응답을 못 읽어 내장 문항으로 간다. Play 가 출제를 기다리지 않는지 볼 때 쓴다(#150).
+ */
 class E2eApplication : OpicApplication() {
     override fun recorder(): Recorder {
         val real = super.recorder()
@@ -33,11 +39,21 @@ class E2eApplication : OpicApplication() {
     }
 
     override fun gemini() = GeminiClient(
-        HttpClient(MockEngine { respond(ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }),
+        HttpClient(
+            MockEngine {
+                if (QUESTION_PROMPT in it.body.toByteArray().decodeToString()) delay(QUESTION_DELAY)
+                respond(ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+            },
+        ),
     )
 }
 
 fun recordFailRequested() = InstrumentationRegistry.getArguments().getString("recordFail") == "true"
+
+/** 시험 팩 출제 프롬프트의 첫 문장 일부. */
+private const val QUESTION_PROMPT = "You write questions for an OPIc English speaking mock test"
+
+private val QUESTION_DELAY = 3.seconds
 
 /** 분석 화면에 보일 받아쓴 답변. 리포트에서 이 글을 찾는다. */
 const val FAKE_TRANSCRIPT = "I live in Seoul and I go jogging every morning."
