@@ -20,6 +20,8 @@ kotlin {
         getByName("androidHostTest").dependencies {
             implementation(libs.compose.uiTestJunit4)
             implementation(libs.compose.uiTestManifest)
+            // 기다림 표시가 계속 도는 화면은 시계를 멈춘 테스트 규칙에서 노드째 찍는다.
+            implementation(libs.roborazzi.core)
         }
     }
 }

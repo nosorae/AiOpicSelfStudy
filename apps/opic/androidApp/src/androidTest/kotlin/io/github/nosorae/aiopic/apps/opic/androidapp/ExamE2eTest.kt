@@ -135,7 +135,7 @@ class ExamE2eTest {
         click("Play")
         var sawLoading = false
         compose.waitUntil(QUESTION_TIMEOUT) {
-            sawLoading = sawLoading || exists("질문을 만들고 있습니다")
+            sawLoading = sawLoading || exists("질문을 만들고 있어요")
             exists("녹음 중")
         }
         Log.i("ExamE2eTest", "FIRST_PLAY Play 에서 녹음 시작까지 ${System.currentTimeMillis() - start}ms")

@@ -42,7 +42,7 @@ final class FirstPlayUITests: XCTestCase {
         let start = Date()
         app.tapTag("exam-play")
         let phase = app.tag("exam-phase")
-        let loading = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "질문을 만들고 있습니다")).firstMatch
+        let loading = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "질문을 만들고 있어요")).firstMatch
         XCTAssertTrue(waitUntil(60) {
             if loading.exists { self.sawLoading = true }
             return phase.exists && phase.label.hasPrefix("녹음 중")

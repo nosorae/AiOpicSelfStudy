@@ -1,11 +1,11 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
-import android.content.Context
-import android.provider.Settings
-import androidx.test.core.app.ApplicationProvider
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nosorae.aiopic.ui.design.MontageTheme
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -19,6 +19,8 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class ExamScreenshotTest {
+    @get:Rule val rule = createComposeRule()
+
     @Config(qualifiers = "w360dp-h1800dp-xhdpi")
     @Test
     fun survey() = shot(ExamSamples.survey)
@@ -37,12 +39,12 @@ class ExamScreenshotTest {
 
     @Test fun questionSpeaking() = shot(ExamSamples.questionSpeaking)
 
-    /** 질문을 만드는 중 안내. 파형 막대는 동작 줄이기를 켠 것처럼 멈춘 모양으로 찍는다. */
-    @Test fun questionLoading() = still { shot(ExamSamples.questionLoading) }
+    /** 질문을 만드는 중 안내. 점 무리는 멈춘 시계의 한 장면이다. */
+    @Test fun questionLoading() = still(ExamSamples.questionLoading)
 
-    @Test fun questionLoadingRecalibrated() = still { shot(ExamSamples.questionLoadingRecalibrated) }
+    @Test fun questionLoadingRecalibrated() = still(ExamSamples.questionLoadingRecalibrated)
 
-    @Test fun questionSlow() = still { shot(ExamSamples.questionSlow) }
+    @Test fun questionSlow() = still(ExamSamples.questionSlow)
 
     @Test fun questionBuiltIn() = shot(ExamSamples.questionBuiltIn)
 
@@ -71,18 +73,15 @@ class ExamScreenshotTest {
     @Test
     fun questionReplayable_fontScale200() = shot(ExamSamples.questionReplayable)
 
-    /** 시스템 애니메이션 배율을 0 으로 두고 찍는다. 반복 애니메이션이 멈춘 한 장면이 된다. */
-    private fun still(block: () -> Unit) {
-        val resolver = ApplicationProvider.getApplicationContext<Context>().contentResolver
-        Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
-        try {
-            block()
-        } finally {
-            Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
-        }
-    }
-
     private fun shot(state: ExamUiState, dark: Boolean = false) = captureRoboImage {
         MontageTheme(darkTheme = dark) { ExamScreen(state = state, onIntent = {}) }
+    }
+
+    /** 계속 도는 기다림 표시가 있는 화면. 시계를 멈추고 1.2초 넘긴 장면을 찍는다. 시계가 흐르면 화면이 쉬지 않아 찍지 못한다. */
+    private fun still(state: ExamUiState) {
+        rule.mainClock.autoAdvance = false
+        rule.setContent { MontageTheme { ExamScreen(state = state, onIntent = {}) } }
+        rule.mainClock.advanceTimeBy(1_200)
+        rule.onRoot().captureRoboImage()
     }
 }
