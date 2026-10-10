@@ -65,15 +65,15 @@ flowchart TD
     g4["g4 #38<br/>완료 보고"]
   end
   subgraph P6["P6 보완"]
-    n_json["n-json<br/>읽을 수 없는 JSON 응답을 한 번 다시 요청"]
-    n_grade["n-grade<br/>회차 등급: 마지막 답변 분석 뒤 등급 요청, 저장, 리포트와 기록 표시"]
-    n_flag2["n-flag2<br/>틀림 표시를 교정 하나 단위로 약점 계산에서 뺀다"]
-    n_gen["n-gen<br/>AI 출제 연결, 실패하면 내장 문항으로"]
-    n_survey["n-survey<br/>서베이 Part 1~3 데이터를 시험 팩에 넣고 앱에서 넘긴다"]
-    t_resume["t-resume<br/>이어 본 시험에서 40분 타이머가 다시 흐르는지"]
-    e2e_ios["e2e-ios<br/>iOS XCUITest: 실제 터치로 모의시험 앞부분과 강제 종료 뒤 이어 보기"]
-    live["live<br/>실제 Gemini 확인: 앱 분석 경로와 품질 확인 첫 보고서"]
-    g5["g5<br/>확인: 요구사항 번호마다 테스트가 있는지"]
+    n_json["n-json #118<br/>읽을 수 없는 JSON 응답을 한 번 다시 요청"]
+    n_grade["n-grade #119<br/>회차 등급: 마지막 답변 분석 뒤 등급 요청, 저장, 리포트와 기록 표시"]
+    n_flag2["n-flag2 #120<br/>틀림 표시를 교정 하나 단위로 약점 계산에서 뺀다"]
+    n_gen["n-gen #121<br/>AI 출제 연결, 실패하면 내장 문항으로"]
+    n_survey["n-survey #122<br/>서베이 Part 1~3 데이터를 시험 팩에 넣고 앱에서 넘긴다"]
+    t_resume["t-resume #123<br/>이어 본 시험에서 40분 타이머가 다시 흐르는지"]
+    e2e_ios["e2e-ios #124<br/>iOS XCUITest: 실제 터치로 모의시험 앞부분과 강제 종료 뒤 이어 보기"]
+    live["live #125<br/>실제 Gemini 확인: 앱 분석 경로와 품질 확인 첫 보고서"]
+    g5["g5 #126<br/>확인: 요구사항 번호마다 테스트가 있는지"]
   end
   h0 --> h1
   h1 --> h2
