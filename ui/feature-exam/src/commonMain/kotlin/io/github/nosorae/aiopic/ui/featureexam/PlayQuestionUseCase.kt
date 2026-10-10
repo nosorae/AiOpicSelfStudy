@@ -4,6 +4,11 @@ import dev.zacsweers.metro.Inject
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.tts.api.Tts
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 질문을 기기 음성으로 끝까지 읽고 녹음을 시작한다(F2.3). 이 단계에 녹음 조각이 이미 있으면 이어 녹음이다.
@@ -15,8 +20,22 @@ class PlayQuestionUseCase(
     private val tts: Tts,
     private val recorder: Recorder,
 ) {
-    suspend operator fun invoke(session: ExamSession): PlayResult {
-        val question = repository.question(session) ?: return PlayResult.Failed(ExamError.QuestionUnavailable)
+    /**
+     * 질문을 받는 데 [LoadingNoticeDelay] 넘게 걸리면 [onNotice] 로 [making] 을, [SlowNoticeDelay] 넘게 걸리면 오래 걸린다고 알린다.
+     * 질문을 받으면 안내를 지우고, 내장 문항으로 바꿨으면 그렇게 알린다.
+     */
+    suspend operator fun invoke(session: ExamSession, making: QuestionNotice.Making? = null, onNotice: (QuestionNotice?) -> Unit = {}): PlayResult {
+        val picked = coroutineScope {
+            val waiting = launch {
+                delay(LoadingNoticeDelay)
+                making?.let(onNotice)
+                delay(SlowNoticeDelay - LoadingNoticeDelay)
+                onNotice(QuestionNotice.Slow)
+            }
+            repository.question(session).also { waiting.cancel() }
+        }
+        onNotice(if (picked?.fellBack == true) QuestionNotice.BuiltIn else null)
+        val question = picked?.question ?: return PlayResult.Failed(ExamError.QuestionUnavailable)
         val directory = repository.recordingDirectory(session)
         val resumed = recorder.chunks(directory).isNotEmpty()
         if (!(resumed && session.replayUsed) && !tts.speak(question.text)) return PlayResult.Failed(ExamError.SpeechFailed)
@@ -31,3 +50,9 @@ sealed interface PlayResult {
 
     data class Failed(val error: ExamError) : PlayResult
 }
+
+/** 질문이 바로 오면 안내가 깜빡이지 않게 이만큼 기다린 뒤에 불러오는 중을 보인다. */
+val LoadingNoticeDelay = 500.milliseconds
+
+/** Play 뒤 이만큼 지나도 질문이 안 오면 연결 상태를 보라고 안내를 바꾼다. */
+val SlowNoticeDelay = 10.seconds

@@ -11,8 +11,10 @@ import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -63,7 +65,7 @@ class StoreRepositoriesTest {
 
     private val settings = AppSettings.inMemory()
 
-    private fun exam(generate: suspend (ExamSession, List<QuestionType>) -> List<Question>? = { _, _ -> null }) = StoreExamRepository(store, queue, spec, { pool }, recordingsRoot = "root", settings, maxOutsideTopics = 0, generate)
+    private fun exam() = StoreExamRepository(store, queue, spec, { pool }, recordingsRoot = "root", settings, maxOutsideTopics = 0, CoroutineScope(EmptyCoroutineContext)) { _, _, _ -> null }
 
     private val practice = StorePracticeRepository(store, queue, { pool }, recordingsRoot = "root")
 
@@ -93,9 +95,9 @@ class StoreRepositoriesTest {
     @Test
     fun `F3_3 같은 단계는 저장소를 다시 만들어도 같은 질문이고 단계의 유형을 따른다`() = runTest {
         val session = ExamSession("s1", surveyTopics = listOf("영화", "요리"), level = 3)
-        val questions = (0..6).map { exam().question(session.copy(stepIndex = it)) }
+        val questions = (0..6).map { exam().question(session.copy(stepIndex = it))?.question }
 
-        assertEquals(questions, (0..6).map { exam().question(session.copy(stepIndex = it)) })
+        assertEquals(questions, (0..6).map { exam().question(session.copy(stepIndex = it))?.question })
         assertEquals(listOf(null, null, "intro", "intro", null, "routine", "issue"), questions.map { it?.type?.id })
         assertEquals(4, questions.filterNotNull().map { it.id }.toSet().size)
     }

@@ -1,4 +1,4 @@
-promptVersion: opic-en-questions-v2
+promptVersion: opic-en-questions-v3
 
 You write questions for an OPIc English speaking mock test. Write new questions in the style of the test. Do not copy published test questions.
 
@@ -6,8 +6,9 @@ Survey topics the test taker chose: {{topics}}
 Level the test taker chose (1 to 6): {{level}}
 Difficulty change chosen after question 7: {{recalibration}}
 Question types the test taker is weak at, weakest first: {{weakTypes}}
+Questions already asked in this test (number. type, topic): {{asked}}
 
-Write exactly one question for each line of this order, with the same number and type. Line 0 is a warm-up question asked before the scored questions, so make it different from question 1:
+This request covers only part of the test. Write exactly one question for each line of this order, with the same number and type:
 {{order}}
 
 Question types:
@@ -23,8 +24,9 @@ Question types:
 
 Rules:
 - Each run of description, routine and past-experience is a set of three questions on one topic. Take set topics from the survey topics. One set may use a common topic outside the survey.
+- Do not reuse a topic or situation from the questions already asked.
 - Role-play questions share one situation. Comparison and social-issue questions share one topic.
 - topic: the survey topic the question is about, "self" for self-intro, or a short name for a topic outside the survey.
-- Higher levels and "harder" get longer questions with two or three parts. Lower levels and "easier" get short, simple questions.
+- The difficulty change applies to questions 8 and later. Higher levels and "harder" get longer questions with two or three parts. Lower levels and "easier" get short, simple questions.
 - For weak types, ask the same kind of question again with a different topic so the test taker can practise it.
 - Return JSON that follows the response schema.

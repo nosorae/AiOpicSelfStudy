@@ -1,7 +1,7 @@
 import XCTest
 
 // 오래 걸리는 버튼이 처리 중 표시를 보이고, 키 확인 중에는 뒤로 나가거나 탭을 옮길 수 없는지 화면 터치로 본다(#133, #152).
-// 가짜 Gemini 가 3초 늦게 답해서 키 확인과 첫 문항 출제가 3초씩 걸린다.
+// 가짜 Gemini 가 3초 늦게 답해서 키 확인이 3초 걸린다.
 final class LoadingUITests: XCTestCase {
     private let app = XCUIApplication()
 
@@ -39,7 +39,7 @@ final class LoadingUITests: XCTestCase {
         XCTAssertTrue(app.tag("key-field").exists, "키를 확인하는 동안 탭을 누르자 키 입력 화면이 사라졌다")
         XCTAssertTrue(waitUntil(10) { !self.app.tag("key-field").exists }, "키 저장 뒤 설정으로 돌아오지 않았다")
 
-        // 모의시험 점검: Play 를 누르면 질문을 받아 오고 읽는 동안 처리 중이다.
+        // 모의시험 점검: Play 를 누르면 질문을 읽는 동안 처리 중이다.
         app.tabBars.buttons["홈"].tap()
         app.tapTag("home-exam")
         app.swipeUp()

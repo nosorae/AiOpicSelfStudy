@@ -83,6 +83,9 @@ import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.MissingResourceException
@@ -196,6 +199,8 @@ interface AppGraph {
         answerTimer = settings.answerTimer,
     )
 
+    /** 미리 보낸 출제 요청을 시험 화면을 다시 열어도 이어 받도록 앱에 하나만 둔다. 요청은 화면보다 오래 살아서 앱 범위에서 돈다. */
+    @SingleIn(AppScope::class)
     @Provides
     fun examRepository(
         store: OpicStore,
@@ -208,8 +213,9 @@ interface AppGraph {
         pack: ExamPack,
     ): ExamRepository {
         val writer = GeminiQuestionWriter(client) { keyVault.get(GeminiModels.PROVIDER) }
-        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS) { session, order ->
-            examQuestions(session, order, store, settings, writer, pack.questionsPrompt)
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope) { session, part, asked ->
+            examQuestions(session, part, asked, store, settings, writer, pack.questionsPrompt)
         }
     }
 
@@ -255,13 +261,14 @@ class ExamPack(
 )
 
 /**
- * 시험 팩의 출제 프롬프트에 서베이 주제, 수준, 재조정, 약점 유형(낮은 점수부터), 문항 유형 순서를 채워 Gemini 에 질문을 받는다(F6.1).
- * 음성 전송 동의가 없으면 보내지 않는다. 순서의 0번은 점검의 연습 문항이다. 설정에서 고른 모델로 보낸다.
+ * 시험 팩의 출제 프롬프트에 서베이 주제, 수준, 재조정, 약점 유형(낮은 점수부터), 이미 낸 질문, 받을 문항의 번호와 유형을 채워
+ * Gemini 에 회차의 한 몫을 받는다(F6.1, ADR 0029). 음성 전송 동의가 없으면 보내지 않는다. 번호 0 은 점검의 연습 문항이다.
+ * 설정에서 고른 분석 모델이 아니라 출제 모델로 보낸다.
  */
-// ponytail: 재조정은 7번 뒤에 고르는데 회차 질문을 점검 때 한 번에 받아서 늘 "not chosen yet" 이 간다. 재조정 뒤 문항을 따로 받게 되면 그때 채운다.
 private suspend fun examQuestions(
     session: ExamSession,
-    order: List<QuestionType>,
+    part: List<IndexedValue<QuestionType>>,
+    asked: List<Question>,
     store: OpicStore,
     settings: AppSettings,
     writer: GeminiQuestionWriter,
@@ -276,11 +283,11 @@ private suspend fun examQuestions(
             "level" to session.level.toString(),
             "recalibration" to (session.recalibration?.name?.lowercase() ?: "not chosen yet"),
             "weakTypes" to weak.joinToString { "${it.type.id} (${it.score})" }.ifEmpty { "none" },
-            "order" to order.withIndex().joinToString("\n") { (number, type) -> "$number. ${type.id}" },
+            "asked" to asked.withIndex().joinToString("; ") { (number, it) -> "$number. ${it.type.id}, ${it.topic}" }.ifEmpty { "none" },
+            "order" to part.joinToString("\n") { (number, type) -> "$number. ${type.id}" },
         ),
     )
-    val model = GeminiModels.choose(settings.selectedModelId()).model
-    return writer.write(model, Prompt(file.version, text, OpicPrompt.Questions.responseSchema.toString()), order, idPrefix = "${session.id}-")
+    return writer.write(GeminiModels.questionModel, Prompt(file.version, text, OpicPrompt.Questions.responseSchema.toString()), part.map { it.value }, idPrefix = "${session.id}-")
 }
 
 /**

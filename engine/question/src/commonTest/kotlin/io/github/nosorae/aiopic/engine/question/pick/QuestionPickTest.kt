@@ -79,6 +79,16 @@ class QuestionPickTest {
     }
 
     @Test
+    fun `F6_1 몫마다 따로 고르면 생성한 몫은 그대로 쓰고 실패한 몫은 회차 전체 풀 선택의 같은 위치라 몫끼리 겹치지 않는다`() = runTest {
+        val head = pickQuestions(order, topics, pool, maxOutsideTopics = 2, random = Random(5), part = 0..2) { null }!!
+        val tail = pickQuestions(order, topics, pool, maxOutsideTopics = 2, random = Random(5), part = 3..5) { generated.drop(3) }!!
+        val failedTail = pickQuestions(order, topics, pool, maxOutsideTopics = 2, random = Random(5), part = 3..5) { null }!!
+
+        assertEquals(generated.drop(3), tail)
+        assertEquals(pickFromPool(pool, order, topics, Random(5)), head + failedTail)
+    }
+
+    @Test
     fun `생성 결과 검사는 문항 수와 유형과 빈 글과 서베이 밖 주제 수를 본다`() {
         assertEquals(emptyList(), checkQuestions(generated, order, topics, maxOutsideTopics = 2))
         assertEquals(1, checkQuestions(generated.dropLast(1), order, topics, maxOutsideTopics = 2).size)

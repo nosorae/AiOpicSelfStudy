@@ -1,5 +1,8 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
+import android.content.Context
+import android.provider.Settings
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nosorae.aiopic.ui.design.MontageTheme
@@ -34,6 +37,15 @@ class ExamScreenshotTest {
 
     @Test fun questionSpeaking() = shot(ExamSamples.questionSpeaking)
 
+    /** 질문을 만드는 중 안내. 파형 막대는 동작 줄이기를 켠 것처럼 멈춘 모양으로 찍는다. */
+    @Test fun questionLoading() = still { shot(ExamSamples.questionLoading) }
+
+    @Test fun questionLoadingRecalibrated() = still { shot(ExamSamples.questionLoadingRecalibrated) }
+
+    @Test fun questionSlow() = still { shot(ExamSamples.questionSlow) }
+
+    @Test fun questionBuiltIn() = shot(ExamSamples.questionBuiltIn)
+
     @Test fun questionReplayable() = shot(ExamSamples.questionReplayable)
 
     @Test fun questionNextable() = shot(ExamSamples.questionNextable)
@@ -58,6 +70,17 @@ class ExamScreenshotTest {
     @Config(fontScale = 2f)
     @Test
     fun questionReplayable_fontScale200() = shot(ExamSamples.questionReplayable)
+
+    /** 시스템 애니메이션 배율을 0 으로 두고 찍는다. 반복 애니메이션이 멈춘 한 장면이 된다. */
+    private fun still(block: () -> Unit) {
+        val resolver = ApplicationProvider.getApplicationContext<Context>().contentResolver
+        Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+        try {
+            block()
+        } finally {
+            Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+        }
+    }
 
     private fun shot(state: ExamUiState, dark: Boolean = false) = captureRoboImage {
         MontageTheme(darkTheme = dark) { ExamScreen(state = state, onIntent = {}) }
