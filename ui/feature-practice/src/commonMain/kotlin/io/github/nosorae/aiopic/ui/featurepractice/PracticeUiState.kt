@@ -25,6 +25,8 @@ data class PracticeUiState(
     val error: PracticeError? = null,
     /** 누른 버튼(Next, 나가기)의 저장이 도는 중이다. 끝날 때까지 그 버튼은 진행 표시를 보이고 다른 입력은 받지 않는다. */
     val saving: Boolean = false,
+    /** 그 저장이 Next 로 낸 답변이다. 이때만 Next 가 진행 표시를 보이고 단계가 피드백으로 넘어간다. 나가기의 저장은 아니다. */
+    val submitting: Boolean = false,
     val navigation: PracticeDestination? = null,
 ) {
     val canPlay: Boolean get() = question != null && phase == PracticePhase.Ready

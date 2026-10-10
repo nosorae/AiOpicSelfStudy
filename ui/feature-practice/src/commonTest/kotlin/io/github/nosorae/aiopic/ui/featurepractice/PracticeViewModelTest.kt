@@ -276,6 +276,30 @@ class PracticeViewModelTest {
     }
 
     @Test
+    fun `녹음 중 나가기를 누르면 저장하는 동안에도 답변 제출 중이 아니다`() = practiceTest {
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+
+        viewModel.onIntent(PracticeIntent.ExitPractice)
+
+        assertTrue(viewModel.uiState.value.saving)
+        assertFalse(viewModel.uiState.value.submitting)
+    }
+
+    @Test
+    fun `Next 를 누르면 저장하는 동안 답변 제출 중이다`() = practiceTest {
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(10.seconds)
+
+        viewModel.onIntent(PracticeIntent.SubmitAnswer)
+
+        assertTrue(viewModel.uiState.value.submitting)
+        runCurrent()
+        assertFalse(viewModel.uiState.value.submitting)
+    }
+
+    @Test
     fun `녹음 조각을 쓰지 못했으면 Next 에서 답변을 저장하지 않고 이유를 보여 준다`() = practiceTest {
         recorder.writeFails = true
         val viewModel = viewModel()

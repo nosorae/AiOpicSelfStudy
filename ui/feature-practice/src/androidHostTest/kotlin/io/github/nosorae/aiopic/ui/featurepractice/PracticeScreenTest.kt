@@ -145,6 +145,14 @@ class PracticeScreenTest {
     }
 
     @Test
+    fun `녹음 중 나가기를 누르면 피드백 단계가 되지 않는다`() {
+        show(PracticeSamples.exiting)
+
+        step("답하기", "지금")
+        rule.onNodeWithText("피드백").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "지금").not())
+    }
+
+    @Test
     fun `왜 이 질문인지 약한 유형 이름과 점수가 보인다`() {
         show(PracticeSamples.ready)
 

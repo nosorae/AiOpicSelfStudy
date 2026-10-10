@@ -112,6 +112,7 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                     variant = MontageButtonVariant.Text,
                     type = MontageButtonType.Assistive,
                     size = MontageButtonSize.Medium,
+                    loading = state.saving && !state.submitting,
                 )
             }
         },
@@ -123,7 +124,7 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                     nextDelay = NextDelay,
                     canReplay = state.canReplay,
                     canNext = state.canNext,
-                    saving = state.saving,
+                    saving = state.submitting,
                     onReplay = { onIntent(PracticeIntent.ReplayQuestion) },
                     onNext = { onIntent(PracticeIntent.SubmitAnswer) },
                     modifier = Modifier.padding(horizontal = Gutter, vertical = MontageSpacing.spacing12),
@@ -138,7 +139,7 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
         ) {
             MontageAnswerSteps(
                 current = when {
-                    state.saving -> AnswerStep.Feedback
+                    state.submitting -> AnswerStep.Feedback
                     recording -> AnswerStep.Answer
                     else -> AnswerStep.Listen
                 },
@@ -272,7 +273,8 @@ internal object PracticeSamples {
     val speaking = ready.copy(phase = PracticePhase.Speaking)
     val replayable = ready.copy(phase = PracticePhase.Recording, recorded = 3.seconds, voiceLevel = 0.6f)
     val nextable = ready.copy(phase = PracticePhase.Recording, recorded = 12.seconds, replayUsed = true, voiceLevel = 0.3f)
-    val saving = nextable.copy(saving = true)
+    val saving = nextable.copy(saving = true, submitting = true)
+    val exiting = replayable.copy(saving = true)
     val micError = ready.copy(error = PracticeError.MicDenied)
     val recordingError = ready.copy(error = PracticeError.RecordingFailed)
     val noQuestion = PracticeUiState(error = PracticeError.QuestionUnavailable)
