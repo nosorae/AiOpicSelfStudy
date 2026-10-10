@@ -11,6 +11,7 @@ import io.github.nosorae.aiopic.apps.opic.shared.data.StorePracticeRepository
 import io.github.nosorae.aiopic.apps.opic.shared.data.StoreReads
 import io.github.nosorae.aiopic.engine.aigemini.GeminiAnalyzer
 import io.github.nosorae.aiopic.engine.aigemini.GeminiModels
+import io.github.nosorae.aiopic.engine.aigemini.GeminiQuestionWriter
 import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
 import io.github.nosorae.aiopic.engine.answer.analysis.AnswerAnalysisHandler
 import io.github.nosorae.aiopic.engine.answer.analysis.GradeRequest
@@ -32,9 +33,11 @@ import io.github.nosorae.aiopic.engine.answer.port.TranscriptAnalyzer
 import io.github.nosorae.aiopic.engine.answer.route.AnswerRouter
 import io.github.nosorae.aiopic.engine.answer.store.OpicDatabase
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
+import io.github.nosorae.aiopic.engine.answer.weakness.weaknessScores
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
+import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
@@ -49,6 +52,7 @@ import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
 import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.packs.opicen.OpicPrompt
 import io.github.nosorae.aiopic.packs.opicen.OpicQuestionType
+import io.github.nosorae.aiopic.packs.opicen.PromptFile
 import io.github.nosorae.aiopic.ui.featureexam.ExamContent
 import io.github.nosorae.aiopic.ui.featureexam.ExamRepository
 import io.github.nosorae.aiopic.ui.featureexam.ExamViewModel
@@ -77,6 +81,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.MissingResourceException
 import kotlin.time.DurationUnit
@@ -182,7 +187,21 @@ interface AppGraph {
     fun examContent(spec: ExamSpec, settings: AppSettings): ExamContent = ExamContent(spec, OpicEn.surveyTopics, surveyParts = emptyList(), answerTimer = settings.answerTimer)
 
     @Provides
-    fun examRepository(store: OpicStore, queue: WorkQueue, spec: ExamSpec, @Named(RECORDINGS) recordingsRoot: String): ExamRepository = StoreExamRepository(store, queue, spec, OpicEn::questionPool, recordingsRoot)
+    fun examRepository(
+        store: OpicStore,
+        queue: WorkQueue,
+        spec: ExamSpec,
+        @Named(RECORDINGS) recordingsRoot: String,
+        settings: AppSettings,
+        keyVault: KeyVault,
+        client: GeminiClient,
+        pack: ExamPack,
+    ): ExamRepository {
+        val writer = GeminiQuestionWriter(client) { keyVault.get(GeminiModels.PROVIDER) }
+        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS) { session, order ->
+            examQuestions(session, order, store, settings, writer, pack.questionsPrompt)
+        }
+    }
 
     @Provides
     fun practiceRepository(store: OpicStore, queue: WorkQueue, settings: AppSettings, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, { practicePool(settings) }, recordingsRoot)
@@ -210,11 +229,49 @@ interface AppGraph {
             @Provides workQueue: WorkQueue,
             @Provides gemini: GeminiClient,
             @Provides timer: MonotonicTimer,
+            @Provides pack: ExamPack,
         ): AppGraph
     }
 }
 
 private const val RECORDINGS = "recordingsRoot"
+
+/**
+ * 모의시험 출제에 쓰는 시험 팩 파일. 호스트 JVM 테스트는 Compose 리소스를 못 읽어서 바꿔 넣는다.
+ */
+class ExamPack(
+    val pool: suspend () -> List<Question> = OpicEn::questionPool,
+    val questionsPrompt: suspend () -> PromptFile = { OpicPrompt.Questions.load() },
+)
+
+/**
+ * 시험 팩의 출제 프롬프트에 서베이 주제, 수준, 재조정, 약점 유형(낮은 점수부터), 문항 유형 순서를 채워 Gemini 에 질문을 받는다(F6.1).
+ * 음성 전송 동의가 없으면 보내지 않는다. 순서의 0번은 점검의 연습 문항이다. 설정에서 고른 모델로 보낸다.
+ */
+// ponytail: 재조정은 7번 뒤에 고르는데 회차 질문을 점검 때 한 번에 받아서 늘 "not chosen yet" 이 간다. 재조정 뒤 문항을 따로 받게 되면 그때 채운다.
+private suspend fun examQuestions(
+    session: ExamSession,
+    order: List<QuestionType>,
+    store: OpicStore,
+    settings: AppSettings,
+    writer: GeminiQuestionWriter,
+    prompt: suspend () -> PromptFile,
+): List<Question>? {
+    if (!settings.isGiven()) return null
+    val file = prompt()
+    val weak = weaknessScores(store.answers().first(), store.flags().first())
+    val text = file.fill(
+        mapOf(
+            "topics" to session.surveyTopics.joinToString(),
+            "level" to session.level.toString(),
+            "recalibration" to (session.recalibration?.name?.lowercase() ?: "not chosen yet"),
+            "weakTypes" to weak.joinToString { "${it.type.id} (${it.score})" }.ifEmpty { "none" },
+            "order" to order.withIndex().joinToString("\n") { (number, type) -> "$number. ${type.id}" },
+        ),
+    )
+    val model = GeminiModels.choose(settings.selectedModelId()).model
+    return writer.write(model, Prompt(file.version, text, OpicPrompt.Questions.responseSchema.toString()), order, idPrefix = "${session.id}-")
+}
 
 /**
  * 한 문항 연습의 풀. 시험 팩의 내장 문항에 사용자가 설정에서 불러온 문항(F6.3)을 더한다. 모의시험 출제에는 넣지 않는다.
@@ -232,7 +289,7 @@ internal suspend fun practicePool(settings: AppSettings, builtIn: suspend () -> 
 
 /**
  * 플랫폼 진입점이 Metro 컴파일러 플러그인 없이 그래프를 만들 수 있게 여기서 만든다. 인자는 [AppGraph.Factory] 와 같다.
- * [gemini] 와 [timer] 는 앱이 기본값을 쓰고, 끝까지 도는 시나리오 테스트가 저장해 둔 Gemini 응답과 손으로 넘기는 시계로 바꾼다.
+ * [gemini], [timer], [pack] 은 앱이 기본값을 쓰고, 테스트가 저장해 둔 Gemini 응답, 손으로 넘기는 시계, 메모리 문항 풀과 프롬프트로 바꾼다.
  */
 fun createAppGraph(
     settings: AppSettings,
@@ -244,7 +301,8 @@ fun createAppGraph(
     workQueue: WorkQueue,
     gemini: GeminiClient = GeminiClient(),
     timer: MonotonicTimer = deviceMonotonicTimer(),
-): AppGraph = createGraphFactory<AppGraph.Factory>().create(settings, keyVault, database, recordingsRoot, recorder, tts, workQueue, gemini, timer)
+    pack: ExamPack = ExamPack(),
+): AppGraph = createGraphFactory<AppGraph.Factory>().create(settings, keyVault, database, recordingsRoot, recorder, tts, workQueue, gemini, timer, pack)
 
 /** 키 확인 요청 결과를 키 입력 화면의 결과로 옮긴다(F1.1). 모델이 없다는 답도 키는 통과했다는 뜻이다. */
 internal fun geminiKeyCheck(result: LlmResult): DomainResult<Unit> = when (result) {

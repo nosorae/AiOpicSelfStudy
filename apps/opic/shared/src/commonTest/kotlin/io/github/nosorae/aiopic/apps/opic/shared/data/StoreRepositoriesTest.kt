@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.apps.opic.shared.data
 
+import io.github.nosorae.aiopic.apps.opic.shared.AppSettings
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.store.OpicDatabase
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
@@ -60,7 +61,9 @@ class StoreRepositoriesTest {
     private val queue = FakeWorkQueue()
     private val reads = StoreReads(store)
 
-    private fun exam() = StoreExamRepository(store, queue, spec, { pool }, recordingsRoot = "root")
+    private val settings = AppSettings.inMemory()
+
+    private fun exam(generate: suspend (ExamSession, List<QuestionType>) -> List<Question>? = { _, _ -> null }) = StoreExamRepository(store, queue, spec, { pool }, recordingsRoot = "root", settings, maxOutsideTopics = 0, generate)
 
     private val practice = StorePracticeRepository(store, queue, { pool }, recordingsRoot = "root")
 
