@@ -18,6 +18,8 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Stability
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageAlert
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
@@ -135,6 +137,19 @@ fun SettingsScreen(
                 onClick = { onIntent(SettingsIntent.SetAnswerTimer(!state.answerTimerOn)) },
             ) {
                 MontageCheckbox(checked = state.answerTimerOn, onCheckedChange = { onIntent(SettingsIntent.SetAnswerTimer(it)) })
+            }
+            val haptics = LocalHaptics.current
+            val setHaptics = { on: Boolean ->
+                onIntent(SettingsIntent.SetHaptics(on))
+                // 켜는 즉시 저장돼 앱 틀의 켜기/끄기를 통과하므로, 켰을 때만 느낌을 한 번 보여 준다.
+                if (on) haptics.play(HapticEffect.Selection)
+            }
+            MontageListCell(
+                title = stringResource(Res.string.settings_haptics),
+                caption = stringResource(Res.string.settings_haptics_caption),
+                onClick = { setHaptics(!state.hapticsOn) },
+            ) {
+                MontageCheckbox(checked = state.hapticsOn, onCheckedChange = setHaptics)
             }
             MontageListCell(
                 title = stringResource(Res.string.settings_question_file),

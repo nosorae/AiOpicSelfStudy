@@ -2,6 +2,8 @@ package io.github.nosorae.aiopic.apps.opic.shared
 
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.libs.haptics.api.Haptics
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -81,5 +83,21 @@ class AppSettingsTest {
         settings.saveQuestionFile("""[{"id": "my-1", "text": "Describe your room.", "type": "description", "topic": "home"}]""")
 
         assertEquals(listOf(builtIn, Question("my-1", "Describe your room.", QuestionType("description"), "home")), practicePool(reopen()) { listOf(builtIn) })
+    }
+
+    @Test
+    fun `진동은 기본으로 켜져 있고 끄면 재생하지 않는다`() = runTest {
+        val played = mutableListOf<HapticEffect>()
+        val settings = reopen()
+        val haptics = settings.haptics(Haptics { played += it })
+
+        assertTrue(settings.hapticsOn())
+        haptics.play(HapticEffect.Selection)
+
+        settings.setHapticsOn(false)
+        haptics.play(HapticEffect.Success)
+
+        assertFalse(reopen().hapticsOn())
+        assertEquals(listOf(HapticEffect.Selection), played)
     }
 }

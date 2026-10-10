@@ -78,6 +78,7 @@ import io.github.nosorae.aiopic.ui.featurereport.flag.FlagStore
 import io.github.nosorae.aiopic.ui.featuresettings.SettingsViewModel
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportStore
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportViewModel
+import io.github.nosorae.aiopic.ui.featuresettings.haptics.HapticsStore
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
@@ -125,6 +126,9 @@ interface AppGraph {
     /** 앱 틀이 구독해서 화면 모드를 고르는 즉시 테마를 바꾼다(F9.1). */
     val themeModeStore: ThemeModeStore
 
+    /** 앱 틀이 플랫폼 진동에 설정의 진동 켜기/끄기를 씌울 때 쓴다. */
+    val settings: AppSettings
+
     /** 플랫폼 대기열이 답변 id 나 회차 등급 요청을 꺼낼 때마다 부른다(F5.1, F5.3). 대기열은 그래프보다 먼저 만들어져서 이 값을 나중에 이어 준다. */
     val analysisHandler: WorkHandler
 
@@ -137,6 +141,8 @@ interface AppGraph {
     @Provides fun answerTimerStore(settings: AppSettings): AnswerTimerStore = settings
 
     @Provides fun questionFileStore(settings: AppSettings): QuestionFileStore = settings
+
+    @Provides fun hapticsStore(settings: AppSettings): HapticsStore = settings
 
     // ponytail: 첫 버전은 제공사가 Gemini 하나라 목록도 하나다.
     @Provides fun modelCatalog(): ModelCatalog = GeminiModels

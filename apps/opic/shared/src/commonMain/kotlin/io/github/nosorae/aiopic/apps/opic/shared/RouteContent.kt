@@ -8,6 +8,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.libs.haptics.api.Haptics
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.featureexam.ExamRoute
 import io.github.nosorae.aiopic.ui.featurehistory.HistoryRoute
 import io.github.nosorae.aiopic.ui.featurehome.HomeRoute
@@ -47,6 +50,7 @@ internal fun RouteContent(
 ) {
     val scope = rememberCoroutineScope()
     val restart: () -> Unit = { scope.launch { onRestart(AppRoute.start(graph.decideStartUseCase())) } }
+    val haptics = LocalHaptics.current
     when (route) {
         AppRoute.Home -> HomeRoute(
             viewModel = viewModel { graph.homeViewModel },
@@ -109,7 +113,7 @@ internal fun RouteContent(
                 graph.keyEntryViewModelFactory.create(KeyProvider.entries.firstOrNull { it.id == route.provider })
             }
             BlockBackWhileChecking(viewModel, onBlockBack)
-            KeyEntryRoute(viewModel = viewModel, onDone = onBack, onOpenFreeTierNotice = { onOpen(AppRoute.FreeTierNotice) }, modifier = modifier)
+            KeyEntryRoute(viewModel = viewModel, onDone = { keySaved(haptics, onBack) }, onOpenFreeTierNotice = { onOpen(AppRoute.FreeTierNotice) }, modifier = modifier)
         }
 
         AppRoute.FreeTierNotice -> ConsentRoute(viewModel = viewModel { graph.consentViewModel }, onDone = onBack, modifier = modifier)
@@ -122,7 +126,7 @@ internal fun RouteContent(
         AppRoute.StartKeyEntry -> {
             val viewModel = viewModel(key = route.toString()) { graph.keyEntryViewModelFactory.create(null) }
             BlockBackWhileChecking(viewModel, onBlockBack)
-            KeyEntryRoute(viewModel = viewModel, onDone = restart, onOpenFreeTierNotice = { onOpen(AppRoute.FreeTierNotice) }, modifier = modifier)
+            KeyEntryRoute(viewModel = viewModel, onDone = { keySaved(haptics, restart) }, onOpenFreeTierNotice = { onOpen(AppRoute.FreeTierNotice) }, modifier = modifier)
         }
 
         AppRoute.StartConsent -> ConsentRoute(viewModel = viewModel { graph.consentViewModel }, onDone = restart, modifier = modifier)
@@ -139,3 +143,9 @@ private fun BlockBackWhileChecking(viewModel: KeyEntryViewModel, onBlockBack: (B
 
 @OptIn(ExperimentalUuidApi::class)
 private fun newId(): String = Uuid.random().toString()
+
+/** 키 저장은 확인 요청을 기다린 끝이라 성공 진동으로 알리고 다음 화면으로 간다. */
+private fun keySaved(haptics: Haptics, next: () -> Unit) {
+    haptics.play(HapticEffect.Success)
+    next()
+}

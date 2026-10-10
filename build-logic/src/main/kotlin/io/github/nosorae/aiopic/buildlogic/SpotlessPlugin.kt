@@ -24,7 +24,8 @@ class SpotlessPlugin : Plugin<Project> {
         // Compose 규칙 묶음은 .kt 에만 건다. 기본값으로 켜진 규칙이 화면 함수 이름(대문자 시작), 미리보기 비공개,
         // ViewModel 을 자식 컴포저블에 넘기지 않기를 잡는다. 화면은 Material 3 만 쓰므로 Material 2 사용을 막는 규칙을 켠다.
         val composeRules = library("composeRules-ktlint").get().let { "${it.group}:${it.name}:${it.version}" }
-        val composeEditorConfig = editorConfig + ("compose_disallow_material2" to "true")
+        // CompositionLocal 은 숨은 의존이라 막고, 거의 모든 화면이 쓰는 진동(ui/design 의 LocalHaptics)만 허용한다.
+        val composeEditorConfig = editorConfig + ("compose_disallow_material2" to "true") + ("compose_allowed_composition_locals" to "LocalHaptics")
         val excluded = listOf("**/build/**", "**/.gradle/**", "**/.kotlin/**")
 
         extensions.configure<SpotlessExtension> {

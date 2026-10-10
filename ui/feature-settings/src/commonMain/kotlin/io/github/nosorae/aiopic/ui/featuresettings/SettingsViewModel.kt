@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.Inject
 import io.github.nosorae.aiopic.ui.featuresettings.consent.RevokeVoiceConsentUseCase
+import io.github.nosorae.aiopic.ui.featuresettings.haptics.SetHapticsUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.key.DeleteKeyUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.model.SelectModelUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.practice.ImportQuestionsUseCase
@@ -16,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** 설정 탭(S14)의 분석 모델, 제공사별 키, 음성 전송 동의, 답변 타이머, 문항 파일, 화면 모드. */
+/** 설정 탭(S14)의 분석 모델, 제공사별 키, 음성 전송 동의, 답변 타이머, 문항 파일, 진동, 화면 모드. */
 @Inject
 class SettingsViewModel(
     private val loadSettingsUseCase: LoadSettingsUseCase,
@@ -26,6 +27,7 @@ class SettingsViewModel(
     private val revokeVoiceConsentUseCase: RevokeVoiceConsentUseCase,
     private val setAnswerTimerUseCase: SetAnswerTimerUseCase,
     private val importQuestionsUseCase: ImportQuestionsUseCase,
+    private val setHapticsUseCase: SetHapticsUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -71,6 +73,11 @@ class SettingsViewModel(
                 _uiState.update { it.copy(answerTimerOn = intent.on) }
             }
 
+            is SettingsIntent.SetHaptics -> viewModelScope.launch {
+                setHapticsUseCase(intent.on)
+                _uiState.update { it.copy(hapticsOn = intent.on) }
+            }
+
             is SettingsIntent.ImportQuestions -> viewModelScope.launch {
                 val result = importQuestionsUseCase(intent.json)
                 _uiState.update {
@@ -96,6 +103,7 @@ class SettingsViewModel(
                     themeMode = loaded.themeMode,
                     consentGiven = loaded.consentGiven,
                     answerTimerOn = loaded.answerTimerOn,
+                    hapticsOn = loaded.hapticsOn,
                     importedQuestionCount = loaded.importedQuestionCount,
                 )
             }

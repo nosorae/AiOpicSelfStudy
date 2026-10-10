@@ -30,6 +30,8 @@ kotlin {
         implementation(project(":libs:recorder"))
         implementation(project(":libs:tts"))
         implementation(project(":libs:timer"))
+        // 플랫폼 진동에 설정의 켜기/끄기를 씌워 화면에 넘긴다.
+        implementation(project(":libs:haptics"))
         implementation(project(":libs:llm-gemini"))
         implementation(project(":packs:opic-en"))
         implementation(libs.androidx.lifecycle.viewmodelCompose)
