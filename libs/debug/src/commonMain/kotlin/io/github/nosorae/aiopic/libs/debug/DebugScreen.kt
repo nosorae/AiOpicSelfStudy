@@ -44,7 +44,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 private enum class DebugTab { Logs, Network, Switches, Panels, Info, Crashes }
@@ -218,16 +217,7 @@ private fun PanelsTab(core: DebugCore, modifier: Modifier = Modifier) {
     val panels by core.panels.collectAsState()
     var version by remember { mutableIntStateOf(0) }
     val rows by produceState(emptyList<Pair<String, String>>(), panels, version) {
-        value = panels.flatMap { (title, rows) ->
-            val lines = try {
-                rows()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                listOf("error" to (e.message ?: e::class.simpleName.orEmpty()))
-            }
-            listOf("## $title" to "") + lines
-        }
+        value = core.panelRows()
     }
     Column(modifier) {
         TextButton(onClick = { version++ }, modifier = Modifier.padding(horizontal = 4.dp)) { Text("Reload") }

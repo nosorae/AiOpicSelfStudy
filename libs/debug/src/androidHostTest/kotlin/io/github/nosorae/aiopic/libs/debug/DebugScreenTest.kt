@@ -98,6 +98,19 @@ class DebugScreenTest {
     }
 
     @Test
+    fun panelValuesAreRedactedOnScreen() {
+        val key = "AIza" + "x".repeat(35)
+        core.panel("Key") { listOf("key" to key) }
+        core.panel("Broken") { error("bad $key") }
+        show()
+
+        rule.onNodeWithText("Panels").performClick()
+        rule.onNodeWithText("key: ***").assertExists()
+        rule.onNodeWithText("error: bad ***").assertExists()
+        rule.onAllNodesWithText(key, substring = true).assertCountEquals(0)
+    }
+
+    @Test
     fun shareSendsTheWholeReport() {
         core.log(DebugLevel.Error, "Rec", "녹음 실패")
         show()

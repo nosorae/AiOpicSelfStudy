@@ -113,19 +113,22 @@ internal class DebugCore(val clock: Clock) {
         append("# Info\n")
         platform.info().forEach { (name, value) -> append("$name: $value\n") }
         append(switchesText())
-        panels.value.forEach { (title, rows) ->
-            append("## $title\n")
-            try {
-                rows().forEach { (name, value) -> append("$name: ${redact(value)}\n") }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                append("${e.message ?: e::class.simpleName}\n")
-            }
-        }
+        panelRows().forEach { (name, value) -> append(if (name.startsWith("## ")) "$name\n" else "$name: $value\n") }
         crashes().forEach { (_, text) -> append("\n$text\n") }
         append(logsText())
         append(callsText())
+    }
+
+    /** 앱 패널을 읽어 가린 줄로 돌려준다. 패널 제목은 `"## 제목" to ""` 줄이다. 화면과 보고서가 같이 써서 화면에도 키 원문이 안 보인다. */
+    suspend fun panelRows(): List<Pair<String, String>> = panels.value.flatMap { (title, rows) ->
+        val lines = try {
+            rows()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            listOf("error" to (e.message ?: e::class.simpleName.orEmpty()))
+        }
+        listOf("## $title" to "") + lines.map { (name, value) -> redact(name) to redact(value) }
     }
 
     private fun callsText() = "# Network\n" + calls.value.joinToString("") { call ->

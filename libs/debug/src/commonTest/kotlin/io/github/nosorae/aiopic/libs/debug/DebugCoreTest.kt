@@ -64,7 +64,7 @@ class DebugCoreTest {
     fun reportHasInfoSwitchesPanelsAndLogs() = runTest {
         core.switch("slow", "느린 응답")
         core.panel("대기열") { listOf("남은 작업" to "2") }
-        core.panel("고장") { error("읽기 실패") }
+        core.panel("고장") { error("읽기 실패 AIza" + "x".repeat(35)) }
         core.log(DebugLevel.Warn, "Key", "확인 실패")
 
         val report = core.report()
@@ -72,7 +72,7 @@ class DebugCoreTest {
         assertContains(report, "app: 1.0 (7)")
         assertContains(report, "느린 응답 (slow): off")
         assertContains(report, "## 대기열\n남은 작업: 2")
-        assertContains(report, "## 고장\n읽기 실패")
+        assertContains(report, "## 고장\nerror: 읽기 실패 ***")
         assertContains(report, "2026-10-10T01:00:00Z W Key: 확인 실패")
     }
 
