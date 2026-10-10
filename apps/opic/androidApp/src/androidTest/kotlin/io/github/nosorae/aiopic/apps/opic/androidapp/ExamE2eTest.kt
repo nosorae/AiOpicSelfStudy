@@ -5,6 +5,7 @@ import android.os.Process
 import android.util.Log
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
@@ -63,7 +64,7 @@ class ExamE2eTest {
         // 서베이(F2.2): 한 화면에 질문 하나, 고르면 바로 다음 화면. 네 묶음에서 묶음 최소를 넘게 합쳐 12개. 난이도 1단계(12문항)
         SURVEY_OPTIONS.forEach(::click)
         SURVEY_GROUPS.forEach { topics ->
-            topics.forEach { compose.onNode(hasText(it)).performScrollTo().performClick() }
+            topics.forEach { compose.onNode(hasTestTag("survey-topic-$it")).performScrollTo().performClick() }
             click("다음")
         }
         click("1단계")
@@ -167,12 +168,12 @@ class ExamE2eTest {
         /** Part 1~3 에서 하위 질문이 가장 적은 길. */
         val SURVEY_OPTIONS = listOf("일해 본 적 없어요", "아니요", "수업을 들은 지 5년이 넘었어요", "혼자 집이나 아파트에서")
 
-        /** 여가, 취미, 운동, 휴가 묶음에서 5, 3, 3, 1개. */
+        /** 여가, 취미, 운동, 휴가 묶음에서 5, 3, 3, 1개(묶음 최소 2, 1, 1, 1 을 채우고 합쳐 12개). 보기 이름은 바뀌어 와서 주제 id 로 찾는다. */
         val SURVEY_GROUPS = listOf(
-            listOf("영화 보기", "공연 보기", "콘서트 가기", "공원 가기", "카페 가기"),
-            listOf("음악 듣기", "요리", "책 읽기"),
-            listOf("조깅", "걷기", "헬스"),
-            listOf("해외 여행"),
+            listOf("movies", "performances", "concerts", "parks", "camping"),
+            listOf("music", "cooking", "drawing"),
+            listOf("jogging", "walking", "gym"),
+            listOf("overseas-travel"),
         )
 
         const val SCREEN_TIMEOUT = 15_000L
