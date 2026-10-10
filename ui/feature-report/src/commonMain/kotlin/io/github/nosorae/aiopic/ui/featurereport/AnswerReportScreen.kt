@@ -1,13 +1,17 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -16,6 +20,8 @@ import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
+import io.github.nosorae.aiopic.ui.design.MontageCelebration
+import io.github.nosorae.aiopic.ui.design.MontageCelebrationSize
 import io.github.nosorae.aiopic.ui.design.MontageCountUp
 import io.github.nosorae.aiopic.ui.design.MontageGatheringDots
 import io.github.nosorae.aiopic.ui.design.MontageListCell
@@ -37,6 +43,7 @@ fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Mod
  * 답변 하나의 피드백(F5.2, F7.1). 모의시험과 한 문항 연습이 같은 화면을 쓴다. 분석한 제공사와 모델을 맨 위에 둔다(F5.7).
  * 받아쓴 글만 분석한 경로면 발음 칸에 "평가 안 함"을 쓴다(F5.9). 교정마다 "틀림"을 누를 수 있다(F8.1).
  * 이 화면의 움직임은 하나다. 분석을 기다리는 동안은 모이는 점, 분석이 끝났으면 굴러 올라가는 점수다(답변마다 한 번만).
+ * 보는 중에 분석이 끝나면 점수 둘레에 작은 축하가 한 번 터진다.
  */
 @Composable
 fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent) -> Unit, modifier: Modifier = Modifier) {
@@ -47,14 +54,18 @@ fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent
 
             answer == null -> Paragraph(stringResource(Res.string.answer_not_found), secondary = true)
 
-            else -> LazyColumn(Modifier.fillMaxWidth()) {
-                answerContent(answer, state.names, state.wrongCorrections) { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) }
+            else -> {
+                // 이 화면을 보는 동안 분석이 끝났을 때만 축하한다. 이미 분석된 답변을 다시 여는 것은 상태가 바뀐 게 아니다.
+                val waited = rememberSaveable(answer.id) { answer.analysis == AnswerAnalysis.Pending }
+                LazyColumn(Modifier.fillMaxWidth()) {
+                    answerContent(answer, state.names, state.wrongCorrections, waited) { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) }
+                }
             }
         }
     }
 }
 
-private fun LazyListScope.answerContent(answer: Answer, names: ReportNames, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
+private fun LazyListScope.answerContent(answer: Answer, names: ReportNames, wrongCorrections: Set<Int>, celebrate: Boolean, onWrongClick: (index: Int) -> Unit) {
     item {
         answer.analysis.analyzedBy?.let { Paragraph(stringResource(Res.string.answer_analyzed_by, names.model(it)), secondary = true) }
         SectionTitle(stringResource(Res.string.answer_question))
@@ -72,17 +83,22 @@ private fun LazyListScope.answerContent(answer: Answer, names: ReportNames, wron
             Paragraph(stringResource(Res.string.answer_unscorable_help), secondary = true)
         }
 
-        is AnswerAnalysis.Done -> feedback(answer.id, analysis.feedback, wrongCorrections, onWrongClick)
+        is AnswerAnalysis.Done -> feedback(answer.id, analysis.feedback, wrongCorrections, celebrate, onWrongClick)
     }
 }
 
-private fun LazyListScope.feedback(answerId: String, feedback: Feedback, wrongCorrections: Set<Int>, onWrongClick: (index: Int) -> Unit) {
+private fun LazyListScope.feedback(answerId: String, feedback: Feedback, wrongCorrections: Set<Int>, celebrate: Boolean, onWrongClick: (index: Int) -> Unit) {
     item {
         SectionTitle(stringResource(Res.string.answer_score))
-        Row(Modifier.padding(horizontal = MontageSpacing.spacing20), verticalAlignment = Alignment.Bottom) {
-            val style = MontageTheme.typography.title1.bold
-            MontageCountUp(feedback.score, style = style, color = MontageTheme.colors.foregroundNeutralStrong, playOnceKey = "answer-score:$answerId:${feedback.score}")
-            Text(stringResource(Res.string.answer_score_unit), style = style, color = MontageTheme.colors.foregroundNeutralStrong)
+        Box(Modifier.padding(horizontal = MontageSpacing.spacing20), contentAlignment = Alignment.Center) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                val style = MontageTheme.typography.title1.bold
+                MontageCountUp(feedback.score, style = style, color = MontageTheme.colors.foregroundNeutralStrong, playOnceKey = "answer-score:$answerId:${feedback.score}")
+                Text(stringResource(Res.string.answer_score_unit), style = style, color = MontageTheme.colors.foregroundNeutralStrong)
+            }
+            if (celebrate) {
+                MontageCelebration(MontageCelebrationSize.Small, Modifier.matchParentSize().wrapContentSize(unbounded = true).requiredSize(MontageSpacing.spacing48 * 2), playOnceKey = "answer-celebration:$answerId")
+            }
         }
     }
     item {
