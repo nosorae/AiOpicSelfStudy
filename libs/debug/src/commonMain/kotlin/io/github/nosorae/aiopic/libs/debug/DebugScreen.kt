@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -56,7 +58,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
@@ -75,7 +76,7 @@ private enum class DebugTab { Logs, Network, Switches, Panels, Info, Crashes }
  * 디버깅 화면. 앱 디자인 체계와 묶이지 않게 이 모듈의 토큰([DebugTheme])으로 그린다.
  * 탭은 로그, 네트워크, 스위치, 앱 패널, 기기와 앱 정보, 크래시이고, 공유는 [DebugCore.report] 전체를 [onShare] 로 넘긴다.
  * 직접 만든 움직임은 없다. Material 부품의 짧은 전환(탭 밑줄, 스위치)과 기다리는 동안 계속 도는 막대([Waiting])뿐이다.
- * 동작 줄이기([reduceMotion])가 켜지면 막대는 멈춘 한 장면으로 그린다. 기다리는 중이라는 것은 옆의 문장과 막힌 버튼으로 남는다.
+ * 동작 줄이기([reduceMotion])가 켜지면 막대는 멈춘 한 장면으로 그린다. 기다리는 중이라는 것은 막대 옆의 문장과 막힌 버튼으로 남는다.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,8 +97,8 @@ internal fun DebugScreen(
                 TopAppBar(
                     title = { Text("Debug tools", style = DebugType.title) },
                     actions = {
-                        // 보고서는 앱 패널을 다시 읽어서 만들어 시간이 걸릴 수 있다. 그동안 버튼 글자와 폭은 그대로 두고 막기만 하며,
-                        // 탭 줄 밑 막대로 기다림을 보인다. 다른 버튼과 탭, 본문도 끝날 때까지 막는다.
+                        // 보고서는 앱 패널을 다시 읽어서 만들어 시간이 걸릴 수 있다. 그동안 버튼 글자와 폭은 그대로 두고 글자 밑에 막대를 돌리며,
+                        // 탭 줄 밑에 무엇이 나오는지 문장으로 적는다. 다른 버튼과 탭, 본문도 끝날 때까지 막는다.
                         TextButton(
                             enabled = !sharing,
                             onClick = {
@@ -110,7 +111,12 @@ internal fun DebugScreen(
                                     }
                                 }
                             },
-                        ) { Text("Share") }
+                        ) {
+                            Box {
+                                Text("Share")
+                                if (sharing) Waiting(reduceMotion, Modifier.matchParentSize().wrapContentHeight(Alignment.Bottom).offset(y = DebugSpace.xs))
+                            }
+                        }
                         TextButton(enabled = !sharing, onClick = onClose) { Text("Close") }
                     },
                 )
@@ -119,7 +125,14 @@ internal fun DebugScreen(
                         Tab(selected = it == tab, enabled = !sharing, onClick = { tab = it }, text = { Text(it.name) })
                     }
                 }
-                if (sharing) Waiting(reduceMotion, Modifier.semantics { contentDescription = "Preparing report" })
+                if (sharing) {
+                    Text(
+                        "Building the report to share: device info, switches, panels, crashes, logs and network calls.",
+                        style = DebugType.body,
+                        color = debugColors.ink,
+                        modifier = Modifier.fillMaxWidth().background(debugColors.sunken).padding(horizontal = DebugSpace.l, vertical = DebugSpace.m),
+                    )
+                }
             }
         },
     ) { padding ->

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -59,9 +60,9 @@ class DebugScreenshotTest {
         DebugCall(at, method, url, emptyList(), "", status, ms.milliseconds, responseBody = body, error = error),
     )
 
-    private fun shot(dark: Boolean = false, records: Boolean = true, act: () -> Unit = {}) {
+    private fun shot(dark: Boolean = false, records: Boolean = true, reduceMotion: Boolean = false, act: () -> Unit = {}) {
         if (records) records()
-        rule.setContent { DebugApp(core, onShare = {}, onClose = {}, reduceMotion = false, dark = dark) }
+        rule.setContent { DebugApp(core, onShare = {}, onClose = {}, reduceMotion = reduceMotion, dark = dark) }
         act()
         rule.onRoot().captureRoboImage()
     }
@@ -123,6 +124,23 @@ class DebugScreenshotTest {
         )
         rule.onNodeWithText("Crashes").performScrollTo().performClick()
     }
+
+    // 보고서를 만드는 중. 끝없는 막대는 찍을 때마다 다르게 나와 동작 줄이기의 멈춘 장면으로 찍는다. 패널이 끝나지 않게 막아 둔다.
+    private fun startSharing() {
+        core.panel("Slow") {
+            CompletableDeferred<Unit>().await()
+            emptyList()
+        }
+        rule.onNodeWithText("Share").performClick()
+    }
+
+    @Test fun sharing() = shot(reduceMotion = true) { startSharing() }
+
+    @Test fun sharingDark() = shot(dark = true, reduceMotion = true) { startSharing() }
+
+    @Config(fontScale = 2f)
+    @Test
+    fun sharingFontScale200() = shot(reduceMotion = true) { startSharing() }
 
     @Test fun empty() = shot(records = false)
 

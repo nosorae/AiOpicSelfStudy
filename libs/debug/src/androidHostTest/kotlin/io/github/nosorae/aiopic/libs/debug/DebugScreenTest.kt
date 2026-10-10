@@ -17,7 +17,6 @@ import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
-import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -232,12 +231,14 @@ class DebugScreenTest {
         rule.onNodeWithText("Share").assertIsNotEnabled()
         rule.onNodeWithText("Close").assertIsNotEnabled()
         rule.onNodeWithText("Network").assertIsNotEnabled()
-        rule.onNodeWithContentDescription("Preparing report").assertExists()
+        rule.onNodeWithText("Building the report to share", substring = true).assertIsDisplayed()
+        rule.onAllNodes(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertCountEquals(1)
 
         gate.complete(Unit)
         rule.waitUntil { shared != null }
         rule.onNodeWithText("Share").assertIsEnabled()
         rule.onNodeWithText("Close").assertIsEnabled()
+        rule.onNodeWithText("Building the report to share", substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -251,6 +252,23 @@ class DebugScreenTest {
 
         rule.onNodeWithText("Panels").performClick()
 
+        rule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.4f, 0f..1f))).assertExists()
+        rule.onAllNodes(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertCountEquals(0)
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun reduceMotionKeepsTheSharingSentenceWithAStillBar() {
+        val gate = CompletableDeferred<Unit>()
+        core.panel("Slow") {
+            gate.await()
+            emptyList()
+        }
+        rule.setContent { DebugScreen(core, onShare = {}, onClose = {}, reduceMotion = true) }
+
+        rule.onNodeWithText("Share").performClick()
+
+        rule.onNodeWithText("Building the report to share", substring = true).assertIsDisplayed()
         rule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.4f, 0f..1f))).assertExists()
         rule.onAllNodes(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertCountEquals(0)
         gate.complete(Unit)
