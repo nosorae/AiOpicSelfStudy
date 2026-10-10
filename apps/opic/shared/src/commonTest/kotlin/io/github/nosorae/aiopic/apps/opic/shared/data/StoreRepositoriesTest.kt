@@ -9,6 +9,7 @@ import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
+import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
 import kotlinx.coroutines.CoroutineScope
@@ -99,6 +100,22 @@ class StoreRepositoriesTest {
         assertEquals(questions, (0..6).map { exam().question(session.copy(stepIndex = it))?.question })
         assertEquals(listOf(null, null, "intro", "intro", null, "routine", "issue"), questions.map { it?.type?.id })
         assertEquals(4, questions.filterNotNull().map { it.id }.toSet().size)
+    }
+
+    @Test
+    fun `185 회차가 끝나면 진행 중인 다른 회차의 질문만 남기고 질문 음성을 지운다`() = runTest {
+        val kept = mutableListOf<List<String>>()
+        val exam = StoreExamRepository(store, queue, spec, { pool }, "root", settings, 0, CoroutineScope(EmptyCoroutineContext), cleanVoices = { kept += it }) { _, _, _ -> null }
+        val running = ExamSession("s2", stepIndex = 3, surveyTopics = listOf("영화"), level = 3)
+        val asked = exam.question(running)!!.question
+        exam.save(running)
+        exam.save(ExamSession("s1", stepIndex = 3, surveyTopics = listOf("요리"), level = 3))
+
+        exam.save(ExamSession("s1", status = ExamStatus.Finished))
+
+        // 끝난 s1 의 질문은 남기지 않는다. 진행 중인 s2 는 이미 낸 몫(점검 연습 문항과 1번)을 남긴다.
+        assertEquals(listOf(settings.examQuestions("s2")!!.map { it.text }), kept)
+        assertTrue(asked.text in kept.single())
     }
 
     @Test
