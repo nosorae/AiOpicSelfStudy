@@ -13,6 +13,7 @@ import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import org.jetbrains.compose.resources.MissingResourceException
 import kotlin.time.Duration.Companion.minutes
 
 /** 영어 오픽 한 회의 순서와 등급. 엔진은 이 값을 데이터로만 받는다(F2.1). */
@@ -135,6 +136,16 @@ object OpicEn {
 
     /** 내장 문항 풀(F6.2). 앱이 출제할 때마다 읽는다. */
     suspend fun questionPool(): List<Question> = parseQuestions(Res.readBytes("files/questions/pool.json").decodeToString())
+
+    /**
+     * 내장 문항 하나를 Gemini 음성으로 미리 읽어 둔 파일(모노 AAC m4a, #161). 없으면 null 이고 앱이 기기 음성으로 읽는다.
+     * 파일은 `scripts/make_question_voices.py` 가 문항 id 이름으로 만든다.
+     */
+    suspend fun questionVoice(id: String): ByteArray? = try {
+        Res.readBytes("files/voices/$id.m4a")
+    } catch (_: MissingResourceException) {
+        null
+    }
 }
 
 /** 오픽 등급, 낮은 것부터. 회차 등급 응답 스키마가 이 값만 고르게 한다(F5.3). */
