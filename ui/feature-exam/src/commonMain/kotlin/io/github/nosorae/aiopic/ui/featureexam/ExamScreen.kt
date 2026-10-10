@@ -80,6 +80,7 @@ import io.github.nosorae.aiopic.ui.design.icon_normal_close
 import io.github.nosorae.aiopic.ui.design.icon_normal_play
 import io.github.nosorae.aiopic.ui.design.icon_normal_refresh
 import io.github.nosorae.aiopic.ui.design.rememberElapsedFraction
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -97,13 +98,27 @@ fun ExamRoute(viewModel: ExamViewModel, onExit: () -> Unit, onFinish: () -> Unit
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val currentOnExit by rememberUpdatedState(onExit)
     val currentOnFinish by rememberUpdatedState(onFinish)
+    // 마지막 문항까지 답했으면 축하 화면을 잠깐 보이고 리포트로 간다. 시간이 다 돼 끝났으면 바로 간다.
+    var finishing by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(state.navigation) {
         when (state.navigation) {
             ExamDestination.Exit -> currentOnExit()
-            ExamDestination.Finished -> currentOnFinish()
+
+            ExamDestination.Finished -> {
+                if (state.answeredAll) {
+                    finishing = true
+                    delay(FINISH_HOLD_MILLIS)
+                }
+                currentOnFinish()
+            }
+
             null -> return@LaunchedEffect
         }
         viewModel.onIntent(ExamIntent.NavigationHandled)
+    }
+    if (finishing) {
+        ExamFinished(state.questionCount, modifier)
+        return
     }
     val requestMic = rememberMicPermission()
     val openSettings = rememberOpenAppSettings()
@@ -639,3 +654,6 @@ internal object ExamSamples {
 private fun ExamScreenPreview() {
     MontageTheme { ExamScreen(state = ExamSamples.questionReplayable, onIntent = {}) }
 }
+
+/** 다 마친 축하(1.4초)가 끝나고 문구를 읽을 틈까지 보인다. 동작 줄이기여도 같다. */
+private const val FINISH_HOLD_MILLIS = 2_000L

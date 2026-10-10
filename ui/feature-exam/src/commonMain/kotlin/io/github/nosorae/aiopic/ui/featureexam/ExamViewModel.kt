@@ -238,7 +238,7 @@ class ExamViewModel(
         }
         if (next.status != ExamStatus.InProgress) {
             stopAll()
-            _uiState.update { it.copy(navigation = ExamDestination.Finished) }
+            _uiState.update { it.copy(navigation = ExamDestination.Finished, answeredAll = next.status == ExamStatus.Finished) }
         } else if (next.remaining != null) {
             startClock(restart = false)
         }
