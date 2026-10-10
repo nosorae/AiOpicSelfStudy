@@ -1,5 +1,7 @@
 package io.github.nosorae.aiopic.libs.recorder.api
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlin.time.Duration
 
 /**
@@ -30,6 +32,14 @@ public interface Recorder {
      * 분석이 이 위치를 말 멈춤으로 세지 않게 요청에 넣는다(F3.4). 조각 길이와 끊긴 곳은 녹음기만 알아서 여기서 계산한다.
      */
     public suspend fun merge(chunks: List<String>, output: String): List<Duration>
+
+    /**
+     * 마이크에 들어오는 소리 크기(0~1)를 80ms 마다 낸다. 녹음 화면이 목소리가 들어가는 걸 보여 줄 때 쓴다.
+     * 값은 직전 값 뒤로 들어온 가장 큰 소리를 귀에 들리는 크기에 맞춰 바꾼 것이다. 녹음 중이 아니면 0 이다.
+     * 모으는 동안 끝나지 않으니 화면이 떠 있는 동안만 모은다.
+     */
+    // ponytail: 기본값은 화면 테스트의 가짜 녹음기가 그대로 컴파일되게 둔다. 녹음 화면이 음량을 쓰면 그쪽 가짜도 값을 낸다.
+    public val levels: Flow<Float> get() = emptyFlow()
 }
 
 public data class StoppedRecording(val chunks: List<String>, val failure: RecordingFailure? = null)

@@ -17,6 +17,7 @@ val resumedAt = recorder.merge(chunks, "$dir/answer.m4a")
 - 마이크를 못 열면 `MicUnavailable`, 폴더나 조각 파일을 못 만들거나 못 쓰면 `WriteFailed` 다. 녹음 도중 실패는 녹음을 끊지 않고 `stop` 이 알린다
 - 전화 같은 끼어듦이 끝나면 새 조각부터 이어 쓴다. 다시 시작한 조각에는 표시를 붙인다
 - `merge` 는 이어 녹음을 시작한 위치를 합친 파일 기준 시각으로 돌려준다. 분석 요청에 넣어 그 위치를 말 멈춤으로 세지 않게 한다
+- `recorder.levels` 는 마이크에 들어오는 소리 크기를 0~1 로 80ms 마다 낸다. 녹음 화면의 목소리 띠(`MontageVoiceRibbon`)에 넣는 값이다. 진폭을 -50dB~0dB 구간으로 바꿔서 보통 말소리가 0.5 안팎이 된다. 녹음 중이 아니면 0 이다. Android 는 `MediaRecorder.getMaxAmplitude`, iOS 는 녹음 탭 버퍼의 최대 표본에서 읽는다
 - Android 매니페스트에 `RECORD_AUDIO`, `FOREGROUND_SERVICE_MICROPHONE` 권한과 서비스가 들어 있다. 권한 요청은 앱이 한다
 
 ## 테스트

@@ -1,6 +1,9 @@
 package io.github.nosorae.aiopic.libs.recorder.api
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.get
+import kotlinx.cinterop.set
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import platform.AVFAudio.AVAudioFormat
 import platform.AVFAudio.AVAudioPCMBuffer
@@ -148,6 +151,24 @@ class IosRecorderTest {
     }
 
     @Test
+    fun `음량은 직전 값 뒤로 들어온 가장 큰 소리이고 녹음 중이 아니면 0 이다`() = runTest {
+        val recorder = IosRecorder(mic, chunkLength = 5.seconds)
+        mic.feed(100.milliseconds, sample = 0.5f)
+        assertEquals(0f, recorder.levels.first())
+
+        recorder.start(dir)
+        mic.feed(100.milliseconds, sample = 0.1f)
+        mic.feed(100.milliseconds, sample = -0.5f)
+        assertEquals(loudness(0.5f), recorder.levels.first())
+        // 그 뒤로 소리가 들어오지 않았다.
+        assertEquals(0f, recorder.levels.first())
+
+        mic.feed(100.milliseconds, sample = 0.5f)
+        recorder.stop()
+        assertEquals(0f, recorder.levels.first())
+    }
+
+    @Test
     fun `폴더가 없으면 조각 목록은 비어 있다`() = runTest {
         assertEquals(emptyList(), IosRecorder(mic, chunkLength = 5.seconds).chunks(dir))
     }
@@ -167,7 +188,7 @@ class IosRecorderTest {
     }
 }
 
-/** 마이크 대신 16kHz 모노 무음 버퍼를 0.1초씩 넘긴다. 열려 있지 않으면 버퍼를 넘기지 않는다. */
+/** 마이크 대신 16kHz 모노 버퍼를 0.1초씩 넘긴다. 표본은 모두 [feed] 의 sample 이고 기본은 무음이다. 열려 있지 않으면 버퍼를 넘기지 않는다. */
 @OptIn(ExperimentalForeignApi::class)
 private class FakeMic(var available: Boolean = true) : MicInput {
     private val format = AVAudioFormat(standardFormatWithSampleRate = 16_000.0, channels = 1u)
@@ -185,10 +206,12 @@ private class FakeMic(var available: Boolean = true) : MicInput {
         onBuffer = null
     }
 
-    fun feed(length: Duration) {
+    fun feed(length: Duration, sample: Float = 0f) {
         repeat((length / 100.milliseconds).toInt()) {
             val buffer = AVAudioPCMBuffer(format, frameCapacity = 1_600u)
             buffer.frameLength = 1_600u
+            val samples = buffer.floatChannelData!![0]!!
+            repeat(1_600) { samples[it] = sample }
             onBuffer?.invoke(buffer)
         }
     }

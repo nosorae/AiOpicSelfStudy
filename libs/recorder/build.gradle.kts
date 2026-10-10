@@ -11,6 +11,10 @@ kotlin {
         }
     }
     sourceSets {
+        // 음량을 Flow 로 낸다.
+        commonMain.dependencies {
+            api(libs.kotlinx.coroutines.core)
+        }
         getByName("androidDeviceTest").dependencies {
             implementation(libs.androidx.test.runner)
             implementation(libs.androidx.testExt.junit)

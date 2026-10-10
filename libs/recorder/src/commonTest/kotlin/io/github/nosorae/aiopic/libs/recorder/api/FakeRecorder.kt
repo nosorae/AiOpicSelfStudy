@@ -1,11 +1,12 @@
 package io.github.nosorae.aiopic.libs.recorder.api
 
+import kotlinx.coroutines.flow.Flow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
  * 테스트용. 파일을 쓰지 않는다. 시작할 때마다 조각 하나를 경로로만 만들고, 조각 길이는 모두 [chunkLength] 로 친다.
- * [writeFails] 면 멈출 때 조각 쓰기에 실패했다고 알린다.
+ * [writeFails] 면 멈출 때 조각 쓰기에 실패했다고 알린다. 녹음 중이면 [peak] 를 음량으로 낸다.
  */
 class FakeRecorder(
     private val micAvailable: Boolean = true,
@@ -14,6 +15,11 @@ class FakeRecorder(
 ) : Recorder {
     private val folders = mutableMapOf<String, MutableList<String>>()
     private var current: String? = null
+
+    /** 마이크에 들어온 소리의 최대 진폭(0~1)으로 친다. */
+    var peak = 0f
+
+    override val levels: Flow<Float> = levelFlow { if (current != null) peak else 0f }
 
     override suspend fun start(directory: String): RecordingFailure? {
         if (!micAvailable) return RecordingFailure.MicUnavailable
