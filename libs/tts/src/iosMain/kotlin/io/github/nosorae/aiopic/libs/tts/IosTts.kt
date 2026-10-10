@@ -1,21 +1,30 @@
 package io.github.nosorae.aiopic.libs.tts
 
 import io.github.nosorae.aiopic.libs.tts.api.Tts
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.AVFAudio.AVAudioSession
+import platform.AVFAudio.AVAudioSessionCategoryOptionDefaultToSpeaker
+import platform.AVFAudio.AVAudioSessionCategoryPlayAndRecord
+import platform.AVFAudio.AVAudioSessionModeDefault
 import platform.AVFAudio.AVSpeechBoundary
 import platform.AVFAudio.AVSpeechSynthesisVoice
 import platform.AVFAudio.AVSpeechSynthesisVoiceQualityDefault
 import platform.AVFAudio.AVSpeechSynthesizer
 import platform.AVFAudio.AVSpeechSynthesizerDelegateProtocol
 import platform.AVFAudio.AVSpeechUtterance
+import platform.Foundation.NSLog
 import platform.darwin.NSObject
 import kotlin.coroutines.resume
 
 /**
  * iOS 기기 음성으로 질문을 읽는다. 끝 알림은 메인 스레드로 오므로 [speak] 와 [stop] 도 메인 스레드에서 부른다.
- * 오디오 세션 설정은 녹음과 함께 정해야 해서 여기서 건드리지 않는다.
+ *
+ * 읽기 전에 오디오 세션 카테고리를 녹음기(`EngineMicInput`)와 같은 녹음 겸용, 스피커 출력으로 맞춘다.
+ * 앱 기본 카테고리(SoloAmbient)는 무음 모드에서 소리가 안 나서, 녹음을 한 번도 안 한 첫 질문만 들리지 않았다(#134).
+ * 세션 활성화는 합성기가 읽을 때 스스로 한다. 앱을 켜자마자 활성화하면 다른 앱의 음악이 끊긴다.
  */
 public class IosTts : Tts {
     private val synthesizer = AVSpeechSynthesizer()
@@ -46,6 +55,7 @@ public class IosTts : Tts {
     }
 
     override suspend fun speak(text: String): Boolean = suspendCancellableCoroutine { cont ->
+        useSpeakerCategory()
         val utterance = AVSpeechUtterance.speechUtteranceWithString(text).also { it.voice = voice }
         pending?.second?.resume(false)
         pending = utterance to cont
@@ -59,6 +69,20 @@ public class IosTts : Tts {
         pending = null
         synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary.AVSpeechBoundaryImmediate)
         if (current.second.isActive) current.second.resume(false)
+    }
+
+    @OptIn(ExperimentalForeignApi::class)
+    private fun useSpeakerCategory() {
+        val session = AVAudioSession.sharedInstance()
+        if (session.category == AVAudioSessionCategoryPlayAndRecord) return
+        val set = session.setCategory(
+            AVAudioSessionCategoryPlayAndRecord,
+            mode = AVAudioSessionModeDefault,
+            options = AVAudioSessionCategoryOptionDefaultToSpeaker,
+            error = null,
+        )
+        // 실패해도 읽기는 한다. 무음 모드가 아니면 들린다. 실기기에서만 나는 일이라 원인을 볼 수 있게 남긴다.
+        if (!set) NSLog("IosTts: 오디오 세션 카테고리를 바꾸지 못했다 (지금 %@)", session.category)
     }
 
     private fun finish(utterance: AVSpeechUtterance, spoken: Boolean) {

@@ -7,6 +7,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
+import platform.AVFAudio.AVAudioSession
+import platform.AVFAudio.AVAudioSessionCategoryPlayAndRecord
 import platform.Foundation.NSDate
 import platform.Foundation.NSRunLoop
 import platform.Foundation.dateWithTimeIntervalSinceNow
@@ -31,6 +33,15 @@ class IosTtsTest {
 
         assertTrue(spoken.isCompleted, "30초 안에 끝 알림이 오지 않았다")
         assertEquals(true, spoken.getCompleted())
+    }
+
+    /** #134: 녹음 전 첫 읽기도 무음 스위치에 묻히지 않는 녹음 겸용 카테고리여야 한다. 기본 카테고리(SoloAmbient)는 무음 모드에서 소리가 안 난다. */
+    @Test
+    fun speakUsesPlayAndRecordCategoryBeforeAnyRecording() {
+        val spoken = speakOnMain("Hi.")
+
+        assertEquals(AVAudioSessionCategoryPlayAndRecord, AVAudioSession.sharedInstance().category)
+        runMainLoop(30.seconds) { spoken.isCompleted }
     }
 
     @Test
