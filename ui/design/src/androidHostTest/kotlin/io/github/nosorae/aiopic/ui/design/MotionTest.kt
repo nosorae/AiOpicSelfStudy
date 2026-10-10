@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -254,9 +255,17 @@ class MotionTest {
 
     @Test fun celebrationSmall() = assertBursts(MontageCelebrationSize.Small)
 
-    @Test fun celebrationLarge_reduceMotion() = assertStill { MontageCelebration(MontageCelebrationSize.Large, Modifier.size(148.dp)) }
+    /** 동작 줄이기면 축하는 끝 장면(빈 영역) 그대로다. 라이트, 다크 배경 두 색 말고는 아무것도 그려지지 않는다. */
+    private fun assertCelebrationEmpty(size: MontageCelebrationSize) {
+        assertStill { MontageCelebration(size, Modifier.size(148.dp)) }
+        val shot = frame()
+        val pixels = IntArray(shot.width * shot.height).also { shot.getPixels(it, 0, shot.width, 0, 0, shot.width, shot.height) }
+        assertEquals("동작 줄이기인데 조각이 남는다", 2, pixels.toSet().size)
+    }
 
-    @Test fun celebrationSmall_reduceMotion() = assertStill { MontageCelebration(MontageCelebrationSize.Small, Modifier.size(148.dp)) }
+    @Test fun celebrationLarge_reduceMotion() = assertCelebrationEmpty(MontageCelebrationSize.Large)
+
+    @Test fun celebrationSmall_reduceMotion() = assertCelebrationEmpty(MontageCelebrationSize.Small)
 
     @Test
     fun `큰 축하는 축하 진동, 작은 축하는 성공 진동을 한 번 내고 같은 키로 다시 그려도 내지 않는다`() {
@@ -336,6 +345,31 @@ class MotionTest {
         var struck by mutableStateOf(false)
         show(reduceMotion) { MontageListCell(title = "I went to the park yesterday with my friends.", struck = struck) }
         assertChange({ struck = true }, check)
+    }
+
+    /** 목록에 새로 들어온 줄만 짧게 나타나고 아래 줄은 미끄러져 내려간다. 처음 있던 줄은 등장하지 않는다. */
+    @Test
+    fun listItemAppears() = assertListItems(reduceMotion = false) { start, moving, end ->
+        assertFalse("새 줄이 들어왔는데 그대로다", moving.sameAs(start))
+        assertFalse("새 줄이 움직이지 않고 바로 끝이다", moving.sameAs(end))
+    }
+
+    @Test
+    fun listItemAppears_reduceMotion() = assertListItems(reduceMotion = true) { _, moving, end ->
+        assertTrue("동작 줄이기인데 새 줄이 움직인다", moving.sameAs(end))
+    }
+
+    private fun assertListItems(reduceMotion: Boolean, check: (Bitmap, Bitmap, Bitmap) -> Unit) {
+        var rows by mutableStateOf(listOf("2회차", "1회차"))
+        show(reduceMotion) {
+            LazyColumn(Modifier.height(180.dp)) {
+                items(rows, key = { it }) { MontageListCell(title = it, modifier = montageItemMotion()) }
+            }
+        }
+        val first = frame()
+        settle()
+        assertTrue("처음 있던 줄이 등장한다", first.sameAs(frame()))
+        assertChange({ rows = listOf("3회차") + rows }, check)
     }
 
     /** 듣기에서 답하기로 넘어간다. 피드백 단계까지 셋을 보인다. */

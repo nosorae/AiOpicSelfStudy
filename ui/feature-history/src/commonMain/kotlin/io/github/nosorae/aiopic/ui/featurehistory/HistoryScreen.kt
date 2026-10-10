@@ -26,6 +26,7 @@ import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.design.montageItemMotion
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -65,6 +66,7 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
                         },
                         chevron = true,
                         onClick = { onOpenSession(row.session.id) },
+                        modifier = montageItemMotion(),
                     ) {
                         val grade = row.session.grade
                         Text(
@@ -85,7 +87,7 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
                     }
                 }
                 items(state.weaknesses, key = { it.typeName }) { weakness ->
-                    MontageListCell(title = weakness.typeName) {
+                    MontageListCell(title = weakness.typeName, modifier = montageItemMotion()) {
                         MontageProgressBar(weakness.score / 100f, Modifier.width(96.dp).height(4.dp).align(Alignment.CenterVertically))
                         Text(
                             text = stringResource(Res.string.history_score, weakness.score),

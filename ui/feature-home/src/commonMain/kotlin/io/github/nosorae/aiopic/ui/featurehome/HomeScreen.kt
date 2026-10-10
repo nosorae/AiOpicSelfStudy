@@ -8,7 +8,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,6 +26,7 @@ import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageStepTrail
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.design.montageItemMotion
 import org.jetbrains.compose.resources.stringResource
 
 /**
@@ -50,6 +55,10 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
 ) {
     val gutter = MontageSpacing.spacing20
+    // 불러온 지난 회차가 처음 채워질 때는 새 줄로 보지 않는다. 그 뒤에 들어온 회차(방금 끝낸 시험)만 나타난다.
+    val loaded = state.pastSessions != null
+    var appear by remember { mutableStateOf(false) }
+    LaunchedEffect(loaded) { if (loaded) appear = true }
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.home_title)) }) {
         LazyColumn(Modifier.fillMaxWidth()) {
             item {
@@ -107,6 +116,7 @@ fun HomeScreen(
                     caption = if (session.timeUp) "$grade · ${stringResource(Res.string.home_time_up)}" else grade,
                     chevron = true,
                     onClick = { onSessionClick(session.id) },
+                    modifier = montageItemMotion(appear),
                 )
             }
         }

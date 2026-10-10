@@ -24,7 +24,7 @@ enum class MontageCelebrationSize { Large, Small }
  * 축하할 일이 실제로 생겼을 때 한 번 터지는 조각. 크기는 [modifier] 로 정한 영역이고 조각은 그 가운데에서 터진다.
  * 큰 축하는 목소리 띠 같은 짧은 막대와 점 40개가 위로 터졌다가 떨어지며 사라진다(1.4초). 같은 때 축하 진동을 낸다.
  * 작은 축하는 불꽃 12개가 둥글게 한 번 퍼지고 사라진다(0.7초). 같은 때 성공 진동을 낸다.
- * 동작 줄이기면 조각이 퍼진 한 장면으로 멈춰 있고 진동은 그대로 낸다. 결과는 늘 옆의 체크나 문구가 전한다. 이 그림은 꾸밈이다.
+ * 동작 줄이기면 조각을 그리지 않고 진동만 낸다. 끝 장면이 빈 영역이라서다. 결과는 늘 옆의 체크나 문구가 전한다. 이 그림은 꾸밈이다.
  * [playOnceKey] 를 주면 그 키로 한 번 터진 뒤에는 다시 그려도 아무것도 그리지 않고 진동도 내지 않는다. 키에는 무엇의 축하인지를 넣는다.
  * [delayMillis] 뒤에 터진다. 다른 움직임(등급 구슬, 체크 그리기)이 멈춘 뒤에 터지게 할 때 쓴다.
  */
@@ -37,14 +37,14 @@ fun MontageCelebration(kind: MontageCelebrationSize, modifier: Modifier = Modifi
     val reduceMotion = MontageMotion.reduceMotion
     val large = kind == MontageCelebrationSize.Large
     val spec = MontageMotion.spec<Float>(if (large) LARGE_MILLIS else SMALL_MILLIS)
-    // 동작 줄이기면 조각이 가장 넓게 퍼진 때 멈춘다. 처음부터 끝 장면이면 아무것도 안 보여서다.
-    val progress = remember { Animatable(if (reduceMotion) STILL_AT else 0f) }
+    val progress = remember { Animatable(0f) }
     LaunchedEffect(Unit) {
         playOnceKey?.let(played::add)
         delay(delayMillis.toLong())
         haptics.play(if (large) HapticEffect.Celebrate else HapticEffect.Success)
         if (!reduceMotion) progress.animateTo(1f, spec)
     }
+    if (reduceMotion) return
     val palette = listOf(colors.foregroundBrandPrimary, colors.brandDecoration, colors.foregroundCautionaryPrimary, colors.foregroundAccentLightblue, colors.foregroundAccentLime)
     val pieces = remember(large) { if (large) confetti() else sparks() }
     Canvas(modifier) {
@@ -104,6 +104,5 @@ private fun sparks(): List<Piece> = List(12) { i ->
 
 private const val LARGE_MILLIS = 1_400
 private const val SMALL_MILLIS = 700
-private const val STILL_AT = 0.35f
 private const val SEED = 158
 private const val GRAVITY = 2.4f
