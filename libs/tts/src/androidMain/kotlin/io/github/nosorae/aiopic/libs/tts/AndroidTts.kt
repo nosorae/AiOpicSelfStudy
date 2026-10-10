@@ -94,7 +94,7 @@ public class AndroidTts(context: Context) : Tts {
     override fun hasHighQualityVoice(): Boolean {
         // 엔진이 아직 안 켜졌으면 안내하지 않는다. 설정 화면을 다시 열면 그때 본다.
         if (!ready.isCompleted) return true
-        return installedUsVoices().any { it.quality >= Voice.QUALITY_HIGH }
+        return (bestUsVoice(engine.voices)?.quality ?: 0) >= Voice.QUALITY_HIGH
     }
 
     override fun stop() {
@@ -115,12 +115,14 @@ public class AndroidTts(context: Context) : Tts {
         if (voiceChosen) return
         voiceChosen = true
         engine.setLanguage(Locale.US)
-        val best = bestVoice(installedUsVoices(), { true }, { it.quality }) ?: return
+        val best = bestUsVoice(engine.voices) ?: return
         if (best.quality > (engine.voice?.quality ?: 0)) engine.setVoice(best)
     }
+}
 
-    private fun installedUsVoices(): List<Voice> = engine.voices.orEmpty()
-        .filter { it.locale == Locale.US && !it.isNetworkConnectionRequired && TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED !in it.features }
+/** 네트워크 없이 바로 읽을 수 있는 en-US 음성 가운데 품질이 가장 높은 것. 엔진이 안 켜졌으면 [voices] 가 null 이다. */
+internal fun bestUsVoice(voices: Collection<Voice>?): Voice? = bestVoice(voices.orEmpty(), { it.locale.toLanguageTag() }, { it.quality }) {
+    !it.isNetworkConnectionRequired && TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED !in it.features
 }
 
 private const val TAG = "AndroidTts"

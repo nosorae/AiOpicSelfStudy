@@ -57,12 +57,12 @@ public class IosTts : Tts {
 
     /** 설치된 en-US 음성 가운데 Premium, Enhanced, 기본 순으로 가장 좋은 것을 쓴다(설계 8절, #161). 앱을 켠 뒤 받은 음성은 다음 실행부터 쓴다. */
     private val voice: AVSpeechSynthesisVoice? by lazy {
-        bestVoice(usVoices(), { true }, { it.quality.toInt() }) ?: AVSpeechSynthesisVoice.voiceWithLanguage("en-US")
+        bestUsVoice() ?: AVSpeechSynthesisVoice.voiceWithLanguage("en-US")
     }
 
-    private fun usVoices() = AVSpeechSynthesisVoice.speechVoices().filterIsInstance<AVSpeechSynthesisVoice>().filter { it.language == "en-US" }
+    private fun bestUsVoice() = bestVoice(AVSpeechSynthesisVoice.speechVoices().filterIsInstance<AVSpeechSynthesisVoice>(), { it.language }, { it.quality.toInt() })
 
-    override fun hasHighQualityVoice(): Boolean = usVoices().any { it.quality != AVSpeechSynthesisVoiceQualityDefault }
+    override fun hasHighQualityVoice(): Boolean = (bestUsVoice()?.quality ?: AVSpeechSynthesisVoiceQualityDefault) != AVSpeechSynthesisVoiceQualityDefault
 
     init {
         synthesizer.delegate = delegate
