@@ -1382,9 +1382,10 @@
       ],
       "done": "xcodebuild test -project apps/opic/iosApp/iosApp.xcodeproj -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/xcode -only-testing:iosAppUITests",
       "done_desc": "iosAppUITests 대상을 만들어 SwiftUI 앱 틀과 Compose 화면을 XCUITest 로 실제 터치한다. 흐름: 첫 실행에서 키 입력(가짜 키 확인을 쓰는 실행 인자), 음성 전송 동의, 서베이 Part 1~4, 수준 선택, 첫 문항 Play 와 녹음 시작 표시까지. 그다음 앱을 terminate 하고 다시 launch 해서 홈의 이어 보기로 같은 문항에 돌아오는지. 마이크 권한은 시뮬레이터에서 미리 허용하고 녹음 내용은 확인하지 않는다(시뮬레이터 마이크 없이 되는 범위). 터치 대상은 Compose testTag 를 iOS 접근성 식별자로 노출해 찾는다. 시뮬레이터는 iPhone 17(iOS 26.4) 하나. 실기기에는 설치하지 않는다",
-      "status": "doing",
+      "status": "done",
       "issue": 124,
-      "start": "2026-10-10"
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "live",
