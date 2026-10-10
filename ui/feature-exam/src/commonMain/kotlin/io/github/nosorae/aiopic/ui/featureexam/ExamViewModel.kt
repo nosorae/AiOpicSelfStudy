@@ -176,6 +176,8 @@ class ExamViewModel(
     /** 바뀐 회차를 화면에 옮긴다. 단계가 바뀌면 문항 진행을 처음으로 돌리고, 회차가 끝났으면 녹음을 멈추고 끝으로 간다. */
     private suspend fun changed(next: ExamSession) {
         val stepChanged = !::session.isInitialized || session.stepIndex != next.stepIndex
+        // 점검 녹음 때부터 돌던 시계가 1번 문항 전의 시간을 40분에 넣지 않게 40분이 켜지는 때부터 센다(F2.5).
+        if (::session.isInitialized && session.remaining == null && next.remaining != null) lastTick = timer.elapsed()
         session = next
         val asks = content.spec.steps.indices.filter { i ->
             val step = content.spec.steps[i]
