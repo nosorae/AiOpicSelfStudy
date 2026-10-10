@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
@@ -138,7 +139,8 @@ internal fun Context.animationsOff(): Boolean = Settings.Global.getFloat(content
 
 private fun SnapshotStateList<AppRoute>.selectTab(tab: AppRoute) = replaceAll(listOfNotNull(AppRoute.Home, tab.takeIf { it != AppRoute.Home }))
 
-private fun SnapshotStateList<AppRoute>.replaceAll(next: List<AppRoute>) {
+/** 비우기와 채우기를 한 번에 반영한다. 시작 분기를 다시 하는 코루틴이 다른 스레드에서 이어지면 그 사이 화면이 빈 백스택을 읽는다(#194). */
+private fun SnapshotStateList<AppRoute>.replaceAll(next: List<AppRoute>) = Snapshot.withMutableSnapshot {
     clear()
     addAll(next)
 }

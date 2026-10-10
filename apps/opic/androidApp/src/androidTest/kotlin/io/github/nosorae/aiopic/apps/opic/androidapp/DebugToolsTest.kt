@@ -1,5 +1,7 @@
 package io.github.nosorae.aiopic.apps.opic.androidapp
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
@@ -29,6 +31,11 @@ class DebugToolsTest {
     @Test
     fun settingsRowOpensDebugToolsWithKeyCheckCall() {
         assumeTrue("debugTools 계측 인자가 없다", InstrumentationRegistry.getArguments().getString("debugTools") == "true")
+        // 디버깅 화면은 열릴 때 알림 권한을 묻는다. 시스템 권한 창이 화면을 덮으면 테스트가 디버깅 화면을 못 찾아서 미리 준다.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val instrumentation = InstrumentationRegistry.getInstrumentation()
+            instrumentation.uiAutomation.grantRuntimePermission(instrumentation.targetContext.packageName, Manifest.permission.POST_NOTIFICATIONS)
+        }
         ActivityScenario.launch(MainActivity::class.java)
 
         // 첫 실행이면 키 입력 화면, 아니면 탭이 있는 홈이 뜬다.

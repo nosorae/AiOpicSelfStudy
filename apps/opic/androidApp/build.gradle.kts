@@ -11,8 +11,11 @@ android {
         testInstrumentationRunner = "io.github.nosorae.aiopic.apps.opic.androidapp.E2eRunner"
     }
     // 테스트마다 계측을 새로 띄워서, 앞 테스트가 끝날 때 앱 프로세스가 강제 종료된 뒤 이어 보기를 확인한다.
+    // 애니메이션을 끄면 앱이 동작 줄이기(끝 장면 바로 보이기)로 돈다. 녹음 중 목소리 띠처럼 계속 도는 그림이 Compose 를 쉬지 못하게 해서
+    // 테스트가 기다리다 멈추는 것을 막는다(#194).
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
+        animationsDisabled = true
     }
     packaging {
         resources {
