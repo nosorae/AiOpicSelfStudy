@@ -21,7 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import kotlin.time.Duration.Companion.seconds
 
-/** 문항 화면 공통 부품. 단계 표시가 지난 단계와 지금 단계를 알리는지, 질문을 듣는 동안 Play 가 눌리지 않는지, Next 가 켜질 때 진동하는지 본다. */
+/** 문항 화면 공통 부품. 단계 표시가 지난 단계와 지금 단계를 알리는지, 질문을 듣는 동안 Play 가 눌리지 않는지, 다시 듣기가 5초 뒤 사라지는지, Next 가 켜질 때 진동하는지 본다. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class QuestionPartsTest {
@@ -85,5 +85,23 @@ class QuestionPartsTest {
         rule.waitForIdle()
 
         assertEquals(listOf(HapticEffect.Tap), played)
+    }
+
+    @Test
+    fun `다시 듣기는 쓸 수 있는 동안 보이고 5초가 끝나면 사라진다`() {
+        var recorded by mutableStateOf(3.seconds)
+        var canReplay by mutableStateOf(true)
+        rule.setContent {
+            MontageTheme(reduceMotion = true) {
+                MontageRecordingButtons(recorded, 5.seconds, 10.seconds, canReplay = canReplay, canNext = false, saving = false, onReplay = {}, onNext = {})
+            }
+        }
+        rule.onNodeWithText("다시 듣기").assertExists()
+
+        recorded = 5.seconds
+        canReplay = false
+        rule.waitForIdle()
+
+        rule.onNodeWithText("다시 듣기").assertDoesNotExist()
     }
 }

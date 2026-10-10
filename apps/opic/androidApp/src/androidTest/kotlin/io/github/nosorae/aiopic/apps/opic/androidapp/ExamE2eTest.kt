@@ -7,7 +7,6 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
-import androidx.compose.ui.test.isNotEnabled
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
@@ -94,7 +93,7 @@ class ExamE2eTest {
         await("문항 2 / 12")
         click("Play")
         await("녹음 중")
-        compose.onNode(hasText("다시 듣기") and isNotEnabled()).assertExists()
+        assertFalse("이어 본 문항에서 다시 듣기가 보인다", exists("다시 듣기"))
         next()
 
         repeat(10) {
