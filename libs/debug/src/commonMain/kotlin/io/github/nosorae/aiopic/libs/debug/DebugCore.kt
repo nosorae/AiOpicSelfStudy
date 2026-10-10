@@ -6,12 +6,27 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.concurrent.Volatile
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Instant
 
 internal class DebugLog(val time: Instant, val level: DebugLevel, val tag: String, val message: String, val error: String?)
 
+/** 네트워크 호출 하나. [status] 가 null 이면 응답을 못 받았고 [error] 에 이유가 있다. */
+internal data class DebugCall(
+    val time: Instant,
+    val method: String,
+    val url: String,
+    val requestHeaders: List<Pair<String, String>>,
+    val requestBody: String,
+    val status: Int?,
+    val duration: Duration,
+    val responseHeaders: List<Pair<String, String>> = emptyList(),
+    val responseBody: String = "",
+    val error: String? = null,
+)
+
 /** 기록을 모으고 보고서를 만든다. 플랫폼 일(저장, 기기 정보)은 [DebugPlatform] 에 맡긴다. */
-internal class DebugCore(private val clock: Clock) {
+internal class DebugCore(val clock: Clock) {
     @Volatile private var config = DebugConfig()
 
     @Volatile private var platform: DebugPlatform = MemoryPlatform()
@@ -19,6 +34,8 @@ internal class DebugCore(private val clock: Clock) {
     // ponytail: 로그 한 줄마다 목록을 복사한다(최대 2,000개 참조). 로그가 초당 수백 줄이 되면 잠금 있는 배열 링 버퍼로 바꾼다.
     private val _logs = MutableStateFlow<List<DebugLog>>(emptyList())
     val logs: StateFlow<List<DebugLog>> = _logs
+    private val _calls = MutableStateFlow<List<DebugCall>>(emptyList())
+    val calls: StateFlow<List<DebugCall>> = _calls
     private val switches = MutableStateFlow<Map<String, DebugSwitch>>(emptyMap())
     private val panels = MutableStateFlow<Map<String, suspend () -> List<Pair<String, String>>>>(emptyMap())
 
@@ -31,6 +48,32 @@ internal class DebugCore(private val clock: Clock) {
         val entry = DebugLog(clock.now(), level, tag, redact(message), error?.let { redact(it.stackTraceToString()) })
         val max = config.maxLogs
         _logs.update { (it + entry).takeLast(max) }
+    }
+
+    /** 키를 가리고 본문을 자른 뒤 저장한다. 그래서 메모리에도 공유 파일에도 키와 큰 본문이 남지 않는다. */
+    fun recordCall(call: DebugCall) {
+        val hidden = DEFAULT_REDACT_HEADERS + config.redactHeaders.map { it.lowercase() }
+        fun headers(list: List<Pair<String, String>>) = list.map { (name, value) -> name to if (name.lowercase() in hidden) "***" else redact(value) }
+        val stored = call.copy(
+            url = redact(call.url),
+            requestHeaders = headers(call.requestHeaders),
+            requestBody = body(call.requestBody),
+            responseHeaders = headers(call.responseHeaders),
+            responseBody = body(call.responseBody),
+            error = call.error?.let(::redact),
+        )
+        val max = config.maxCalls
+        _calls.update { (it + stored).takeLast(max) }
+    }
+
+    private fun body(text: String): String {
+        val max = config.maxBodyBytes
+        val size = text.encodeToByteArray().size
+        if (size <= max) return redact(text)
+        // 수 MB 본문 전체에 정규식을 돌리지 않게 상한 근처만 가린다. 여유를 키 길이보다 길게 둬서 잘린 끝에 키 반쪽이 남지 않는다.
+        // ponytail: 앱이 더한 패턴이 REDACT_MARGIN 보다 길면 끝에 걸친 값이 반만 가려진다. 그런 패턴이 생기면 여유를 늘린다.
+        val head = redact(text.take(max + REDACT_MARGIN)).encodeToByteArray()
+        return head.decodeToString(0, minOf(max, head.size)) + "\n(잘림: 원래 $size 바이트)"
     }
 
     fun switch(key: String, title: String, default: Boolean = false): DebugSwitch {
@@ -71,6 +114,15 @@ internal class DebugCore(private val clock: Clock) {
         }
         platform.crashNames().sortedDescending().forEach { append("\n${platform.readCrash(it)}\n") }
         append(logsText())
+        append(callsText())
+    }
+
+    private fun callsText() = "# Network\n" + calls.value.joinToString("") { call ->
+        val head = "## ${call.time} ${call.method} ${call.url} ${call.status ?: "실패"} ${call.duration}\n"
+        fun lines(mark: String, headers: List<Pair<String, String>>, body: String) = headers.joinToString("") { (name, value) -> "$mark $name: $value\n" } +
+            body.lineSequence().filter { it.isNotEmpty() }.joinToString("") { "$mark $it\n" }
+        head + lines(">", call.requestHeaders, call.requestBody) + lines("<", call.responseHeaders, call.responseBody) +
+            call.error?.let { "! $it\n" }.orEmpty()
     }
 
     private fun switchesText() = "# Switches\n" + switches.value.values.joinToString("") {
@@ -86,5 +138,6 @@ internal class DebugCore(private val clock: Clock) {
 
     companion object {
         const val MAX_CRASHES = 5
+        const val REDACT_MARGIN = 256
     }
 }

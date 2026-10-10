@@ -42,8 +42,16 @@ public class DebugSwitch internal constructor(
 /**
  * @param redactPatterns 앱이 더 가릴 값의 패턴. Google API 키 형식과 URL 의 `key`, `api_key`, `access_token` 값은 늘 가린다.
  * @param maxLogs 메모리에 두는 로그 줄 수. 넘으면 오래된 것부터 버린다.
+ * @param redactHeaders 앱이 더 가릴 헤더 이름(대소문자 무시). `x-goog-api-key`, `authorization`, `proxy-authorization`,
+ *   `cookie`, `set-cookie`, `x-api-key` 는 늘 가린다.
+ * @param maxCalls 메모리에 두는 네트워크 호출 수. 넘으면 오래된 것부터 버린다.
+ * @param maxBodyBytes 요청, 응답 본문 하나를 남기는 크기. 녹음이 base64 로 들어간 분석 요청은 수 MB 라서 자르지 않으면
+ *   호출 200건이 수백 MB 가 된다. 자른 본문 끝에는 원래 크기를 적는다.
  */
 public class DebugConfig(
     public val redactPatterns: List<Regex> = emptyList(),
     public val maxLogs: Int = 2_000,
+    public val redactHeaders: Set<String> = emptySet(),
+    public val maxCalls: Int = 200,
+    public val maxBodyBytes: Int = 16 * 1024,
 )

@@ -16,6 +16,8 @@ val slow = DebugTools.switch("slow_response", "느린 응답")
 if (slow.enabled) delay(3.seconds)         // 읽을 때마다 저장된 값을 본다
 
 DebugTools.panel("오디오") { listOf("경로" to audio.route(), "모드" to audio.mode()) }
+
+val http = HttpClient { installDebugTools() }   // io.github.nosorae.aiopic.libs.debug.network
 ```
 
 ## 하는 일
@@ -28,11 +30,12 @@ DebugTools.panel("오디오") { listOf("경로" to audio.route(), "모드" to au
 | 앱 패널 | 앱이 "이름, 값" 줄을 돌려주는 함수를 넘긴다. 함수가 실패하면 그 패널에 오류 메시지만 적는다 |
 | 기기와 앱 정보 | 앱 id, 버전과 빌드 번호, OS, 기기 모델, 언어, 남은 저장 공간 |
 | 크래시 | 처리 안 된 예외가 나면 그 순간의 예외, 스위치, 로그를 파일로 쓰고(최근 5개) 다음 실행의 보고서에 넣는다. 원래 처리기는 그대로 부른다. iOS 의 네이티브 신호 크래시는 잡지 않는다 |
-| 보고서 | 정보, 스위치, 앱 패널, 크래시, 로그를 텍스트 하나로 묶는다 |
+| 네트워크 | Ktor 클라이언트에 `installDebugTools()` 를 걸면 요청마다 주소, 메서드, 상태 코드, 걸린 시간, 헤더, 본문을 남긴다. 최근 200건(`maxCalls`)만 두고 본문 하나는 16KB(`maxBodyBytes`)에서 잘라 원래 크기를 적는다. 헤더 `x-goog-api-key`, `authorization`, `proxy-authorization`, `cookie`, `set-cookie`, `x-api-key` 는 값을 통째로 가리고 앱은 `redactHeaders` 로 이름을 더한다. 실패한 요청도 남기고 예외는 그대로 앱에 넘긴다. 스트리밍 응답은 아직 따로 다루지 않는다 |
+| 보고서 | 정보, 스위치, 앱 패널, 크래시, 로그, 네트워크를 텍스트 하나로 묶는다 |
 
 기록은 메모리에만 두고 크래시 때만 파일로 쓴다. 평소에는 디스크에 쓰지 않는다.
 
-네트워크 기록(Ktor 플러그인), 화면과 공유, 흔들어 열기는 다음 단계에서 더한다.
+화면과 공유, 흔들어 열기는 다음 단계에서 더한다.
 
 ## 두 모듈의 API 맞추기
 

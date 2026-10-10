@@ -20,10 +20,16 @@ final enum class io.github.nosorae.aiopic.libs.debug/DebugLevel : kotlin/Enum<io
 }
 
 final class io.github.nosorae.aiopic.libs.debug/DebugConfig { // io.github.nosorae.aiopic.libs.debug/DebugConfig|null[0]
-    constructor <init>(kotlin.collections/List<kotlin.text/Regex> = ..., kotlin/Int = ...) // io.github.nosorae.aiopic.libs.debug/DebugConfig.<init>|<init>(kotlin.collections.List<kotlin.text.Regex>;kotlin.Int){}[0]
+    constructor <init>(kotlin.collections/List<kotlin.text/Regex> = ..., kotlin/Int = ..., kotlin.collections/Set<kotlin/String> = ..., kotlin/Int = ..., kotlin/Int = ...) // io.github.nosorae.aiopic.libs.debug/DebugConfig.<init>|<init>(kotlin.collections.List<kotlin.text.Regex>;kotlin.Int;kotlin.collections.Set<kotlin.String>;kotlin.Int;kotlin.Int){}[0]
 
+    final val maxBodyBytes // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxBodyBytes|{}maxBodyBytes[0]
+        final fun <get-maxBodyBytes>(): kotlin/Int // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxBodyBytes.<get-maxBodyBytes>|<get-maxBodyBytes>(){}[0]
+    final val maxCalls // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxCalls|{}maxCalls[0]
+        final fun <get-maxCalls>(): kotlin/Int // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxCalls.<get-maxCalls>|<get-maxCalls>(){}[0]
     final val maxLogs // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxLogs|{}maxLogs[0]
         final fun <get-maxLogs>(): kotlin/Int // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxLogs.<get-maxLogs>|<get-maxLogs>(){}[0]
+    final val redactHeaders // io.github.nosorae.aiopic.libs.debug/DebugConfig.redactHeaders|{}redactHeaders[0]
+        final fun <get-redactHeaders>(): kotlin.collections/Set<kotlin/String> // io.github.nosorae.aiopic.libs.debug/DebugConfig.redactHeaders.<get-redactHeaders>|<get-redactHeaders>(){}[0]
     final val redactPatterns // io.github.nosorae.aiopic.libs.debug/DebugConfig.redactPatterns|{}redactPatterns[0]
         final fun <get-redactPatterns>(): kotlin.collections/List<kotlin.text/Regex> // io.github.nosorae.aiopic.libs.debug/DebugConfig.redactPatterns.<get-redactPatterns>|<get-redactPatterns>(){}[0]
 }
@@ -40,3 +46,4 @@ final object io.github.nosorae.aiopic.libs.debug/DebugTools { // io.github.nosor
 }
 
 final fun (io.github.nosorae.aiopic.libs.debug/DebugTools).io.github.nosorae.aiopic.libs.debug/install(io.github.nosorae.aiopic.libs.debug/DebugConfig = ...) // io.github.nosorae.aiopic.libs.debug/install|install@io.github.nosorae.aiopic.libs.debug.DebugTools(io.github.nosorae.aiopic.libs.debug.DebugConfig){}[0]
+final fun (io.ktor.client/HttpClientConfig<*>).io.github.nosorae.aiopic.libs.debug.network/installDebugTools() // io.github.nosorae.aiopic.libs.debug.network/installDebugTools|installDebugTools@io.ktor.client.HttpClientConfig<*>(){}[0]

@@ -16,4 +16,7 @@ public class DebugSwitch internal constructor(public val enabled: Boolean)
 public class DebugConfig(
     public val redactPatterns: List<Regex> = emptyList(),
     public val maxLogs: Int = 2_000,
+    public val redactHeaders: Set<String> = emptySet(),
+    public val maxCalls: Int = 200,
+    public val maxBodyBytes: Int = 16 * 1024,
 )
