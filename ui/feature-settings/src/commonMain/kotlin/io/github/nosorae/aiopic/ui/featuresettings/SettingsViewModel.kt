@@ -11,13 +11,14 @@ import io.github.nosorae.aiopic.ui.featuresettings.practice.ImportQuestionsUseCa
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionImportResult
 import io.github.nosorae.aiopic.ui.featuresettings.practice.SetAnswerTimerUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.theme.SetThemeModeUseCase
+import io.github.nosorae.aiopic.ui.featuresettings.voice.SetQuestionVoiceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** 설정 탭(S14)의 분석 모델, 제공사별 키, 음성 전송 동의, 답변 타이머, 문항 파일, 진동, 화면 모드. */
+/** 설정 탭(S14)의 분석 모델, 제공사별 키, 음성 전송 동의, 답변 타이머, 문항 파일, 진동, 질문 음성, 화면 모드. */
 @Inject
 class SettingsViewModel(
     private val loadSettingsUseCase: LoadSettingsUseCase,
@@ -28,6 +29,7 @@ class SettingsViewModel(
     private val setAnswerTimerUseCase: SetAnswerTimerUseCase,
     private val importQuestionsUseCase: ImportQuestionsUseCase,
     private val setHapticsUseCase: SetHapticsUseCase,
+    private val setQuestionVoiceUseCase: SetQuestionVoiceUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -78,6 +80,11 @@ class SettingsViewModel(
                 _uiState.update { it.copy(hapticsOn = intent.on) }
             }
 
+            is SettingsIntent.SetNaturalVoice -> viewModelScope.launch {
+                setQuestionVoiceUseCase(intent.on)
+                _uiState.update { it.copy(naturalVoiceOn = intent.on) }
+            }
+
             is SettingsIntent.ImportQuestions -> viewModelScope.launch {
                 val result = importQuestionsUseCase(intent.json)
                 _uiState.update {
@@ -104,6 +111,8 @@ class SettingsViewModel(
                     consentGiven = loaded.consentGiven,
                     answerTimerOn = loaded.answerTimerOn,
                     hapticsOn = loaded.hapticsOn,
+                    naturalVoiceOn = loaded.naturalVoiceOn,
+                    highQualityDeviceVoice = loaded.highQualityDeviceVoice,
                     importedQuestionCount = loaded.importedQuestionCount,
                 )
             }

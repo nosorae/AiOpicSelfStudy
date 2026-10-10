@@ -222,7 +222,9 @@ private class DiskRecorder(private val directories: MutableSet<String>) : Record
 }
 
 private object SilentTts : Tts {
-    override suspend fun speak(text: String) = true
+    override suspend fun speak(text: String, audio: ByteArray?) = true
+
+    override fun hasHighQualityVoice() = true
 
     override fun stop() = Unit
 }

@@ -71,7 +71,7 @@ class ResumeTimerTest {
             tts = FakeTts,
             workQueue = FakeWorkQueue(),
             timer = { now },
-            pack = ExamPack(pool = { pool }),
+            pack = ExamPack(pool = { pool }, voice = { null }),
         ).also { graph = it }
         val store = ViewModelStore().also(viewModels::add)
         return ViewModelProvider.create(store, viewModelFactory { initializer { created.examViewModelFactory.create("s1") } })[ExamViewModel::class]

@@ -74,7 +74,9 @@ object FakeRecorder : Recorder {
 }
 
 object FakeTts : Tts {
-    override suspend fun speak(text: String) = true
+    override suspend fun speak(text: String, audio: ByteArray?) = true
+
+    override fun hasHighQualityVoice() = true
 
     override fun stop() = Unit
 }

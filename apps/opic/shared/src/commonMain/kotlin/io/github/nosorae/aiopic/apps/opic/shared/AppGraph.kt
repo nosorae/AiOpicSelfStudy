@@ -88,6 +88,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
+import io.github.nosorae.aiopic.ui.featuresettings.voice.QuestionVoiceStore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -161,6 +162,27 @@ interface AppGraph {
 
     @Provides fun surveyStore(settings: AppSettings): SurveyStore = settings
 
+    @Provides
+    fun questionVoiceStore(settings: AppSettings, @Named(DEVICE_TTS) device: Tts): QuestionVoiceStore = object : QuestionVoiceStore {
+        override suspend fun naturalVoiceOn() = settings.naturalVoiceOn
+
+        override suspend fun setNaturalVoiceOn(on: Boolean) = settings.setNaturalVoiceOn(on)
+
+        override fun hasHighQualityDeviceVoice() = device.hasHighQualityVoice()
+    }
+
+    /**
+     * 화면이 쓰는 음성. 플랫폼 기기 음성에 미리 만든 Gemini 음성을 씌운다(#161). 모델이 낸 질문의 음성은 녹음 폴더 옆 `voices` 에 받아 둔다.
+     * 출제 모델처럼 분석 모델 설정과 상관없이 [QUESTION_VOICE_MODEL] 로 받는다.
+     */
+    @SingleIn(AppScope::class)
+    @Provides
+    fun questionVoice(@Named(DEVICE_TTS) device: Tts, settings: AppSettings, @Named(RECORDINGS) recordingsRoot: String, keyVault: KeyVault, client: GeminiClient, pack: ExamPack): QuestionVoice = QuestionVoice(device, { settings.naturalVoiceOn }, pack.pool, pack.voice, "$recordingsRoot/voices", synthesize = { text ->
+        keyVault.get(GeminiModels.PROVIDER)?.let { client.speech(it, QUESTION_VOICE_MODEL, QUESTION_VOICE_NAME, text) }
+    })
+
+    @Provides fun tts(voice: QuestionVoice): Tts = voice
+
     // ponytail: 첫 버전은 제공사가 Gemini 하나라 목록도 하나다.
     @Provides fun modelCatalog(): ModelCatalog = GeminiModels
 
@@ -224,10 +246,11 @@ interface AppGraph {
         keyVault: KeyVault,
         client: GeminiClient,
         pack: ExamPack,
+        voice: QuestionVoice,
     ): ExamRepository {
         val writer = GeminiQuestionWriter(client) { keyVault.get(GeminiModels.PROVIDER) }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope, OpicEn.survey::nearTopics) { session, part, asked ->
+        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope, OpicEn.survey::nearTopics, voice::prepare) { session, part, asked ->
             examQuestions(session, part, asked, store, settings, writer, pack.questionsPrompt)
         }
     }
@@ -254,7 +277,7 @@ interface AppGraph {
             @Provides database: OpicDatabase,
             @Provides @Named(RECORDINGS) recordingsRoot: String,
             @Provides recorder: Recorder,
-            @Provides tts: Tts,
+            @Provides @Named(DEVICE_TTS) tts: Tts,
             @Provides workQueue: WorkQueue,
             @Provides gemini: GeminiClient,
             @Provides timer: MonotonicTimer,
@@ -264,13 +287,20 @@ interface AppGraph {
 }
 
 private const val RECORDINGS = "recordingsRoot"
+private const val DEVICE_TTS = "deviceTts"
+
+/** 질문 음성 모델과 목소리(#161, ADR 0031). 내장 문항 음성을 만드는 `packs/opic-en/scripts/make_question_voices.py` 와 같아야 한 회차 안에서 목소리가 바뀌지 않는다. */
+internal const val QUESTION_VOICE_MODEL = "gemini-3.8-flash-tts"
+internal const val QUESTION_VOICE_NAME = "Kore"
 
 /**
- * 모의시험 출제에 쓰는 시험 팩 파일. 호스트 JVM 테스트는 Compose 리소스를 못 읽어서 바꿔 넣는다.
+ * 모의시험 출제와 질문 음성에 쓰는 시험 팩 파일. 호스트 JVM 테스트는 Compose 리소스를 못 읽어서 바꿔 넣는다.
  */
 class ExamPack(
     val pool: suspend () -> List<Question> = OpicEn::questionPool,
     val questionsPrompt: suspend () -> PromptFile = { OpicPrompt.Questions.load() },
+    /** 내장 문항 id 로 미리 만든 질문 음성을 읽는다(#161). */
+    val voice: suspend (String) -> ByteArray? = OpicEn::questionVoice,
 )
 
 /**
@@ -455,6 +485,12 @@ private fun WorkHandler.logged() = WorkHandler { payload ->
 
 /** 녹음 파일 하나를 통째로 읽는다. 분석 요청 한 번에 답변 하나(길어야 몇 MB)만 싣는다. */
 internal expect fun readFile(path: String): ByteArray
+
+/** 없으면 null 이다. 미리 받아 둔 질문 음성을 찾을 때 쓴다. */
+internal expect fun readFileOrNull(path: String): ByteArray?
+
+/** 폴더가 없으면 만들고 통째로 쓴다. */
+internal expect fun writeFile(path: String, bytes: ByteArray)
 
 // ponytail: Gemini 목록은 모두 음성을 직접 들어서 두 단계 경로(받아쓰기, 글 분석)를 쓰지 않는다. 음성을 못 듣는 모델을 더할 때 실제 구현을 넣는다.
 private object NoTwoStepPath : Transcriber, TranscriptAnalyzer {

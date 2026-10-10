@@ -34,6 +34,9 @@ class SettingsScreenshotTest {
 
     @Test fun imported() = shot(SettingsSamples.imported)
 
+    /** #161: 기기 음성을 골랐는데 고품질 기기 음성이 없으면 받는 곳을 안내한다. */
+    @Test fun deviceVoice() = shot(SettingsSamples.deviceVoice)
+
     private fun shot(state: SettingsUiState, dark: Boolean = false) = captureRoboImage {
         MontageTheme(darkTheme = dark) { SettingsScreen(state, onIntent = {}, onOpenKeyEntry = {}, onOpenFreeTierNotice = {}, onOpenFlagExport = {}, onOpenAppInfo = {}, onPickQuestionFile = {}) }
     }

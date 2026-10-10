@@ -19,6 +19,12 @@
     <string name="settings_key_delete_message">지우면 답변을 분석하기 전에 키를 다시 넣어야 합니다. 다른 제공사 키는 그대로 남습니다.</string>
     <string name="settings_key_delete_cancel">취소</string>
     <string name="settings_theme_section">화면 모드</string>
+    <string name="settings_voice_section">질문 음성</string>
+    <string name="settings_voice_natural">자연스러운 음성</string>
+    <string name="settings_voice_natural_caption">사람처럼 읽는 음성입니다. 모델이 만든 질문은 Gemini 키로 미리 받고, 못 받으면 기기 음성으로 읽습니다.</string>
+    <string name="settings_voice_device">기기 음성</string>
+    <string name="settings_voice_device_caption">기기에 설치된 영어 음성 가운데 가장 좋은 것으로 읽습니다. 인터넷이 없어도 됩니다.</string>
+    <string name="settings_voice_device_guide">기기 설정에서 영어(미국) 고음질 음성을 받으면 더 자연스럽습니다. iPhone 은 손쉬운 사용 > 읽기 및 말하기 > 음성, Android 는 텍스트 음성 변환 출력에서 받습니다.</string>
     <string name="settings_theme_system">시스템 따라가기</string>
     <string name="settings_theme_light">라이트</string>
     <string name="settings_theme_dark">다크</string>
