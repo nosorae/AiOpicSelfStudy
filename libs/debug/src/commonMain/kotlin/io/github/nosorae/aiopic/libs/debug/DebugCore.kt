@@ -23,6 +23,8 @@ internal data class DebugCall(
     val responseHeaders: List<Pair<String, String>> = emptyList(),
     val responseBody: String = "",
     val error: String? = null,
+    /** 자르기 전 응답 본문의 바이트 수. 목록에 보이는 크기다. */
+    val responseSize: Int = 0,
 )
 
 /** 기록을 모으고 보고서를 만든다. 플랫폼 일(저장, 기기 정보)은 [DebugPlatform] 에 맡긴다. */
@@ -66,6 +68,7 @@ internal class DebugCore(val clock: Clock) {
             requestBody = body(call.requestBody),
             responseHeaders = headers(call.responseHeaders),
             responseBody = body(call.responseBody),
+            responseSize = call.responseBody.encodeToByteArray().size,
             error = call.error?.let(::redact),
         )
         val max = config.maxCalls
