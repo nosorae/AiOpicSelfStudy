@@ -1,0 +1,42 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <AiOpicSelfStudy.libs:debug-noop>
+final enum class io.github.nosorae.aiopic.libs.debug/DebugLevel : kotlin/Enum<io.github.nosorae.aiopic.libs.debug/DebugLevel> { // io.github.nosorae.aiopic.libs.debug/DebugLevel|null[0]
+    enum entry Debug // io.github.nosorae.aiopic.libs.debug/DebugLevel.Debug|null[0]
+    enum entry Error // io.github.nosorae.aiopic.libs.debug/DebugLevel.Error|null[0]
+    enum entry Info // io.github.nosorae.aiopic.libs.debug/DebugLevel.Info|null[0]
+    enum entry Warn // io.github.nosorae.aiopic.libs.debug/DebugLevel.Warn|null[0]
+
+    final val entries // io.github.nosorae.aiopic.libs.debug/DebugLevel.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<io.github.nosorae.aiopic.libs.debug/DebugLevel> // io.github.nosorae.aiopic.libs.debug/DebugLevel.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): io.github.nosorae.aiopic.libs.debug/DebugLevel // io.github.nosorae.aiopic.libs.debug/DebugLevel.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<io.github.nosorae.aiopic.libs.debug/DebugLevel> // io.github.nosorae.aiopic.libs.debug/DebugLevel.values|values#static(){}[0]
+}
+
+final class io.github.nosorae.aiopic.libs.debug/DebugConfig { // io.github.nosorae.aiopic.libs.debug/DebugConfig|null[0]
+    constructor <init>(kotlin.collections/List<kotlin.text/Regex> = ..., kotlin/Int = ...) // io.github.nosorae.aiopic.libs.debug/DebugConfig.<init>|<init>(kotlin.collections.List<kotlin.text.Regex>;kotlin.Int){}[0]
+
+    final val maxLogs // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxLogs|{}maxLogs[0]
+        final fun <get-maxLogs>(): kotlin/Int // io.github.nosorae.aiopic.libs.debug/DebugConfig.maxLogs.<get-maxLogs>|<get-maxLogs>(){}[0]
+    final val redactPatterns // io.github.nosorae.aiopic.libs.debug/DebugConfig.redactPatterns|{}redactPatterns[0]
+        final fun <get-redactPatterns>(): kotlin.collections/List<kotlin.text/Regex> // io.github.nosorae.aiopic.libs.debug/DebugConfig.redactPatterns.<get-redactPatterns>|<get-redactPatterns>(){}[0]
+}
+
+final class io.github.nosorae.aiopic.libs.debug/DebugSwitch { // io.github.nosorae.aiopic.libs.debug/DebugSwitch|null[0]
+    final val enabled // io.github.nosorae.aiopic.libs.debug/DebugSwitch.enabled|{}enabled[0]
+        final fun <get-enabled>(): kotlin/Boolean // io.github.nosorae.aiopic.libs.debug/DebugSwitch.enabled.<get-enabled>|<get-enabled>(){}[0]
+}
+
+final object io.github.nosorae.aiopic.libs.debug/DebugTools { // io.github.nosorae.aiopic.libs.debug/DebugTools|null[0]
+    final fun log(io.github.nosorae.aiopic.libs.debug/DebugLevel, kotlin/String, kotlin/String, kotlin/Throwable? = ...) // io.github.nosorae.aiopic.libs.debug/DebugTools.log|log(io.github.nosorae.aiopic.libs.debug.DebugLevel;kotlin.String;kotlin.String;kotlin.Throwable?){}[0]
+    final fun panel(kotlin/String, kotlin.coroutines/SuspendFunction0<kotlin.collections/List<kotlin/Pair<kotlin/String, kotlin/String>>>) // io.github.nosorae.aiopic.libs.debug/DebugTools.panel|panel(kotlin.String;kotlin.coroutines.SuspendFunction0<kotlin.collections.List<kotlin.Pair<kotlin.String,kotlin.String>>>){}[0]
+    final fun switch(kotlin/String, kotlin/String, kotlin/Boolean = ...): io.github.nosorae.aiopic.libs.debug/DebugSwitch // io.github.nosorae.aiopic.libs.debug/DebugTools.switch|switch(kotlin.String;kotlin.String;kotlin.Boolean){}[0]
+}
+
+final fun (io.github.nosorae.aiopic.libs.debug/DebugTools).io.github.nosorae.aiopic.libs.debug/install(io.github.nosorae.aiopic.libs.debug/DebugConfig = ...) // io.github.nosorae.aiopic.libs.debug/install|install@io.github.nosorae.aiopic.libs.debug.DebugTools(io.github.nosorae.aiopic.libs.debug.DebugConfig){}[0]

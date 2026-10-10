@@ -52,5 +52,7 @@ include(
     ":libs:tts",
     ":libs:timer",
     ":libs:haptics",
+    ":libs:debug",
+    ":libs:debug-noop",
     ":tools:eval",
 )
