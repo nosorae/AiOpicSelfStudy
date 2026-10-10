@@ -32,6 +32,9 @@ struct TabRoot: View {
 
     private func destination(_ route: AppRoute) -> some View {
         RouteView(shell: shell, route: route, onOpen: { path.append($0) }, onExit: { path.removeAll() }, onBack: { path.removeLast() }, onRestart: onRestart)
+            // 한 번에 빼고 쌓으면(연습의 Next, 시험 끝) SwiftUI 가 같은 칸의 RouteView 를 다시 쓴다. Compose 화면은 만들 때 한 번만 정하므로
+            // 경로를 identity 로 줘서 경로가 바뀌면 화면을 새로 만든다. 없으면 탭만 바뀌고 앞 화면이 남는다(#134).
+            .id(route)
             // 배경은 안전 영역 밖까지 그리고, 내용은 Compose 화면이 safeDrawing 인셋으로 안쪽에 둔다.
             .ignoresSafeArea()
             .navigationTitle("")
