@@ -41,6 +41,24 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES">
+      <PreActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Grant simulator microphone"
+               scriptText = "# UI 테스트가 마이크 권한 창 없이 녹음을 시작하게 시뮬레이터에서 미리 허용한다.&#10;if [ &quot;$PLATFORM_NAME&quot; = &quot;iphonesimulator&quot; ]; then&#10;  xcrun simctl boot &quot;$TARGET_DEVICE_IDENTIFIER&quot; 2&gt;/dev/null&#10;  xcrun simctl privacy &quot;$TARGET_DEVICE_IDENTIFIER&quot; grant microphone &quot;$PRODUCT_BUNDLE_IDENTIFIER&quot; &gt; &quot;$TARGET_TEMP_DIR/grant-microphone.log&quot; 2&gt;&amp;1&#10;fi&#10;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "69322F549A29979296841AD9"
+                     BuildableName = "AiOpicSelfStudy.app"
+                     BlueprintName = "iosApp"
+                     ReferencedContainer = "container:iosApp.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PreActions>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"

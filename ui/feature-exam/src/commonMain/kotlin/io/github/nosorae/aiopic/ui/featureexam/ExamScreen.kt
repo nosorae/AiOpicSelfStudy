@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -191,7 +192,7 @@ private fun SurveyStep(
             Description(survey.question)
             Column {
                 survey.options.forEachIndexed { option, text ->
-                    MontageListCell(title = text, selected = answers[part] == option, onClick = { onAnswer(part, option) })
+                    MontageListCell(title = text, selected = answers[part] == option, onClick = { onAnswer(part, option) }, modifier = Modifier.testTag("survey-$part-$option"))
                 }
             }
         }
@@ -208,7 +209,9 @@ private fun SurveyStep(
             horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
             verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
         ) {
-            topics.forEach { topic -> MontageChip(text = topic, onClick = { onToggle(topic) }, active = topic in selected) }
+            topics.forEachIndexed { index, topic ->
+                MontageChip(text = topic, onClick = { onToggle(topic) }, active = topic in selected, modifier = Modifier.testTag("survey-topic-$index"))
+            }
         }
     }
 }
@@ -234,7 +237,7 @@ private fun ChoiceStep(
         Description(description)
         Column {
             choices.forEachIndexed { index, choice ->
-                MontageListCell(title = choice, selected = index == selected, onClick = { onSelect(index) })
+                MontageListCell(title = choice, selected = index == selected, onClick = { onSelect(index) }, modifier = Modifier.testTag("exam-choice-$index"))
             }
         }
     }
@@ -264,13 +267,13 @@ private fun QuestionStep(
                         onClick = onReplay,
                         enabled = state.canReplay,
                         type = MontageButtonType.Assistive,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag("exam-replay"),
                     )
                     MontageButton(
                         text = stringResource(Res.string.exam_next),
                         onClick = onNext,
                         enabled = state.canNext,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f).testTag("exam-next"),
                     )
                 }
             } else {
@@ -278,7 +281,7 @@ private fun QuestionStep(
                     text = stringResource(Res.string.exam_play),
                     onClick = onPlay,
                     enabled = state.phase == QuestionPhase.Ready,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().testTag("exam-play"),
                 )
             }
         },
@@ -306,7 +309,7 @@ private fun QuestionStep(
             },
             style = MontageTheme.typography.heading2.bold,
             color = if (state.phase == QuestionPhase.Recording) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralPrimary,
-            modifier = Modifier.padding(horizontal = Gutter),
+            modifier = Modifier.padding(horizontal = Gutter).testTag("exam-phase"),
         )
         state.error?.let {
             Text(
@@ -346,7 +349,7 @@ private fun NextButton(enabled: Boolean, onClick: () -> Unit) {
         text = stringResource(Res.string.exam_next_step),
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().testTag("exam-next-step"),
     )
 }
 
