@@ -15,6 +15,8 @@ import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.recorder.api.Recorder
+import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
+import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.github.nosorae.aiopic.libs.tts.api.Tts
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import io.github.nosorae.aiopic.ui.featureexam.ExamIntent
@@ -211,9 +213,9 @@ class ExamE2eIosTest {
 
 /** 녹음한 폴더를 기기 디스크처럼 그래프 밖에 남긴다. 조각 파일은 만들지 않아서 분석에는 빈 녹음이 간다. */
 private class DiskRecorder(private val directories: MutableSet<String>) : Recorder {
-    override suspend fun start(directory: String): Boolean = directories.add(directory).let { true }
+    override suspend fun start(directory: String): RecordingFailure? = directories.add(directory).let { null }
 
-    override suspend fun stop() = emptyList<String>()
+    override suspend fun stop() = StoppedRecording(emptyList())
 
     override suspend fun chunks(directory: String) = if (directory in directories) listOf("$directory/00000-r.m4a") else emptyList()
 

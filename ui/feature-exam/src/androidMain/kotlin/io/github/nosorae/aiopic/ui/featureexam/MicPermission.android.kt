@@ -1,7 +1,10 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -25,5 +28,13 @@ internal actual fun rememberMicPermission(): suspend () -> Boolean {
                 }.await()
             }
         }
+    }
+}
+
+@Composable
+internal actual fun rememberOpenAppSettings(): () -> Unit {
+    val context = LocalContext.current
+    return remember(context) {
+        { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))) }
     }
 }

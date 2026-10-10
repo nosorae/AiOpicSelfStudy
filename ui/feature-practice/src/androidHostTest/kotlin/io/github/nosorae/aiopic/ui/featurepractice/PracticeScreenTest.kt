@@ -12,7 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-/** 오래 걸릴 수 있는 버튼(Play, Next)이 처리 중에 진행 표시를 보이고 눌리지 않는지 본다. */
+/** 오래 걸릴 수 있는 버튼(Play, Next)이 처리 중에 진행 표시를 보이고 눌리지 않는지, 녹음 오류마다 고칠 버튼이 보이는지 본다. */
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class PracticeScreenTest {
@@ -20,8 +20,10 @@ class PracticeScreenTest {
 
     private val intents = mutableListOf<PracticeIntent>()
 
+    private var settingsOpened = 0
+
     private fun show(state: PracticeUiState) = rule.setContent {
-        MontageTheme { PracticeScreen(state = state, onIntent = { intents += it }) }
+        MontageTheme { PracticeScreen(state = state, onIntent = { intents += it }, onOpenSettings = { settingsOpened++ }) }
     }
 
     private fun assertBusyButtonIgnoresClick(hiddenText: String) {
@@ -50,5 +52,24 @@ class PracticeScreenTest {
         show(PracticeSamples.saving)
 
         assertBusyButtonIgnoresClick("Next")
+    }
+
+    @Test
+    fun `녹음을 저장하지 못했으면 저장 공간 안내와 다시 녹음 버튼이 보이고 누르면 다시 녹음한다`() {
+        show(PracticeSamples.recordingError)
+
+        rule.onNodeWithText("녹음을 저장하지 못했습니다. 기기 저장 공간을 확인하고 다시 녹음을 누르세요.").assertExists()
+        rule.onNodeWithText("다시 녹음").performClick()
+
+        assertEquals(listOf<PracticeIntent>(PracticeIntent.PlayQuestion), intents)
+    }
+
+    @Test
+    fun `마이크 권한이 꺼져 있으면 설정 열기 버튼이 보이고 누르면 설정을 연다`() {
+        show(PracticeSamples.micError)
+
+        rule.onNodeWithText("설정 열기").performClick()
+
+        assertEquals(1, settingsOpened)
     }
 }

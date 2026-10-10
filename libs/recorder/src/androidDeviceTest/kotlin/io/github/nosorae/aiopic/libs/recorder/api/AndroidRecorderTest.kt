@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -48,9 +49,9 @@ class AndroidRecorderTest {
     @Test
     fun `F3_2_녹음기를_끊지_않고_몇_초마다_새_조각_파일로_넘어간다`() = runBlocking {
         val recorder = AndroidRecorder(context)
-        assertTrue(recorder.start(dir.path))
+        assertNull(recorder.start(dir.path))
         Thread.sleep(12_000)
-        val chunks = recorder.stop()
+        val chunks = recorder.stop().chunks
 
         assertTrue(chunks.size >= 2, "조각 $chunks")
         val merged = File(dir, "merged.m4a").path
@@ -63,7 +64,7 @@ class AndroidRecorderTest {
     fun `F3_2_F3_3_프로세스가_죽은_뒤_새_녹음기가_끝난_조각만_되찾고_이어_녹음한다`() = runBlocking {
         // 프로세스가 죽은 상황: 녹음 중인 녹음기를 그대로 두고 새 녹음기로 같은 폴더를 연다.
         val dead = AndroidRecorder(context)
-        assertTrue(dead.start(dir.path))
+        assertNull(dead.start(dir.path))
         Thread.sleep(8_000)
         val restored = AndroidRecorder(context).chunks(dir.path)
         dead.stop()
@@ -74,9 +75,9 @@ class AndroidRecorderTest {
         restored.forEach { assertTrue(durationOf(it) > 0.seconds, it) }
 
         val recorder = AndroidRecorder(context)
-        assertTrue(recorder.start(dir.path))
+        assertNull(recorder.start(dir.path))
         Thread.sleep(2_000)
-        val all = recorder.stop()
+        val all = recorder.stop().chunks
 
         assertEquals(all.sorted(), all)
         assertTrue(all.size > restored.size)
@@ -89,7 +90,7 @@ class AndroidRecorderTest {
     @Test
     fun `F3_4_다른_앱이_오디오를_잠깐_가져가면_그동안_멈추고_끝나면_새_조각으로_다시_녹음한다`() = runBlocking {
         val recorder = AndroidRecorder(context)
-        assertTrue(recorder.start(dir.path))
+        assertNull(recorder.start(dir.path))
         Thread.sleep(2_000)
         // 전화가 울릴 때처럼 다른 쪽이 오디오 포커스를 잠깐 가져간다.
         val audio = context.getSystemService(AudioManager::class.java)
@@ -100,11 +101,30 @@ class AndroidRecorderTest {
         Thread.sleep(1_000)
         audio.abandonAudioFocusRequest(call)
         Thread.sleep(2_000)
-        val chunks = recorder.stop()
+        val chunks = recorder.stop().chunks
 
         val resumes = recorder.merge(chunks, File(dir, "merged.m4a").path)
         assertEquals(1, resumes.size, "조각 $chunks")
         assertTrue(resumes.single() in 1.seconds..3.seconds, "이어 녹음 위치 $resumes")
+    }
+
+    @Test
+    fun `폴더를_만들_수_없으면_시작하지_못한다`() = runBlocking {
+        dir.parentFile!!.mkdirs()
+        dir.writeText("파일")
+
+        assertEquals(RecordingFailure.WriteFailed, AndroidRecorder(context).start(File(dir, "answer").path))
+    }
+
+    @Test
+    fun `다음_조각_파일을_만들지_못하면_멈출_때_알린다`() = runBlocking {
+        val recorder = AndroidRecorder(context)
+        assertNull(recorder.start(dir.path))
+        // 녹음 도중 폴더가 사라지면 약 5초 뒤 다음 조각 파일을 만들 수 없다.
+        dir.deleteRecursively()
+        Thread.sleep(8_000)
+
+        assertEquals(RecordingFailure.WriteFailed, recorder.stop().failure)
     }
 
     private fun durationOf(path: String) = MediaMetadataRetriever().run {

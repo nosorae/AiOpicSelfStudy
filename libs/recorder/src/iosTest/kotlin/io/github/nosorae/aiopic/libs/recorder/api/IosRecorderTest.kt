@@ -18,7 +18,7 @@ import platform.Foundation.writeToFile
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -37,9 +37,9 @@ class IosRecorderTest {
     @Test
     fun `F3_2 조각 길이를 채우면 녹음기를 멈추지 않고 새 조각 파일에 이어 쓴다`() = runTest {
         val recorder = IosRecorder(mic, chunkLength = 1.seconds)
-        assertTrue(recorder.start(dir))
+        assertNull(recorder.start(dir))
         mic.feed(2500.milliseconds)
-        val chunks = recorder.stop()
+        val chunks = recorder.stop().chunks
 
         assertEquals(listOf("0000.m4a", "0001.m4a", "0002.m4a"), chunks.map { it.substringAfterLast('/') })
         assertEquals(1, mic.starts)
@@ -56,7 +56,7 @@ class IosRecorderTest {
         mic.feed(1.seconds) // 끼어든 동안 들어온 소리는 쓰지 않는다
         postInterruption(AVAudioSessionInterruptionTypeEnded)
         mic.feed(1.seconds)
-        val chunks = recorder.stop()
+        val chunks = recorder.stop().chunks
 
         assertEquals(listOf("0000.m4a", "0001-resume.m4a"), chunks.map { it.substringAfterLast('/') })
         assertEquals(2, mic.starts)
@@ -75,7 +75,7 @@ class IosRecorderTest {
 
         after.start(dir)
         mic.feed(500.milliseconds)
-        val chunks = after.stop()
+        val chunks = after.stop().chunks
 
         assertEquals(listOf("0000.m4a", "0001.m4a", "0002-resume.m4a"), chunks.map { it.substringAfterLast('/') })
         assertNear(listOf(1.seconds), after.merge(chunks, "$dir/answer.m4a"))
@@ -86,7 +86,7 @@ class IosRecorderTest {
         val recorder = IosRecorder(mic, chunkLength = 5.seconds)
         recorder.start(dir)
         mic.feed(1.seconds)
-        val chunks = recorder.stop()
+        val chunks = recorder.stop().chunks
         NSData().writeToFile("$dir/0001.m4a", atomically = true)
 
         assertEquals(emptyList(), recorder.merge(chunks + "$dir/0001.m4a", "$dir/answer.m4a"))
@@ -95,7 +95,56 @@ class IosRecorderTest {
 
     @Test
     fun `마이크를 열 수 없으면 시작하지 못한다`() = runTest {
-        assertFalse(IosRecorder(FakeMic(available = false), chunkLength = 5.seconds).start(dir))
+        assertEquals(RecordingFailure.MicUnavailable, IosRecorder(FakeMic(available = false), chunkLength = 5.seconds).start(dir))
+    }
+
+    @Test
+    fun `폴더를 만들 수 없으면 시작하지 못한다`() = runTest {
+        NSData().writeToFile(dir, atomically = true)
+
+        assertEquals(RecordingFailure.WriteFailed, IosRecorder(mic, chunkLength = 5.seconds).start("$dir/answer"))
+    }
+
+    @Test
+    fun `조각 파일을 만들지 못하면 멈출 때 알린다`() = runTest {
+        val recorder = IosRecorder(mic, chunkLength = 1.seconds)
+        recorder.start(dir)
+        mic.feed(1500.milliseconds)
+        // 녹음 도중 폴더가 사라지면 다음 조각 파일을 만들 수 없다.
+        NSFileManager.defaultManager.removeItemAtPath(dir, null)
+        mic.feed(1.seconds)
+
+        assertEquals(RecordingFailure.WriteFailed, recorder.stop().failure)
+    }
+
+    @Test
+    fun `끼어듦이 끝난 뒤 마이크를 다시 열지 못하면 멈출 때 알린다`() = runTest {
+        val recorder = IosRecorder(mic, chunkLength = 5.seconds)
+        recorder.start(dir)
+        mic.feed(1.seconds)
+        postInterruption(AVAudioSessionInterruptionTypeBegan)
+        mic.available = false
+        postInterruption(AVAudioSessionInterruptionTypeEnded)
+        val stopped = recorder.stop()
+
+        assertEquals(RecordingFailure.MicUnavailable, stopped.failure)
+        assertEquals(listOf("0000.m4a"), stopped.chunks.map { it.substringAfterLast('/') })
+    }
+
+    @Test
+    fun `실패는 다음 녹음으로 넘어가지 않는다`() = runTest {
+        val recorder = IosRecorder(mic, chunkLength = 5.seconds)
+        recorder.start(dir)
+        postInterruption(AVAudioSessionInterruptionTypeBegan)
+        mic.available = false
+        postInterruption(AVAudioSessionInterruptionTypeEnded)
+        recorder.stop()
+        mic.available = true
+
+        recorder.start(dir)
+        mic.feed(1.seconds)
+
+        assertNull(recorder.stop().failure)
     }
 
     @Test
@@ -120,7 +169,7 @@ class IosRecorderTest {
 
 /** 마이크 대신 16kHz 모노 무음 버퍼를 0.1초씩 넘긴다. 열려 있지 않으면 버퍼를 넘기지 않는다. */
 @OptIn(ExperimentalForeignApi::class)
-private class FakeMic(private val available: Boolean = true) : MicInput {
+private class FakeMic(var available: Boolean = true) : MicInput {
     private val format = AVAudioFormat(standardFormatWithSampleRate = 16_000.0, channels = 1u)
     private var onBuffer: ((AVAudioPCMBuffer) -> Unit)? = null
     var starts = 0

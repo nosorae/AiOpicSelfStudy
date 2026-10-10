@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.question.model.Question
@@ -50,9 +51,11 @@ fun PracticeRoute(viewModel: PracticeViewModel, onExit: () -> Unit, onFeedback: 
         viewModel.onIntent(PracticeIntent.NavigationHandled)
     }
     val requestMic = rememberMicPermission()
+    val openSettings = rememberOpenAppSettings()
     val scope = rememberCoroutineScope()
     PracticeScreen(
         state = state,
+        onOpenSettings = openSettings,
         onIntent = { intent ->
             if (intent == PracticeIntent.PlayQuestion) {
                 scope.launch { viewModel.onIntent(if (requestMic()) intent else PracticeIntent.MicDenied) }
@@ -66,7 +69,7 @@ fun PracticeRoute(viewModel: PracticeViewModel, onExit: () -> Unit, onFeedback: 
 
 /** 상태만 받아 그리는 안쪽 겹. 질문 글자는 보이지 않는다. 미리보기와 스크린샷 테스트가 이 함수를 쓴다. */
 @Composable
-fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, modifier: Modifier = Modifier) {
+fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, modifier: Modifier = Modifier, onOpenSettings: () -> Unit = {}) {
     MontageScreen(
         modifier = modifier,
         topBar = {
@@ -101,7 +104,7 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                     }
                 } else {
                     MontageButton(
-                        text = stringResource(Res.string.practice_play),
+                        text = stringResource(if (state.error in RetryErrors) Res.string.practice_retry else Res.string.practice_play),
                         onClick = { onIntent(PracticeIntent.PlayQuestion) },
                         // 질문을 고르는 동안과 질문을 읽는 동안 진행 표시를 보인다. 녹음은 다 읽은 뒤에 시작된다.
                         enabled = state.canPlay || state.preparing,
@@ -136,6 +139,16 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                     text = stringResource(it.message),
                     style = MontageTheme.typography.body2.medium,
                     color = MontageTheme.colors.foregroundNegativePrimary,
+                    modifier = Modifier.padding(horizontal = Gutter).testTag("practice-error"),
+                )
+            }
+            if (state.error == PracticeError.MicDenied) {
+                MontageButton(
+                    text = stringResource(Res.string.practice_open_settings),
+                    onClick = onOpenSettings,
+                    variant = MontageButtonVariant.Outlined,
+                    type = MontageButtonType.Assistive,
+                    size = MontageButtonSize.Medium,
                     modifier = Modifier.padding(horizontal = Gutter),
                 )
             }
@@ -162,9 +175,14 @@ private fun Duration.clockText(): String {
     return "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
 }
 
+/** 다시 녹음하면 풀리는 오류. 이때 Play 가 "다시 녹음" 이 된다. */
+private val RetryErrors = setOf(PracticeError.MicUnavailable, PracticeError.RecordingFailed)
+
 private val PracticeError.message: StringResource
     get() = when (this) {
+        PracticeError.MicDenied -> Res.string.practice_error_mic_denied
         PracticeError.MicUnavailable -> Res.string.practice_error_mic
+        PracticeError.RecordingFailed -> Res.string.practice_error_recording
         PracticeError.SpeechFailed -> Res.string.practice_error_speech
         PracticeError.QuestionUnavailable -> Res.string.practice_error_question
     }
@@ -179,7 +197,8 @@ internal object PracticeSamples {
     val replayable = ready.copy(phase = PracticePhase.Recording, recorded = 3.seconds)
     val nextable = ready.copy(phase = PracticePhase.Recording, recorded = 12.seconds, replayUsed = true)
     val saving = nextable.copy(saving = true)
-    val micError = ready.copy(error = PracticeError.MicUnavailable)
+    val micError = ready.copy(error = PracticeError.MicDenied)
+    val recordingError = ready.copy(error = PracticeError.RecordingFailed)
     val noQuestion = PracticeUiState(error = PracticeError.QuestionUnavailable)
 }
 

@@ -10,6 +10,8 @@ import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.libs.recorder.api.Recorder
+import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
+import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.github.nosorae.aiopic.libs.tts.api.Tts
 import kotlinx.coroutines.delay
 import kotlin.time.Duration
@@ -75,20 +77,23 @@ class FakeTts(private val readTime: Duration = 3.seconds, var canSpeak: Boolean 
     override fun stop() = Unit
 }
 
-/** 파일을 쓰지 않는다. 시작할 때마다 조각 경로 하나를 더한다. */
-class FakeRecorder(var micAvailable: Boolean = true) : Recorder {
+/** 파일을 쓰지 않는다. 시작할 때마다 조각 경로 하나를 더한다. [writeFails] 면 멈출 때 조각 쓰기에 실패했다고 알린다. */
+class FakeRecorder(var micAvailable: Boolean = true, var writeFails: Boolean = false) : Recorder {
     private val folders = mutableMapOf<String, MutableList<String>>()
     var recording: String? = null
 
-    override suspend fun start(directory: String): Boolean {
-        if (!micAvailable) return false
+    override suspend fun start(directory: String): RecordingFailure? {
+        if (!micAvailable) return RecordingFailure.MicUnavailable
         val chunks = folders.getOrPut(directory) { mutableListOf() }
         chunks += "$directory/${chunks.size}.m4a"
         recording = directory
-        return true
+        return null
     }
 
-    override suspend fun stop(): List<String> = chunks(checkNotNull(recording) { "녹음 중이 아니다" }).also { recording = null }
+    override suspend fun stop(): StoppedRecording {
+        val chunks = chunks(checkNotNull(recording) { "녹음 중이 아니다" }).also { recording = null }
+        return StoppedRecording(chunks, if (writeFails) RecordingFailure.WriteFailed else null)
+    }
 
     override suspend fun chunks(directory: String): List<String> = folders[directory].orEmpty().toList()
 

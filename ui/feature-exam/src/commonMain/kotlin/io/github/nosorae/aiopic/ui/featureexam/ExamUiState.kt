@@ -2,6 +2,7 @@ package io.github.nosorae.aiopic.ui.featureexam
 
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
+import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -47,14 +48,25 @@ data class ExamUiState(
 enum class QuestionPhase { Ready, Speaking, Recording }
 
 enum class ExamError {
-    /** 마이크 권한이 없거나 마이크를 열지 못했다. */
+    /** 사용자가 마이크 권한을 주지 않았다. 설정에서 켜야 한다. */
+    MicDenied,
+
+    /** 권한은 있는데 마이크를 열지 못했다. 다른 앱이 마이크를 쓰고 있을 때 생긴다. */
     MicUnavailable,
+
+    /** 녹음 조각 파일을 만들거나 쓰지 못했다. 저장 공간이 모자랄 때 생긴다. */
+    RecordingFailed,
 
     /** 기기 음성으로 질문을 읽지 못했다. */
     SpeechFailed,
 
     /** 낼 질문을 얻지 못했다. */
     QuestionUnavailable,
+}
+
+internal fun RecordingFailure.toExamError(): ExamError = when (this) {
+    RecordingFailure.MicUnavailable -> ExamError.MicUnavailable
+    RecordingFailure.WriteFailed -> ExamError.RecordingFailed
 }
 
 /** 저장이 끝나야 가는 이동만 상태로 둔다(ADR 0009). 어디로 갈지는 화면을 등록한 쪽이 정한다. */

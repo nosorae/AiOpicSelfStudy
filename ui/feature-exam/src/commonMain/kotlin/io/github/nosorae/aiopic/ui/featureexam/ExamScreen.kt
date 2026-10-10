@@ -58,9 +58,11 @@ fun ExamRoute(viewModel: ExamViewModel, onExit: () -> Unit, onFinish: () -> Unit
         viewModel.onIntent(ExamIntent.NavigationHandled)
     }
     val requestMic = rememberMicPermission()
+    val openSettings = rememberOpenAppSettings()
     val scope = rememberCoroutineScope()
     ExamScreen(
         state = state,
+        onOpenSettings = openSettings,
         onIntent = { intent ->
             if (intent == ExamIntent.PlayQuestion) {
                 scope.launch { viewModel.onIntent(if (requestMic()) intent else ExamIntent.MicDenied) }
@@ -74,7 +76,7 @@ fun ExamRoute(viewModel: ExamViewModel, onExit: () -> Unit, onFinish: () -> Unit
 
 /** 상태만 받아 그리는 안쪽 겹. 회차의 지금 단계에 맞는 화면 하나를 그린다. 미리보기와 스크린샷 테스트가 이 함수를 쓴다. */
 @Composable
-fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Modifier = Modifier) {
+fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Modifier = Modifier, onOpenSettings: () -> Unit = {}) {
     val onExit = { onIntent(ExamIntent.ExitExam) }
     when (val step = state.step) {
         null -> StepScaffold(title = "", onExit = onExit, modifier = modifier) {}
@@ -129,6 +131,7 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
             onPlay = { onIntent(ExamIntent.PlayQuestion) },
             onReplay = { onIntent(ExamIntent.ReplayQuestion) },
             onNext = { onIntent(ExamIntent.SubmitAnswer) },
+            onOpenSettings = onOpenSettings,
             onExit = onExit,
             modifier = modifier,
         )
@@ -257,6 +260,7 @@ private fun QuestionStep(
     onPlay: () -> Unit,
     onReplay: () -> Unit,
     onNext: () -> Unit,
+    onOpenSettings: () -> Unit,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -285,7 +289,7 @@ private fun QuestionStep(
             } else {
                 // 첫 문항은 이때 질문을 받아 오고(F6.1) 질문을 다 읽어야 녹음이 시작돼서 그동안 Play 가 진행 표시를 보인다.
                 MontageButton(
-                    text = stringResource(Res.string.exam_play),
+                    text = stringResource(if (state.error in RetryErrors) Res.string.exam_retry else Res.string.exam_play),
                     onClick = onPlay,
                     loading = state.phase == QuestionPhase.Speaking,
                     modifier = Modifier.fillMaxWidth().testTag("exam-play"),
@@ -323,7 +327,17 @@ private fun QuestionStep(
                 text = stringResource(it.message),
                 style = MontageTheme.typography.body2.medium,
                 color = MontageTheme.colors.foregroundNegativePrimary,
-                modifier = Modifier.padding(horizontal = Gutter),
+                modifier = Modifier.padding(horizontal = Gutter).testTag("exam-error"),
+            )
+        }
+        if (state.error == ExamError.MicDenied) {
+            MontageButton(
+                text = stringResource(Res.string.exam_open_settings),
+                onClick = onOpenSettings,
+                variant = MontageButtonVariant.Outlined,
+                type = MontageButtonType.Assistive,
+                size = MontageButtonSize.Medium,
+                modifier = Modifier.padding(horizontal = Gutter).testTag("exam-open-settings"),
             )
         }
         Description(stringResource(Res.string.exam_rules))
@@ -377,9 +391,14 @@ private val Recalibration.label: StringResource
         Recalibration.Harder -> Res.string.exam_recalibrate_harder
     }
 
+/** 같은 문항을 다시 녹음하면 풀리는 오류. 이때 Play 가 "다시 녹음" 이 된다. */
+private val RetryErrors = setOf(ExamError.MicUnavailable, ExamError.RecordingFailed)
+
 private val ExamError.message: StringResource
     get() = when (this) {
+        ExamError.MicDenied -> Res.string.exam_error_mic_denied
         ExamError.MicUnavailable -> Res.string.exam_error_mic
+        ExamError.RecordingFailed -> Res.string.exam_error_recording
         ExamError.SpeechFailed -> Res.string.exam_error_speech
         ExamError.QuestionUnavailable -> Res.string.exam_error_question
     }
@@ -415,7 +434,8 @@ internal object ExamSamples {
     val questionSaving = questionNextable.copy(saving = true)
     val surveySaving = surveyReady.copy(saving = true)
     val questionTimer = questionReplayable.copy(answerTimer = true)
-    val micError = check.copy(error = ExamError.MicUnavailable)
+    val micError = check.copy(error = ExamError.MicDenied)
+    val recordingError = questionReady.copy(error = ExamError.RecordingFailed)
     val recalibrate = ExamUiState(step = ExamStep.Recalibrate, remaining = 21.minutes, selectedRecalibration = Recalibration.Same)
 }
 
