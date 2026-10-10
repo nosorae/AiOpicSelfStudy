@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.libs.debug
 
+import androidx.compose.ui.window.ComposeUIViewController
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
@@ -15,6 +16,8 @@ import platform.Foundation.NSLocale
 import platform.Foundation.NSNumber
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSString
+import platform.Foundation.NSTemporaryDirectory
+import platform.Foundation.NSURL
 import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.NSUserDefaults
 import platform.Foundation.NSUserDomainMask
@@ -22,7 +25,16 @@ import platform.Foundation.create
 import platform.Foundation.currentLocale
 import platform.Foundation.localeIdentifier
 import platform.Foundation.writeToFile
+import platform.UIKit.UIActivityViewController
+import platform.UIKit.UIApplication
 import platform.UIKit.UIDevice
+import platform.UIKit.UIViewController
+import platform.UIKit.UIWindow
+import platform.UIKit.UIWindowScene
+import platform.UIKit.popoverPresentationController
+import platform.UIKit.restorationIdentifier
+import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_main_queue
 import platform.posix.uname
 import platform.posix.utsname
 import kotlin.experimental.ExperimentalNativeApi
@@ -41,6 +53,44 @@ public fun DebugTools.install(config: DebugConfig = DebugConfig()) {
         previous?.invoke(error)
     }
 }
+
+/**
+ * 디버깅 화면. 앱이 원하는 곳에서 직접 띄울 때 쓴다. 닫기를 누르면 스스로 dismiss 한다.
+ * 흔들기는 앱 Swift 쪽 `UIWindow.motionEnded` 에서 [DebugTools.open] 을 부른다(README).
+ */
+public fun DebugTools.viewController(): UIViewController {
+    lateinit var controller: UIViewController
+    controller = ComposeUIViewController {
+        DebugApp(core, onShare = { share(controller, it) }, onClose = { controller.dismissViewControllerAnimated(true, null) })
+    }
+    return controller
+}
+
+/** 보고서를 임시 파일로 써서 공유 시트에 넘긴다. 보고서가 수 MB 가 될 수 있어 문자열 대신 파일을 넘긴다. */
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+private fun share(from: UIViewController, report: String) {
+    val path = NSTemporaryDirectory() + "debug-report.txt"
+    @Suppress("CAST_NEVER_SUCCEEDS")
+    (report as NSString).writeToFile(path, atomically = true, encoding = NSUTF8StringEncoding, error = null)
+    val sheet = UIActivityViewController(activityItems = listOf(NSURL.fileURLWithPath(path)), applicationActivities = null)
+    sheet.popoverPresentationController?.sourceView = from.view
+    from.presentViewController(sheet, animated = true, completion = null)
+}
+
+/** 맨 위에 떠 있는 화면 위에 디버깅 화면을 띄운다. 이미 떠 있으면 다시 띄우지 않는다. */
+private fun presentOnTop() {
+    val root = UIApplication.sharedApplication.connectedScenes
+        .filterIsInstance<UIWindowScene>()
+        .flatMap { it.windows.filterIsInstance<UIWindow>() }
+        .firstOrNull { it.isKeyWindow() }?.rootViewController ?: return
+    var top: UIViewController = root
+    while (true) top = top.presentedViewController ?: break
+    if (top.restorationIdentifier == RESTORATION_ID) return
+    val debug = DebugTools.viewController().apply { restorationIdentifier = RESTORATION_ID }
+    top.presentViewController(debug, animated = true, completion = null)
+}
+
+private const val RESTORATION_ID = "debug-tools"
 
 private fun crashDir(): String = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, true).first() as String + "/debug-crashes"
 
@@ -81,6 +131,11 @@ internal class IosPlatform(private val crashDir: String) : DebugPlatform {
 
     override fun deleteCrash(name: String) {
         files.removeItemAtPath("$crashDir/$name", null)
+    }
+
+    override fun open() {
+        // 흔들기와 앱 코드가 어느 스레드에서 부르든 UIKit 은 메인 스레드에서만 만진다.
+        dispatch_async(dispatch_get_main_queue()) { presentOnTop() }
     }
 
     private companion object {

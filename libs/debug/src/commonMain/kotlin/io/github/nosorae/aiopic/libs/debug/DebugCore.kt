@@ -36,8 +36,10 @@ internal class DebugCore(val clock: Clock) {
     val logs: StateFlow<List<DebugLog>> = _logs
     private val _calls = MutableStateFlow<List<DebugCall>>(emptyList())
     val calls: StateFlow<List<DebugCall>> = _calls
-    private val switches = MutableStateFlow<Map<String, DebugSwitch>>(emptyMap())
-    private val panels = MutableStateFlow<Map<String, suspend () -> List<Pair<String, String>>>>(emptyMap())
+    private val _switches = MutableStateFlow<Map<String, DebugSwitch>>(emptyMap())
+    val switches: StateFlow<Map<String, DebugSwitch>> = _switches
+    private val _panels = MutableStateFlow<Map<String, suspend () -> List<Pair<String, String>>>>(emptyMap())
+    val panels: StateFlow<Map<String, suspend () -> List<Pair<String, String>>>> = _panels
 
     fun install(config: DebugConfig, platform: DebugPlatform) {
         this.config = config
@@ -77,8 +79,8 @@ internal class DebugCore(val clock: Clock) {
     }
 
     fun switch(key: String, title: String, default: Boolean = false): DebugSwitch {
-        switches.update { if (key in it) it else it + (key to DebugSwitch(this, key, title, default)) }
-        return switches.value.getValue(key)
+        _switches.update { if (key in it) it else it + (key to DebugSwitch(this, key, title, default)) }
+        return _switches.value.getValue(key)
     }
 
     fun switchEnabled(key: String, default: Boolean): Boolean = platform.readSwitch(key) ?: default
@@ -86,8 +88,17 @@ internal class DebugCore(val clock: Clock) {
     fun setSwitch(key: String, enabled: Boolean) = platform.writeSwitch(key, enabled)
 
     fun panel(title: String, rows: suspend () -> List<Pair<String, String>>) {
-        panels.update { it + (title to rows) }
+        _panels.update { it + (title to rows) }
     }
+
+    fun open() = platform.open()
+
+    fun info(): List<Pair<String, String>> = platform.info()
+
+    /** 최근 것부터 (파일 이름, 내용). */
+    fun crashes(): List<Pair<String, String>> = platform.crashNames().sortedDescending().map { it to platform.readCrash(it) }
+
+    fun deleteCrash(name: String) = platform.deleteCrash(name)
 
     /** 처리 안 된 예외가 난 순간의 기록을 파일로 남긴다. 파일은 [MAX_CRASHES] 개까지 두고 오래된 것부터 지운다. */
     fun recordCrash(error: Throwable) {
@@ -102,19 +113,22 @@ internal class DebugCore(val clock: Clock) {
         append("# Info\n")
         platform.info().forEach { (name, value) -> append("$name: $value\n") }
         append(switchesText())
-        panels.value.forEach { (title, rows) ->
-            append("## $title\n")
-            try {
-                rows().forEach { (name, value) -> append("$name: ${redact(value)}\n") }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                append("${e.message ?: e::class.simpleName}\n")
-            }
-        }
-        platform.crashNames().sortedDescending().forEach { append("\n${platform.readCrash(it)}\n") }
+        panelRows().forEach { (name, value) -> append(if (name.startsWith("## ")) "$name\n" else "$name: $value\n") }
+        crashes().forEach { (_, text) -> append("\n$text\n") }
         append(logsText())
         append(callsText())
+    }
+
+    /** 앱 패널을 읽어 가린 줄로 돌려준다. 패널 제목은 `"## 제목" to ""` 줄이다. 화면과 보고서가 같이 써서 화면에도 키 원문이 안 보인다. */
+    suspend fun panelRows(): List<Pair<String, String>> = panels.value.flatMap { (title, rows) ->
+        val lines = try {
+            rows()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            listOf("error" to (e.message ?: e::class.simpleName.orEmpty()))
+        }
+        listOf("## $title" to "") + lines.map { (name, value) -> redact(name) to redact(value) }
     }
 
     private fun callsText() = "# Network\n" + calls.value.joinToString("") { call ->
@@ -125,7 +139,7 @@ internal class DebugCore(val clock: Clock) {
             call.error?.let { "! $it\n" }.orEmpty()
     }
 
-    private fun switchesText() = "# Switches\n" + switches.value.values.joinToString("") {
+    private fun switchesText() = "# Switches\n" + _switches.value.values.joinToString("") {
         "${it.title} (${it.key}): ${if (it.enabled) "on" else "off"}\n"
     }
 

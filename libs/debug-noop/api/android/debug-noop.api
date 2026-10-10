@@ -32,6 +32,7 @@ public final class io/github/nosorae/aiopic/libs/debug/DebugTools {
 	public static final field INSTANCE Lio/github/nosorae/aiopic/libs/debug/DebugTools;
 	public final fun log (Lio/github/nosorae/aiopic/libs/debug/DebugLevel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
 	public static synthetic fun log$default (Lio/github/nosorae/aiopic/libs/debug/DebugTools;Lio/github/nosorae/aiopic/libs/debug/DebugLevel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+	public final fun open ()V
 	public final fun panel (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public final fun switch (Ljava/lang/String;Ljava/lang/String;Z)Lio/github/nosorae/aiopic/libs/debug/DebugSwitch;
 	public static synthetic fun switch$default (Lio/github/nosorae/aiopic/libs/debug/DebugTools;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lio/github/nosorae/aiopic/libs/debug/DebugSwitch;

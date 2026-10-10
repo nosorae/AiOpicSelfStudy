@@ -8,6 +8,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -63,7 +64,7 @@ class DebugCoreTest {
     fun reportHasInfoSwitchesPanelsAndLogs() = runTest {
         core.switch("slow", "느린 응답")
         core.panel("대기열") { listOf("남은 작업" to "2") }
-        core.panel("고장") { error("읽기 실패") }
+        core.panel("고장") { error("읽기 실패 AIza" + "x".repeat(35)) }
         core.log(DebugLevel.Warn, "Key", "확인 실패")
 
         val report = core.report()
@@ -71,7 +72,7 @@ class DebugCoreTest {
         assertContains(report, "app: 1.0 (7)")
         assertContains(report, "느린 응답 (slow): off")
         assertContains(report, "## 대기열\n남은 작업: 2")
-        assertContains(report, "## 고장\n읽기 실패")
+        assertContains(report, "## 고장\nerror: 읽기 실패 ***")
         assertContains(report, "2026-10-10T01:00:00Z W Key: 확인 실패")
     }
 
@@ -90,5 +91,23 @@ class DebugCoreTest {
         assertContains(newest, "I Exam: 문항 3")
         assertContains(core.report(), "crash 2 ***")
         assertFalse("crash 1 " in core.report())
+    }
+
+    @Test
+    fun curlQuotesEveryPartSoItPastesIntoAShell() {
+        val call = DebugCall(
+            time = clock.now,
+            method = "POST",
+            url = "https://x.dev/v1",
+            requestHeaders = listOf("Content-Type" to "application/json"),
+            requestBody = "{\"q\":\"it's\"}",
+            status = 200,
+            duration = 120.milliseconds,
+        )
+
+        assertEquals(
+            "curl -X POST 'https://x.dev/v1' -H 'Content-Type: application/json' --data-raw '{\"q\":\"it'\\''s\"}'",
+            call.curl(),
+        )
     }
 }
