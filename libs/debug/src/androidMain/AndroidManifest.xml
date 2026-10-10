@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 디버깅 화면을 여는 알림. 이 모듈은 디버그 빌드에만 들어가서 릴리스 앱에는 이 권한이 없다. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application>
+        <!-- 흔들거나 알림을 눌러 다시 열 때 화면을 겹쳐 쌓지 않게 singleTop 으로 둔다. -->
+        <activity
+            android:name="io.github.nosorae.aiopic.libs.debug.DebugActivity"
+            android:exported="false"
+            android:label="Debug tools"
+            android:launchMode="singleTop"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- 공유할 보고서 파일을 다른 앱에 넘긴다. 보고서는 수 MB 가 될 수 있어 Intent 텍스트로는 못 보낸다. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.debugtools"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/debug_tools_paths" />
+        </provider>
+    </application>
+</manifest>

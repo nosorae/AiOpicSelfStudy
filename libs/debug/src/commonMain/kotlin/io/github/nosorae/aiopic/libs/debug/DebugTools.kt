@@ -25,6 +25,11 @@ public object DebugTools {
 
     /** 기기에 저장되는 켜기/끄기 스위치. 같은 key 는 같은 스위치를 돌려준다. */
     public fun switch(key: String, title: String, default: Boolean = false): DebugSwitch = core.switch(key, title, default)
+
+    /** 디버깅 화면을 앱 위에 띄운다. 흔들기와 알림 말고 앱의 설정 화면 줄이나 테스트에서 연다. `install` 전에는 아무 일도 안 한다. */
+    public fun open() {
+        core.open()
+    }
 }
 
 public enum class DebugLevel { Debug, Info, Warn, Error }

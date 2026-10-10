@@ -41,9 +41,18 @@ final class io.github.nosorae.aiopic.libs.debug/DebugSwitch { // io.github.nosor
 
 final object io.github.nosorae.aiopic.libs.debug/DebugTools { // io.github.nosorae.aiopic.libs.debug/DebugTools|null[0]
     final fun log(io.github.nosorae.aiopic.libs.debug/DebugLevel, kotlin/String, kotlin/String, kotlin/Throwable? = ...) // io.github.nosorae.aiopic.libs.debug/DebugTools.log|log(io.github.nosorae.aiopic.libs.debug.DebugLevel;kotlin.String;kotlin.String;kotlin.Throwable?){}[0]
+    final fun open() // io.github.nosorae.aiopic.libs.debug/DebugTools.open|open(){}[0]
     final fun panel(kotlin/String, kotlin.coroutines/SuspendFunction0<kotlin.collections/List<kotlin/Pair<kotlin/String, kotlin/String>>>) // io.github.nosorae.aiopic.libs.debug/DebugTools.panel|panel(kotlin.String;kotlin.coroutines.SuspendFunction0<kotlin.collections.List<kotlin.Pair<kotlin.String,kotlin.String>>>){}[0]
     final fun switch(kotlin/String, kotlin/String, kotlin/Boolean = ...): io.github.nosorae.aiopic.libs.debug/DebugSwitch // io.github.nosorae.aiopic.libs.debug/DebugTools.switch|switch(kotlin.String;kotlin.String;kotlin.Boolean){}[0]
 }
 
+final val io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugConfig$stableprop // io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugConfig$stableprop|#static{}io_github_nosorae_aiopic_libs_debug_DebugConfig$stableprop[0]
+final val io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugSwitch$stableprop // io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugSwitch$stableprop|#static{}io_github_nosorae_aiopic_libs_debug_DebugSwitch$stableprop[0]
+final val io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugTools$stableprop // io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugTools$stableprop|#static{}io_github_nosorae_aiopic_libs_debug_DebugTools$stableprop[0]
+
 final fun (io.github.nosorae.aiopic.libs.debug/DebugTools).io.github.nosorae.aiopic.libs.debug/install(io.github.nosorae.aiopic.libs.debug/DebugConfig = ...) // io.github.nosorae.aiopic.libs.debug/install|install@io.github.nosorae.aiopic.libs.debug.DebugTools(io.github.nosorae.aiopic.libs.debug.DebugConfig){}[0]
+final fun (io.github.nosorae.aiopic.libs.debug/DebugTools).io.github.nosorae.aiopic.libs.debug/viewController(): platform.UIKit/UIViewController // io.github.nosorae.aiopic.libs.debug/viewController|viewController@io.github.nosorae.aiopic.libs.debug.DebugTools(){}[0]
 final fun (io.ktor.client/HttpClientConfig<*>).io.github.nosorae.aiopic.libs.debug.network/installDebugTools() // io.github.nosorae.aiopic.libs.debug.network/installDebugTools|installDebugTools@io.ktor.client.HttpClientConfig<*>(){}[0]
+final fun io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugConfig$stableprop_getter(): kotlin/Int // io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugConfig$stableprop_getter|io_github_nosorae_aiopic_libs_debug_DebugConfig$stableprop_getter(){}[0]
+final fun io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugSwitch$stableprop_getter(): kotlin/Int // io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugSwitch$stableprop_getter|io_github_nosorae_aiopic_libs_debug_DebugSwitch$stableprop_getter(){}[0]
+final fun io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugTools$stableprop_getter(): kotlin/Int // io.github.nosorae.aiopic.libs.debug/io_github_nosorae_aiopic_libs_debug_DebugTools$stableprop_getter|io_github_nosorae_aiopic_libs_debug_DebugTools$stableprop_getter(){}[0]

@@ -7,6 +7,8 @@ public object DebugTools {
     public fun panel(title: String, rows: suspend () -> List<Pair<String, String>>) {}
 
     public fun switch(key: String, title: String, default: Boolean = false): DebugSwitch = DebugSwitch(default)
+
+    public fun open() {}
 }
 
 public enum class DebugLevel { Debug, Info, Warn, Error }

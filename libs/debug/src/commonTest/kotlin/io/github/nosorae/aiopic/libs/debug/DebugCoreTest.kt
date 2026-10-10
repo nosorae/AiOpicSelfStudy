@@ -8,6 +8,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -90,5 +91,23 @@ class DebugCoreTest {
         assertContains(newest, "I Exam: 문항 3")
         assertContains(core.report(), "crash 2 ***")
         assertFalse("crash 1 " in core.report())
+    }
+
+    @Test
+    fun curlQuotesEveryPartSoItPastesIntoAShell() {
+        val call = DebugCall(
+            time = clock.now,
+            method = "POST",
+            url = "https://x.dev/v1",
+            requestHeaders = listOf("Content-Type" to "application/json"),
+            requestBody = "{\"q\":\"it's\"}",
+            status = 200,
+            duration = 120.milliseconds,
+        )
+
+        assertEquals(
+            "curl -X POST 'https://x.dev/v1' -H 'Content-Type: application/json' --data-raw '{\"q\":\"it'\\''s\"}'",
+            call.curl(),
+        )
     }
 }

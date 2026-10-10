@@ -9,6 +9,9 @@ internal interface DebugPlatform {
     fun readCrash(name: String): String
     fun writeCrash(name: String, text: String)
     fun deleteCrash(name: String)
+
+    /** 디버깅 화면을 앱 위에 띄운다. */
+    fun open()
 }
 
 internal class MemoryPlatform(private val info: List<Pair<String, String>> = emptyList()) : DebugPlatform {
@@ -28,4 +31,5 @@ internal class MemoryPlatform(private val info: List<Pair<String, String>> = emp
     override fun deleteCrash(name: String) {
         crashes.remove(name)
     }
+    override fun open() = Unit
 }
