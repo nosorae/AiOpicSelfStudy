@@ -1,10 +1,15 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -33,8 +38,9 @@ class ExamScreenTest {
 
     private var settingsOpened = 0
 
+    // 녹음 중 목소리 띠는 끝없이 움직여 시계가 흐르면 화면이 쉬지 않는다. 움직임을 보지 않는 테스트는 동작 줄이기로 띠를 멈춘다.
     private fun show(state: ExamUiState) = rule.setContent {
-        MontageTheme { ExamScreen(state = state, onIntent = { intents += it }, onOpenSettings = { settingsOpened++ }) }
+        MontageTheme(reduceMotion = true) { ExamScreen(state = state, onIntent = { intents += it }, onOpenSettings = { settingsOpened++ }) }
     }
 
     private fun assertBusyButtonIgnoresClick(hiddenText: String) {
@@ -143,5 +149,77 @@ class ExamScreenTest {
 
         assertEquals(1, settingsOpened)
         rule.onNodeWithText("Play").assertExists()
+    }
+
+    private val played = mutableListOf<HapticEffect>()
+
+    private fun showWithHaptics(state: ExamUiState, reduceMotion: Boolean = true) = rule.setContent {
+        CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) {
+            MontageTheme(reduceMotion = reduceMotion) { ExamScreen(state = state, onIntent = { intents += it }) }
+        }
+    }
+
+    @Test
+    fun `녹음이 시작되면 녹음 시작 진동, 멈추면 녹음 끝 진동을 내고 처음 그릴 때는 내지 않는다`() {
+        var state by mutableStateOf(ExamSamples.questionReplayable)
+        rule.setContent {
+            CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) {
+                MontageTheme(reduceMotion = true) { ExamScreen(state = state, onIntent = {}) }
+            }
+        }
+        rule.waitForIdle()
+        assertEquals(emptyList<HapticEffect>(), played)
+
+        state = ExamSamples.questionSpeaking
+        rule.waitForIdle()
+        state = ExamSamples.questionReplayable
+        rule.waitForIdle()
+
+        assertEquals(listOf(HapticEffect.RecordStop, HapticEffect.RecordStart), played)
+    }
+
+    @Test
+    fun `Play 를 누르면 누름 진동을 내고 질문을 튼다`() {
+        showWithHaptics(ExamSamples.questionReady)
+
+        rule.onNodeWithTag("exam-play").performClick()
+
+        assertEquals(listOf(HapticEffect.Tap), played)
+        assertEquals(listOf<ExamIntent>(ExamIntent.PlayQuestion), intents)
+    }
+
+    @Test
+    fun `수준을 고르면 선택 진동을 내고 다음을 누르면 누름 진동을 낸다`() {
+        showWithHaptics(ExamSamples.level)
+
+        rule.onNodeWithTag("exam-choice-1").performClick()
+        rule.onNodeWithTag("exam-next-step").performClick()
+
+        assertEquals(listOf(HapticEffect.Selection, HapticEffect.Tap), played)
+        assertEquals(listOf(ExamIntent.SelectLevel(2), ExamIntent.SubmitLevel), intents)
+    }
+
+    @Test
+    fun `재조정 카드를 고르면 선택 진동을 내고 그 난이도를 고른다`() {
+        showWithHaptics(ExamSamples.recalibrate)
+
+        rule.onNodeWithText("어려운 질문").performClick()
+
+        assertEquals(listOf(HapticEffect.Selection), played)
+        assertEquals(listOf<ExamIntent>(ExamIntent.SelectRecalibration(io.github.nosorae.aiopic.engine.session.model.Recalibration.Harder)), intents)
+    }
+
+    @Test
+    fun `문항 진행 점은 지난 문항까지 차 있다`() {
+        show(ExamSamples.questionReplayable)
+
+        rule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(2f, 0f..15f, 15))).assertExists()
+    }
+
+    @Test
+    fun `동작 줄이기면 Next 가 켜지기까지 남은 초를 글자로 보인다`() {
+        showWithHaptics(ExamSamples.questionReplayable, reduceMotion = true)
+
+        rule.onNodeWithText("Next (7초)").assertExists()
     }
 }

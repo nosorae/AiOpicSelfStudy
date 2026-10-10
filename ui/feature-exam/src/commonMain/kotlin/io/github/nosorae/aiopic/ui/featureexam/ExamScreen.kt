@@ -1,21 +1,44 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.question.model.Survey
@@ -25,15 +48,23 @@ import io.github.nosorae.aiopic.engine.question.model.Topic
 import io.github.nosorae.aiopic.engine.question.model.TopicGroup
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
 import io.github.nosorae.aiopic.ui.design.MontageListCell
+import io.github.nosorae.aiopic.ui.design.MontageMotion
+import io.github.nosorae.aiopic.ui.design.MontageRadius
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
+import io.github.nosorae.aiopic.ui.design.MontageStepTrail
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.design.MontageVoiceRibbon
+import io.github.nosorae.aiopic.ui.design.RecordHaptics
+import io.github.nosorae.aiopic.ui.design.rememberElapsedFraction
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -79,6 +110,7 @@ fun ExamRoute(viewModel: ExamViewModel, onExit: () -> Unit, onFinish: () -> Unit
 @Composable
 fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Modifier = Modifier, onOpenSettings: () -> Unit = {}) {
     val onExit = { onIntent(ExamIntent.ExitExam) }
+    RecordHaptics(state.phase == QuestionPhase.Recording)
     when (val step = state.step) {
         null -> StepScaffold(title = "", onExit = onExit, modifier = modifier) {}
 
@@ -87,26 +119,26 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
         ExamStep.LevelSelect -> ChoiceStep(
             title = stringResource(Res.string.exam_level_title),
             description = stringResource(Res.string.exam_level_description),
-            choices = (1..state.levelCount).map { stringResource(Res.string.exam_level_item, it) },
-            selected = state.selectedLevel?.minus(1),
-            onSelect = { onIntent(ExamIntent.SelectLevel(it + 1)) },
+            selected = state.selectedLevel != null,
             onSubmit = { onIntent(ExamIntent.SubmitLevel) },
             saving = state.saving,
             onExit = onExit,
             modifier = modifier,
-        )
+        ) {
+            LevelChoices(count = state.levelCount, selected = state.selectedLevel?.minus(1), onSelect = { onIntent(ExamIntent.SelectLevel(it + 1)) })
+        }
 
         ExamStep.Recalibrate -> ChoiceStep(
             title = stringResource(Res.string.exam_recalibrate_title),
             description = stringResource(Res.string.exam_recalibrate_description),
-            choices = Recalibration.entries.map { stringResource(it.label) },
-            selected = state.selectedRecalibration?.ordinal,
-            onSelect = { onIntent(ExamIntent.SelectRecalibration(Recalibration.entries[it])) },
+            selected = state.selectedRecalibration != null,
             onSubmit = { onIntent(ExamIntent.SubmitRecalibration) },
             saving = state.saving,
             onExit = onExit,
             modifier = modifier,
-        )
+        ) {
+            RecalibrationCards(selected = state.selectedRecalibration, onSelect = { onIntent(ExamIntent.SelectRecalibration(it)) })
+        }
 
         ExamStep.Check, is ExamStep.Ask -> QuestionStep(
             title = if (step is ExamStep.Ask) {
@@ -156,6 +188,7 @@ private fun StepScaffold(
 private fun SurveyStep(state: ExamUiState, onIntent: (ExamIntent) -> Unit, onExit: () -> Unit, modifier: Modifier = Modifier) {
     // 회차를 읽으며 서베이를 먼저 채우고 단계를 정해서 서베이 단계에서는 늘 있다.
     val survey = state.survey ?: return
+    val haptics = LocalHaptics.current
     MontageScreen(
         modifier = modifier,
         topBar = { MontageTopBar(title = stringResource(Res.string.exam_survey_title)) { ExitButton(onExit) } },
@@ -166,7 +199,10 @@ private fun SurveyStep(state: ExamUiState, onIntent: (ExamIntent) -> Unit, onExi
                 saving = state.saving,
                 onPrevious = { onIntent(ExamIntent.PreviousSurveyScreen) },
                 onNext = { onIntent(ExamIntent.NextSurveyScreen) },
-                onSubmit = { onIntent(ExamIntent.SubmitSurvey) },
+                onSubmit = {
+                    haptics.play(HapticEffect.Tap)
+                    onIntent(ExamIntent.SubmitSurvey)
+                },
                 modifier = Modifier.padding(horizontal = Gutter, vertical = MontageSpacing.spacing12),
             )
         },
@@ -175,31 +211,32 @@ private fun SurveyStep(state: ExamUiState, onIntent: (ExamIntent) -> Unit, onExi
     }
 }
 
-/** 하나를 골라 다음으로 가는 단계(수준 선택, 재조정). [selected] 는 [choices] 의 위치다. */
+/** 하나를 골라 다음으로 가는 단계(수준 선택, 재조정). 고를 것은 [choices] 가 그린다. */
 @Composable
 private fun ChoiceStep(
     title: String,
     description: String,
-    choices: List<String>,
-    selected: Int?,
-    onSelect: (Int) -> Unit,
+    selected: Boolean,
     onSubmit: () -> Unit,
     saving: Boolean,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
+    choices: @Composable () -> Unit,
 ) {
+    val haptics = LocalHaptics.current
     StepScaffold(
         title = title,
         onExit = onExit,
         modifier = modifier,
-        bottomBar = { NextButton(enabled = selected != null, loading = saving, onClick = onSubmit) },
+        bottomBar = {
+            NextButton(enabled = selected, loading = saving) {
+                haptics.play(HapticEffect.Tap)
+                onSubmit()
+            }
+        },
     ) {
         Description(description)
-        Column {
-            choices.forEachIndexed { index, choice ->
-                MontageListCell(title = choice, selected = index == selected, onClick = { onSelect(index) }, modifier = Modifier.testTag("exam-choice-$index"))
-            }
-        }
+        choices()
     }
 }
 
@@ -222,41 +259,26 @@ private fun QuestionStep(
         modifier = modifier,
         bottomBar = {
             if (state.phase == QuestionPhase.Recording) {
-                Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
-                    MontageButton(
-                        text = stringResource(Res.string.exam_replay),
-                        onClick = onReplay,
-                        enabled = state.canReplay,
-                        type = MontageButtonType.Assistive,
-                        modifier = Modifier.weight(1f).testTag("exam-replay"),
-                    )
-                    MontageButton(
-                        text = stringResource(Res.string.exam_next),
-                        onClick = onNext,
-                        enabled = state.canNext,
-                        loading = state.saving,
-                        modifier = Modifier.weight(1f).testTag("exam-next"),
-                    )
-                }
+                RecordingButtons(state, onReplay = onReplay, onNext = onNext)
             } else {
+                val haptics = LocalHaptics.current
                 // 질문을 다 읽어야 녹음이 시작돼서 그동안 Play 가 진행 표시를 보인다. 모델 질문을 기다리면 위에 불러오는 중 안내가 뜬다(F6.1).
                 MontageButton(
                     text = stringResource(if (state.error in RetryErrors) Res.string.exam_retry else Res.string.exam_play),
-                    onClick = onPlay,
+                    onClick = {
+                        haptics.play(HapticEffect.Tap)
+                        onPlay()
+                    },
                     loading = state.phase == QuestionPhase.Speaking,
                     modifier = Modifier.fillMaxWidth().testTag("exam-play"),
                 )
             }
         },
     ) {
-        state.remaining?.let {
-            Text(
-                text = stringResource(Res.string.exam_remaining, it.clockText()),
-                style = MontageTheme.typography.label1.bold,
-                color = MontageTheme.colors.foregroundNeutralSecondary,
-                modifier = Modifier.padding(horizontal = Gutter),
-            )
+        if (state.step is ExamStep.Ask && state.questionCount > 0) {
+            MontageStepTrail(total = state.questionCount, done = state.questionNumber - 1, modifier = Modifier.padding(horizontal = Gutter))
         }
+        state.remaining?.let { RemainingTime(it, state.timeLimit) }
         description?.let { Description(it) }
         val notice = state.questionNotice
         if (notice is QuestionNotice.Making) {
@@ -266,6 +288,9 @@ private fun QuestionStep(
             QuestionLoading(stringResource(Res.string.exam_question_slow), modifier = Modifier.padding(horizontal = Gutter))
         } else {
             PhaseText(state)
+        }
+        if (state.phase == QuestionPhase.Recording) {
+            MontageVoiceRibbon(state.voiceLevel, Modifier.padding(vertical = MontageSpacing.spacing16).testTag("exam-voice"))
         }
         if (state.questionNotice == QuestionNotice.BuiltIn) Description(stringResource(Res.string.exam_question_built_in))
         state.error?.let {
@@ -286,7 +311,168 @@ private fun QuestionStep(
                 modifier = Modifier.padding(horizontal = Gutter).testTag("exam-open-settings"),
             )
         }
-        Description(stringResource(Res.string.exam_rules))
+        // 녹음 중에는 두 버튼의 채움이 같은 규칙을 보여서 문장을 뺀다.
+        if (state.phase != QuestionPhase.Recording) Description(stringResource(Res.string.exam_rules))
+    }
+}
+
+/**
+ * 녹음 중 아래 버튼 둘. 다시 듣기는 쓸 수 있는 5초 동안 채움이 줄어들고, Next 는 켜지기까지 10초 동안 채움이 차오른다(F2.4).
+ * 동작 줄이기면 Next 는 켜지기까지 남은 초를 글자로 보인다.
+ */
+@Composable
+private fun RecordingButtons(state: ExamUiState, onReplay: () -> Unit, onNext: () -> Unit) {
+    val replayWindow = rememberElapsedFraction(state.recorded, ReplayWindow, running = state.canReplay)
+    val nextDelay = rememberElapsedFraction(state.recorded, NextDelay, running = !state.canNext)
+    Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
+        MontageButton(
+            text = stringResource(Res.string.exam_replay),
+            onClick = onReplay,
+            enabled = state.canReplay,
+            type = MontageButtonType.Assistive,
+            fill = if (state.canReplay) ({ 1f - replayWindow.value }) else null,
+            modifier = Modifier.weight(1f).testTag("exam-replay"),
+        )
+        MontageButton(
+            text = if (MontageMotion.reduceMotion && !state.canNext) {
+                stringResource(Res.string.exam_next_in, (NextDelay - state.recorded).inWholeSeconds)
+            } else {
+                stringResource(Res.string.exam_next)
+            },
+            onClick = onNext,
+            enabled = state.canNext,
+            loading = state.saving,
+            fill = if (state.canNext) null else ({ nextDelay.value }),
+            modifier = Modifier.weight(1f).testTag("exam-next"),
+        )
+    }
+}
+
+/** 남은 시간을 40분 중 남은 만큼의 원과 숫자로 보인다. 원은 1초마다 값만 바뀌고 움직이지 않는다(F2.5). */
+@Composable
+private fun RemainingTime(remaining: Duration, limit: Duration?) {
+    val colors = MontageTheme.colors
+    val style = MontageTheme.typography.label1.bold
+    // 원은 옆 글자 높이에 맞춰 글자 크기 설정을 따른다.
+    val ring = with(LocalDensity.current) { style.fontSize.toDp() }
+    Row(
+        modifier = Modifier.padding(horizontal = Gutter),
+        horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (limit != null) {
+            val left = (remaining / limit).toFloat().coerceIn(0f, 1f)
+            Canvas(Modifier.size(ring)) {
+                val stroke = size.minDimension * 0.18f
+                val inset = stroke / 2
+                val arcSize = Size(size.width - stroke, size.height - stroke)
+                drawArc(colors.lineNeutralPrimary, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
+                drawArc(colors.brandDecoration, -90f, 360f * left, false, Offset(inset, inset), arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+            }
+        }
+        Text(
+            text = stringResource(Res.string.exam_remaining, remaining.clockText()),
+            style = style,
+            color = MontageTheme.colors.foregroundNeutralSecondary,
+        )
+    }
+}
+
+/**
+ * 수준 1~[count] 목록. 단계마다 높아지는 막대가 붙어 높을수록 어렵다는 것이 보이고,
+ * 고르면 옅은 강조 띠가 고른 줄로 미끄러져 간다. 처음 고를 때는 띠가 그 줄에 바로 나타난다.
+ */
+@Composable
+private fun LevelChoices(count: Int, selected: Int?, onSelect: (Int) -> Unit) {
+    val haptics = LocalHaptics.current
+    val band = MontageTheme.colors.surfaceBrandPrimaryOpacity8
+    val position = remember { Animatable(selected?.toFloat() ?: -1f) }
+    val settle = MontageMotion.settle<Float>()
+    LaunchedEffect(selected) {
+        val target = selected?.toFloat() ?: return@LaunchedEffect
+        if (position.value < 0f) position.snapTo(target) else position.animateTo(target, settle)
+    }
+    Column(
+        Modifier.padding(horizontal = MontageSpacing.spacing8).drawBehind {
+            if (position.value < 0f) return@drawBehind
+            val row = size.height / count
+            drawRoundRect(band, Offset(0f, row * position.value), Size(size.width, row), CornerRadius(MontageRadius.radius12.toPx()))
+        },
+    ) {
+        repeat(count) { index ->
+            MontageListCell(
+                title = stringResource(Res.string.exam_level_item, index + 1),
+                selected = index == selected,
+                onClick = {
+                    haptics.play(HapticEffect.Selection)
+                    onSelect(index)
+                },
+                modifier = Modifier.testTag("exam-choice-$index"),
+            ) {
+                DifficultyBars(filled = index + 1, total = count, strong = index == selected)
+            }
+        }
+    }
+}
+
+/** 재조정 셋을 카드로 보인다. 고른 카드는 강조색 테두리로 앞으로 나오고 나머지는 살짝 물러난다. */
+@Composable
+private fun RecalibrationCards(selected: Recalibration?, onSelect: (Recalibration) -> Unit) {
+    val haptics = LocalHaptics.current
+    val colors = MontageTheme.colors
+    val shape = RoundedCornerShape(MontageRadius.radius16)
+    Column(Modifier.padding(horizontal = Gutter), verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
+        Recalibration.entries.forEachIndexed { index, choice ->
+            val chosen = choice == selected
+            val scale by animateFloatAsState(if (selected == null || chosen) 1f else 0.98f, MontageMotion.spec(MontageMotion.SHORT_MILLIS))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                    .clip(shape)
+                    .background(if (chosen) colors.surfaceBrandPrimaryOpacity8 else colors.surfaceNeutralSecondary)
+                    .border(1.dp, if (chosen) colors.lineBrandPrimary else Color.Transparent, shape)
+                    .selectable(selected = chosen, role = Role.RadioButton) {
+                        haptics.play(HapticEffect.Selection)
+                        onSelect(choice)
+                    }
+                    .padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing20)
+                    .testTag("exam-choice-$index"),
+                horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(choice.label),
+                    style = if (chosen) MontageTheme.typography.body1.bold else MontageTheme.typography.body1.medium,
+                    color = if (chosen) colors.foregroundBrandPrimary else colors.foregroundNeutralPrimary,
+                    modifier = Modifier.weight(1f),
+                )
+                DifficultyBars(filled = index + 1, total = Recalibration.entries.size, strong = chosen)
+            }
+        }
+    }
+}
+
+/** 왼쪽부터 높아지는 막대 [total] 개 중 [filled] 개를 채운다. 난이도가 높을수록 많이 찬다. [strong] 이면 강조색이다. */
+@Composable
+private fun DifficultyBars(filled: Int, total: Int, strong: Boolean) {
+    val on = if (strong) MontageTheme.colors.brandDecoration else MontageTheme.colors.foregroundNeutralTertiary
+    val off = MontageTheme.colors.lineNeutralPrimary
+    Canvas(Modifier.size(width = MontageSpacing.spacing6 * total, height = MontageSpacing.spacing16).clearAndSetSemantics {}) {
+        val slot = size.width / total
+        val bar = slot * 0.6f
+        for (i in 0 until total) {
+            val height = size.height * (i + 1) / total
+            drawRoundRect(
+                color = if (i < filled) on else off,
+                topLeft = Offset(slot * i + (slot - bar) / 2, size.height - height),
+                size = Size(bar, height),
+                cornerRadius = CornerRadius(bar / 2),
+            )
+        }
     }
 }
 
@@ -397,14 +583,15 @@ internal object ExamSamples {
     val surveyReady = survey.copy(survey = survey.survey!!.copy(screen = 2, topics = surveySample.groups[0].topics.map { it.id }.toSet() + "국내 여행" + "해외 여행"))
     val level = ExamUiState(step = ExamStep.LevelSelect, levelCount = 6, selectedLevel = 4)
     val check = ExamUiState(step = ExamStep.Check)
-    val questionReady = ExamUiState(step = ask, questionNumber = 3, questionCount = 15, remaining = 36.minutes + 12.seconds)
+    val checkRecording = check.copy(phase = QuestionPhase.Recording, recorded = 6.seconds, replayUsed = true, voiceLevel = 0.45f)
+    val questionReady = ExamUiState(step = ask, questionNumber = 3, questionCount = 15, remaining = 36.minutes + 12.seconds, timeLimit = 40.minutes)
     val questionSpeaking = questionReady.copy(phase = QuestionPhase.Speaking)
     val questionLoading = questionSpeaking.copy(questionNumber = 2, questionNotice = QuestionNotice.Making(2, 7, recalibrated = false))
     val questionLoadingRecalibrated = questionSpeaking.copy(questionNumber = 8, questionNotice = QuestionNotice.Making(8, 15, recalibrated = true))
     val questionSlow = questionSpeaking.copy(questionNotice = QuestionNotice.Slow)
-    val questionReplayable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 3.seconds)
+    val questionReplayable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 3.seconds, voiceLevel = 0.6f)
     val questionBuiltIn = questionReplayable.copy(questionNotice = QuestionNotice.BuiltIn)
-    val questionNextable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 12.seconds, replayUsed = true)
+    val questionNextable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 12.seconds, replayUsed = true, voiceLevel = 0.3f)
     val questionSaving = questionNextable.copy(saving = true)
     val surveySaving = surveyReady.copy(saving = true)
     val questionTimer = questionReplayable.copy(answerTimer = true)

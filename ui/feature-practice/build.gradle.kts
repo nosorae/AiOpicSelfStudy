@@ -19,6 +19,8 @@ kotlin {
         getByName("androidHostTest").dependencies {
             implementation(libs.compose.uiTestJunit4)
             implementation(libs.compose.uiTestManifest)
+            // 목소리 띠가 계속 도는 녹음 중 화면은 시계를 멈춘 테스트 규칙에서 노드째 찍는다.
+            implementation(libs.roborazzi.core)
         }
     }
 }
