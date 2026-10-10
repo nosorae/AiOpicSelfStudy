@@ -102,5 +102,7 @@ class EvalsTest {
         assertContains(report, "같은 범위: 5/5 (IM1~IM2)")
         assertContains(report, "잡은 비율: 1/1")
         assertContains(report, "등급 순서: 맞다")
+        // 표의 구분 줄과 각 줄이 `|` 로 시작해야 마크다운 표로 보인다.
+        assertContains(report, "\n|---|---|\n| 1 | IM1~IM2 |")
     }
 }

@@ -20,26 +20,27 @@ class Eval(
         val runs = List(REPEAT) { grade(repeat, gradePrompt) }
         val levels = input.levels.map { it.name to if (it === repeat) runs.first() else grade(it, gradePrompt) }
         val wrong = analyze(input.wrong.answer, answerPrompt)
-        return """
-            |# 품질 확인
-            |
-            |- 모델: $model
-            |- 답변 프롬프트: ${answerPrompt.version}
-            |- 회차 등급 프롬프트: ${gradePrompt.version}
-            |
-            |## 같은 입력 ${REPEAT}번 (${repeat.name} 수준 회차)
-            |
-            |${consistencyTable(runs)}
-            |
-            |## 일부러 틀린 답
-            |
-            |${caughtTable(input.wrong.errors, wrong.corrections)}
-            |
-            |## 수준 다른 답 셋
-            |
-            |${levelTable(levels)}
-            |
-        """.trimMargin()
+        // 표 줄이 `|` 로 시작해서 trimMargin 을 쓰면 표의 `|` 까지 지워진다. 줄을 목록으로 잇는다.
+        return listOf(
+            "# 품질 확인",
+            "",
+            "- 모델: $model",
+            "- 답변 프롬프트: ${answerPrompt.version}",
+            "- 회차 등급 프롬프트: ${gradePrompt.version}",
+            "",
+            "## 같은 입력 ${REPEAT}번 (${repeat.name} 수준 회차)",
+            "",
+            consistencyTable(runs),
+            "",
+            "## 일부러 틀린 답",
+            "",
+            caughtTable(input.wrong.errors, wrong.corrections),
+            "",
+            "## 수준 다른 답 셋",
+            "",
+            levelTable(levels),
+            "",
+        ).joinToString("\n")
     }
 
     private fun analyze(answer: Answer, prompt: PromptFile): AnswerResult {
