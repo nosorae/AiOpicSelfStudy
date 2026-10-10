@@ -54,6 +54,19 @@ class WorkManagerWorkQueueTest {
     }
 
     @Test
+    fun `끝나지 않은 작업 id 를 읽고 끝난 작업은 빠진다`() = runBlocking {
+        val queue = WorkManagerWorkQueue(context, handler)
+        queue.enqueue("a1", "first")
+        queue.enqueue("a2", "second")
+
+        assertEquals(setOf("a1", "a2"), queue.pending().toSet())
+
+        connect("a1")
+
+        assertEquals(listOf("a2"), queue.pending())
+    }
+
+    @Test
     fun `F5_1 같은 id 를 다시 넣어도 한 번만 보낸다`() = runBlocking {
         val queue = WorkManagerWorkQueue(context, handler)
         queue.enqueue("a1", "first")

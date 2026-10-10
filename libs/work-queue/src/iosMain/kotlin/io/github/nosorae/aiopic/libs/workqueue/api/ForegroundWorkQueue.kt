@@ -56,6 +56,9 @@ public class ForegroundWorkQueue(
         update { emptyList() }
     }
 
+    /** 아직 보내지 않은 작업의 id 를 넣은 순서대로 돌려준다. 디버깅 화면의 대기열 패널이 읽는다. */
+    public fun pending(): List<String> = load().map { it.first }
+
     private suspend fun drain() = sending.withLock {
         while (connected) {
             val (id, payload) = load().firstOrNull() ?: return@withLock

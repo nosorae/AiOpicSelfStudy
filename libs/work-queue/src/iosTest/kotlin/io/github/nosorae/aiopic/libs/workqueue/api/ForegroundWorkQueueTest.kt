@@ -42,6 +42,22 @@ class ForegroundWorkQueueTest {
     }
 
     @Test
+    fun `남은 작업 id 를 넣은 순서대로 읽고 보낸 작업은 빠진다`() = runTest {
+        online.value = false
+        val queue = queue()
+        queue.enqueue("a1", "first")
+        queue.enqueue("a2", "second")
+        settle()
+
+        assertEquals(listOf("a1", "a2"), queue.pending())
+
+        online.value = true
+        settle()
+
+        assertEquals(emptyList(), queue.pending())
+    }
+
+    @Test
     fun `F5_6 오프라인에서 넣은 작업은 남아 있다가 연결되면 넣은 순서대로 비워진다`() = runTest {
         online.value = false
         val firstRun = CoroutineScope(Job(backgroundScope.coroutineContext[Job]))
