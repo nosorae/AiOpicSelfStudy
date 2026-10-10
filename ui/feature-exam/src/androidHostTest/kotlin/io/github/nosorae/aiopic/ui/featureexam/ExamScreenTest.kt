@@ -260,4 +260,54 @@ class ExamScreenTest {
 
         rule.onNodeWithText("Next (7초)").assertExists()
     }
+
+    @Test
+    fun `나가기 X 를 누르면 확인 대화상자를 보이고 아직 나가지 않는다`() {
+        show(ExamSamples.questionReplayable)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+
+        rule.onNodeWithText("모의시험을 나갈까요?").assertIsDisplayed()
+        rule.onNodeWithText("진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.").assertIsDisplayed()
+        assertEquals(emptyList<ExamIntent>(), intents)
+    }
+
+    @Test
+    fun `확인 대화상자에서 취소를 누르면 시험에 머문다`() {
+        show(ExamSamples.questionReplayable)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+        rule.onNodeWithText("취소").performClick()
+
+        rule.onNodeWithText("모의시험을 나갈까요?").assertDoesNotExist()
+        assertEquals(emptyList<ExamIntent>(), intents)
+    }
+
+    @Test
+    fun `확인 대화상자에서 나가기를 누르면 시험을 나간다`() {
+        show(ExamSamples.questionReplayable)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+        rule.onNodeWithText("나가기").performClick()
+
+        assertEquals(listOf<ExamIntent>(ExamIntent.ExitExam), intents)
+    }
+
+    @Test
+    fun `서베이 중에 나가면 이번에 고른 답이 저장되지 않는다고 알린다`() {
+        show(ExamSamples.survey)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+
+        rule.onNodeWithText("이번에 고른 서베이 답은 저장되지 않습니다. 홈의 이어 보기로 서베이부터 다시 할 수 있습니다.").assertIsDisplayed()
+    }
+
+    @Test
+    fun `40분이 시작되기 전에 나가면 타이머 이야기 없이 진행이 저장된다고 알린다`() {
+        show(ExamSamples.level)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+
+        rule.onNodeWithText("진행은 저장됩니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.").assertIsDisplayed()
+    }
 }

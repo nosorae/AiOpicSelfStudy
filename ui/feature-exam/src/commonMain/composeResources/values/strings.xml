@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="exam_exit">나가기</string>
+    <string name="exam_exit_cancel">취소</string>
+    <string name="exam_exit_title">모의시험을 나갈까요?</string>
+    <string name="exam_exit_message_survey">이번에 고른 서베이 답은 저장되지 않습니다. 홈의 이어 보기로 서베이부터 다시 할 수 있습니다.</string>
+    <string name="exam_exit_message">진행은 저장됩니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.</string>
+    <string name="exam_exit_message_timer">진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.</string>
+    <string name="survey_exit_title">서베이를 나갈까요?</string>
+    <string name="survey_exit_message">바꾼 답은 저장되지 않습니다. 저장하려면 마지막 묶음에서 저장하기를 누르세요.</string>
     <string name="exam_next_step">다음</string>
     <string name="exam_survey_title">서베이</string>
     <string name="survey_previous">이전</string>

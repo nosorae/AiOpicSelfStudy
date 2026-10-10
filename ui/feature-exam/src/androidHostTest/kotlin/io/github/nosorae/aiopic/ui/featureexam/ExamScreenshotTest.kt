@@ -1,8 +1,11 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.nosorae.aiopic.ui.design.MontageTheme
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -17,6 +20,8 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class ExamScreenshotTest {
+    @get:Rule val rule = createComposeRule()
+
     @Test fun survey() = shot(ExamSamples.survey)
 
     @Test fun surveyGroup() = shot(ExamSamples.surveyGroup)
@@ -77,7 +82,14 @@ class ExamScreenshotTest {
     @Test
     fun recalibrate_fontScale200() = shot(ExamSamples.recalibrate)
 
-    private fun shot(state: ExamUiState, dark: Boolean = false) = captureRoboImage {
-        MontageTheme(darkTheme = dark) { ExamScreen(state = state, onIntent = {}) }
+    /**
+     * 처리 중 표시처럼 끝없이 도는 그림이 있으면 화면이 쉬지 않아 찍지 못한다. 시계를 멈추고 넘긴 장면을 찍는다.
+     * 확인 대화상자를 띄운 다른 테스트가 같은 프로세스에 창을 남겨도 기다리지 않게 모든 장면을 같은 방식으로 찍는다.
+     */
+    private fun shot(state: ExamUiState, dark: Boolean = false) {
+        rule.mainClock.autoAdvance = false
+        rule.setContent { MontageTheme(darkTheme = dark) { ExamScreen(state = state, onIntent = {}) } }
+        rule.mainClock.advanceTimeBy(1_200)
+        rule.onRoot().captureRoboImage()
     }
 }

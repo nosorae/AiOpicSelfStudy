@@ -38,8 +38,8 @@ class AppRouteTest {
     }
 
     @Test
-    fun `iOS 뒤로 버튼은 하위 화면과 한 문항 연습에만 있고 시험과 첫 실행 화면에는 없다`() {
-        assertEquals(subScreens + AppRoute.Practice("a"), everyRoute.filter { it.showsBackButtonOnIos })
+    fun `iOS 뒤로 버튼은 하위 화면에만 있고 화면 안 X 로 닫는 시험 연습 설정 서베이와 첫 실행 화면에는 없다`() {
+        assertEquals(subScreens - AppRoute.Survey, everyRoute.filter { it.showsBackButtonOnIos })
     }
 
     @Test

@@ -21,9 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +62,8 @@ import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
+import io.github.nosorae.aiopic.ui.design.MontageConfirmDialog
+import io.github.nosorae.aiopic.ui.design.MontageIconButton
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageMotion
 import io.github.nosorae.aiopic.ui.design.MontagePlayButton
@@ -71,8 +76,10 @@ import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
 import io.github.nosorae.aiopic.ui.design.MontageVoiceRibbon
 import io.github.nosorae.aiopic.ui.design.RecordHaptics
+import io.github.nosorae.aiopic.ui.design.icon_normal_close
 import io.github.nosorae.aiopic.ui.design.icon_normal_play
 import io.github.nosorae.aiopic.ui.design.icon_normal_refresh
+import io.github.nosorae.aiopic.ui.design.rememberElapsedFraction
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -115,11 +122,28 @@ fun ExamRoute(viewModel: ExamViewModel, onExit: () -> Unit, onFinish: () -> Unit
     )
 }
 
-/** 상태만 받아 그리는 안쪽 겹. 회차의 지금 단계에 맞는 화면 하나를 그린다. 미리보기와 스크린샷 테스트가 이 함수를 쓴다. */
+/**
+ * 상태만 받아 그리는 안쪽 겹. 회차의 지금 단계에 맞는 화면 하나를 그린다. 미리보기와 스크린샷 테스트가 이 함수를 쓴다.
+ * 위쪽 X 는 바로 나가지 않고 나가면 무엇이 남는지 먼저 묻는다. 시험 중에는 시스템 뒤로가기가 막혀 있어 이 X 가 유일한 출구다.
+ */
 @Composable
 fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Modifier = Modifier, onOpenSettings: () -> Unit = {}) {
-    val onExit = { onIntent(ExamIntent.ExitExam) }
     RecordHaptics(state.phase == QuestionPhase.Recording)
+    var confirmingExit by rememberSaveable { mutableStateOf(false) }
+    val onExit = { confirmingExit = true }
+    if (confirmingExit) {
+        MontageConfirmDialog(
+            title = stringResource(Res.string.exam_exit_title),
+            message = stringResource(state.exitMessage),
+            confirm = stringResource(Res.string.exam_exit),
+            cancel = stringResource(Res.string.exam_exit_cancel),
+            onConfirm = {
+                confirmingExit = false
+                onIntent(ExamIntent.ExitExam)
+            },
+            onCancel = { confirmingExit = false },
+        )
+    }
     when (val step = state.step) {
         null -> StepScaffold(title = "", onExit = onExit, modifier = modifier) {}
 
@@ -167,7 +191,7 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
     }
 }
 
-/** 모든 단계가 같은 틀을 쓴다. 시험 중에는 탭이 없고 앞으로만 가서 위쪽에 "나가기" 하나만 둔다. */
+/** 모든 단계가 같은 틀을 쓴다. 시험 중에는 탭이 없고 앞으로만 가서 위쪽에 나가기 X 하나만 둔다. */
 @Composable
 private fun StepScaffold(
     title: String,
@@ -512,17 +536,22 @@ private fun Description(text: String, align: TextAlign = TextAlign.Start) {
     )
 }
 
-/** 시험 중에는 탭이 없고 앞으로만 가서 위쪽에 "나가기" 하나만 둔다. */
+/** 시험 중에는 탭이 없고 앞으로만 가서 위쪽에 나가기 X 하나만 둔다. */
 @Composable
 private fun ExitButton(onExit: () -> Unit) {
-    MontageButton(
-        text = stringResource(Res.string.exam_exit),
-        onClick = onExit,
-        variant = MontageButtonVariant.Text,
-        type = MontageButtonType.Assistive,
-        size = MontageButtonSize.Medium,
-    )
+    MontageIconButton(DesignRes.drawable.icon_normal_close, stringResource(Res.string.exam_exit), onExit, Modifier.testTag("exam-exit"))
 }
+
+/**
+ * 나가면 실제로 남는 것. 서베이는 내기 전까지 이번에 고른 답을 저장하지 않는다. 그 밖의 단계는 회차가 단계마다 저장되고
+ * 쓴 녹음 조각도 남아 이어 보기로 같은 곳에서 잇는다(F3). 40분은 이 화면이 떠 있는 동안만 흐른다(F2.5).
+ */
+private val ExamUiState.exitMessage: StringResource
+    get() = when {
+        step is ExamStep.Survey -> Res.string.exam_exit_message_survey
+        remaining != null -> Res.string.exam_exit_message_timer
+        else -> Res.string.exam_exit_message
+    }
 
 /** 저장하는 동안([loading]) 진행 표시를 보인다. 그동안 다른 입력은 ViewModel 이 받지 않는다. */
 @Composable

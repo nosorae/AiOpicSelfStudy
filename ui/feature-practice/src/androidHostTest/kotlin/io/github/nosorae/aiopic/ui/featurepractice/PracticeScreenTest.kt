@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.ui.featurepractice
 
+import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -7,7 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -30,7 +32,7 @@ class PracticeScreenTest {
         const val HINT = "질문이 끝나면 바로 녹음돼요. 다시 듣기는 5초 안에 한 번, Next 는 10초 뒤에 켜져요."
     }
 
-    @get:Rule val rule = createComposeRule()
+    @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
     private val intents = mutableListOf<PracticeIntent>()
 
@@ -172,5 +174,49 @@ class PracticeScreenTest {
         rule.setContent { MontageTheme(reduceMotion = true) { PracticeScreen(state = PracticeSamples.replayable, onIntent = {}) } }
 
         rule.onNodeWithText("Next (7초)").assertExists()
+    }
+
+    @Test
+    fun `녹음 중이 아니면 나가기 X 를 누를 때 묻지 않고 나간다`() {
+        show(PracticeSamples.ready)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+
+        assertEquals(listOf<PracticeIntent>(PracticeIntent.ExitPractice), intents)
+    }
+
+    @Test
+    fun `녹음 중에 나가기 X 를 누르면 답변이 저장되지 않는다고 묻고 아직 나가지 않는다`() {
+        show(PracticeSamples.replayable)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+
+        rule.onNodeWithText("연습을 나갈까요?").assertIsDisplayed()
+        rule.onNodeWithText("지금 녹음한 답변은 저장되지 않고 피드백도 받지 않습니다.").assertIsDisplayed()
+        assertEquals(emptyList<PracticeIntent>(), intents)
+    }
+
+    @Test
+    fun `확인 대화상자에서 취소를 누르면 연습에 머물고 나가기를 누르면 나간다`() {
+        show(PracticeSamples.replayable)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+        rule.onNodeWithText("취소").performClick()
+        rule.onNodeWithText("연습을 나갈까요?").assertDoesNotExist()
+        assertEquals(emptyList<PracticeIntent>(), intents)
+
+        rule.onNodeWithContentDescription("나가기").performClick()
+        rule.onNodeWithText("나가기").performClick()
+        assertEquals(listOf<PracticeIntent>(PracticeIntent.ExitPractice), intents)
+    }
+
+    @Test
+    fun `녹음 중에 시스템 뒤로가기를 누르면 확인 대화상자를 보인다`() {
+        show(PracticeSamples.replayable)
+
+        rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
+
+        rule.onNodeWithText("연습을 나갈까요?").assertIsDisplayed()
+        assertEquals(emptyList<PracticeIntent>(), intents)
     }
 }

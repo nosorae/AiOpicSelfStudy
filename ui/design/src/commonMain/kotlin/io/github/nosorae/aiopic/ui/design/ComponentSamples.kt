@@ -74,14 +74,20 @@ internal fun TopBarSamples() = Column {
     MontageTopBar("기록")
     MontageTopBar(
         title = "문항 7 / 15",
-        navigationIcon = { MontageIconButton(Res.drawable.icon_normal_close, "닫기", {}) },
-        actions = { MontageIconButton(Res.drawable.icon_normal_more_vertical, "더 보기", {}) },
+        actions = { MontageIconButton(Res.drawable.icon_normal_close, "나가기", {}) },
     )
 }
 
 @Composable
 internal fun AlertSamples() = Samples {
-    MontageAlertContent("지금 나가면 이번 회차 녹음이 저장되지 않습니다.", "나가기", {}, title = "시험을 그만둘까요?", cancel = "계속하기", negative = true)
+    MontageAlertContent(
+        "진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.",
+        "나가기",
+        {},
+        title = "모의시험을 나갈까요?",
+        cancel = "취소",
+        negative = true,
+    )
     MontageAlertContent("마이크 권한이 있어야 답변을 녹음할 수 있습니다.", "설정 열기", {})
 }
 

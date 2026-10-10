@@ -47,7 +47,7 @@ struct TabRoot: View {
             .ignoresSafeArea()
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
-            // 뒤로 버튼을 숨기면 가장자리 스와이프도 꺼진다. 시험은 화면 안 나가기로만 나가고, 키 확인 중에는 끝날 때까지 못 나간다.
+            // 뒤로 버튼을 숨기면 가장자리 스와이프도 꺼진다. 시험, 연습, 설정의 서베이는 화면 안 X 로만 나가고, 키 확인 중에는 끝날 때까지 못 나간다.
             .navigationBarBackButtonHidden(!route.showsBackButtonOnIos || backBlocked.contains(route))
             .toolbar(route.showsBackButtonOnIos ? .visible : .hidden, for: .navigationBar)
             // 보일 때 .visible 을 주면 첫 화면 설정이 이겨 시험 화면에도 탭이 남는다. .automatic 이어야 숨는다.

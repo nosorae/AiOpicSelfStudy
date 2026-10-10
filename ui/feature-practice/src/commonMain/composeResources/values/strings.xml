@@ -2,6 +2,9 @@
 <resources>
     <string name="practice_title">한 문항 연습</string>
     <string name="practice_exit">나가기</string>
+    <string name="practice_exit_cancel">취소</string>
+    <string name="practice_exit_title">연습을 나갈까요?</string>
+    <string name="practice_exit_message">지금 녹음한 답변은 저장되지 않고 피드백도 받지 않습니다.</string>
     <string name="practice_loading">질문을 고르는 중</string>
     <string name="practice_speaking">질문을 듣는 중</string>
     <string name="practice_recording">녹음 중 %1$s</string>

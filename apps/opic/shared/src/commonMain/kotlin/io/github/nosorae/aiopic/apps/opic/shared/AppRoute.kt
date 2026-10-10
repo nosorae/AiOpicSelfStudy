@@ -33,7 +33,10 @@ sealed class AppRoute {
     /** 모의시험. 홈이 진행 중인 회차 id 를 넣으면 이어 보기, 새 id 면 새 회차다(F3). */
     @Serializable data class Exam(val sessionId: String) : AppRoute()
 
-    /** 한 문항 연습. 녹음하는 화면이라 탭이 없지만 시험이 아니라서 뒤로가기는 막지 않는다. [answerId] 는 들어올 때마다 새로 만든다. */
+    /**
+     * 한 문항 연습. 녹음하는 화면이라 탭이 없지만 시험이 아니라서 뒤로가기는 막지 않는다. 녹음 중 뒤로가기는 화면이 받아 나갈지 묻는다.
+     * [answerId] 는 들어올 때마다 새로 만든다.
+     */
     @Serializable data class Practice(val answerId: String) : AppRoute()
 
     /** 설정의 제공사별 키 관리에서 여는 키 입력. [provider] 는 제공사 이름(`gemini`)이다. */
@@ -42,7 +45,7 @@ sealed class AppRoute {
     /** 설정의 무료 등급 안내. 음성 전송 동의 화면을 그대로 연다(F1.3). */
     @Serializable data object FreeTierNotice : AppRoute()
 
-    /** 설정의 서베이. 모의시험 서베이와 같은 흐름으로 저장한 답을 보고 바꾼다. */
+    /** 설정의 서베이. 모의시험 서베이와 같은 흐름으로 저장한 답을 보고 바꾼다. 바꾼 답이 있으면 뒤로가기를 화면이 받아 나갈지 묻는다. */
     @Serializable data object Survey : AppRoute()
 
     /** 설정의 틀림 표시 내보내기(F8.3). */
@@ -91,8 +94,11 @@ sealed class AppRoute {
         Chrome.FullScreen, Chrome.Start -> false
     }
 
-    /** iOS 내비게이션 바(뒤로 버튼과 가장자리 스와이프)를 보일지. Android 는 시스템 뒤로가기라 그리는 버튼이 없다. */
-    val showsBackButtonOnIos: Boolean get() = chrome != Chrome.TopLevel && chrome != Chrome.Start && !blocksBack
+    /**
+     * iOS 내비게이션 바(뒤로 버튼과 가장자리 스와이프)를 보일지. Android 는 시스템 뒤로가기라 그리는 버튼이 없다.
+     * 시험, 연습, 설정의 서베이는 화면 안 X 로 닫는다. 나가면 잃는 것이 있을 때 먼저 묻는데 iOS 뒤로 버튼은 화면이 가로챌 수 없어서다.
+     */
+    val showsBackButtonOnIos: Boolean get() = chrome == Chrome.Sub && this != Survey
 
     companion object {
         /** 하단 탭 순서. 값으로 두면 하위 object 초기화와 순환해 null 이 들어가므로 읽을 때 만든다. */
