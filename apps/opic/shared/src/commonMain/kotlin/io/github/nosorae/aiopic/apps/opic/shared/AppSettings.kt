@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.VoiceConsent
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
@@ -9,6 +10,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.Json
 
 /**
  * 설정 값(화면 모드, 고른 분석 모델, 음성 전송 동의, 답변 타이머, 불러온 문항 파일)을 플랫폼 설정 저장소에 둔다.
@@ -58,6 +60,12 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
 
     override suspend fun saveQuestionFile(json: String) = write(QUESTION_FILE, json)
 
+    /** 회차 하나에 낸 질문(F6.1, F6.2). 모델 출제는 부를 때마다 결과가 달라서, 이어 볼 때 같은 질문이 나오게 처음 고른 목록을 남긴다(F3.3). */
+    // ponytail: 회차마다 몇 KB 를 설정 저장소에 쌓고 지우지 않는다. 회차가 수백 개가 되면 회차 행(engine/session)으로 옮긴다.
+    fun examQuestions(sessionId: String): List<Question>? = read(EXAM_QUESTIONS + sessionId)?.let { Json.decodeFromString<List<Question>>(it) }
+
+    fun saveExamQuestions(sessionId: String, questions: List<Question>) = write(EXAM_QUESTIONS + sessionId, Json.encodeToString(questions))
+
     companion object {
         private const val THEME_MODE = "theme_mode"
         private const val MODEL_ID = "model_id"
@@ -65,6 +73,7 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
         private const val VOICE_CONSENT = "voice_consent"
         private const val ANSWER_TIMER = "answer_timer"
         private const val QUESTION_FILE = "question_file"
+        private const val EXAM_QUESTIONS = "exam_questions_"
 
         /** 앱 틀 테스트처럼 기기에 남길 필요가 없을 때 쓴다. */
         fun inMemory(): AppSettings {

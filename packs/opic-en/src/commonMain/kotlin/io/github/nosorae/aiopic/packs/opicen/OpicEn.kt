@@ -46,6 +46,12 @@ object OpicEn {
         "jogging", "tv", "walking", "cooking", "domestic-travel", "beach", "neighborhood",
     )
 
+    /**
+     * 모델이 만든 질문에서 서베이 밖 주제를 몇 개까지 받는지(F6.1). 출제 프롬프트 규칙대로 자기소개(self), 서베이 밖 세트 하나,
+     * 롤플레이 상황, 비교와 사회 이슈 주제가 서베이 밖일 수 있다. 넘으면 내장 문항으로 고른다(F6.2).
+     */
+    const val MAX_OUTSIDE_TOPICS = 4
+
     /** 내장 문항 풀(F6.2). 앱이 출제할 때마다 읽는다. */
     suspend fun questionPool(): List<Question> = parseQuestions(Res.readBytes("files/questions/pool.json").decodeToString())
 }
