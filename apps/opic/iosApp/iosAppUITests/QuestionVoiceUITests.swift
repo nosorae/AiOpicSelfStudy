@@ -12,7 +12,7 @@ final class QuestionVoiceUITests: XCTestCase {
     }
 
     func testBundledVoiceThenDeviceVoice() {
-        app.launchArguments = [UITestLaunch.reset, UITestLaunch.fakeGemini]
+        app.launchArguments = UITestLaunch.reset + UITestLaunch.fakeGemini
         app.launch()
         app.passFirstLaunch()
 
@@ -21,10 +21,7 @@ final class QuestionVoiceUITests: XCTestCase {
         app.tabBars.buttons["홈"].tap()
 
         app.tapTag("home-exam")
-        app.swipeUp()
-        app.swipeUp()
-        for topic in 0..<12 { app.tapTag("survey-topic-\(topic)") }
-        app.tapTag("exam-next-step")
+        app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")
         XCTAssertTrue(app.staticTexts["장비 점검"].waitForExistence(timeout: 30), "장비 점검 화면이 보이지 않는다")
@@ -37,7 +34,7 @@ final class QuestionVoiceUITests: XCTestCase {
 
         // 1번 Play 전에 앱을 끝내고 설정에서 기기 음성으로 바꾼 뒤 이어 본다.
         app.terminate()
-        app.launchArguments = [UITestLaunch.fakeGemini]
+        app.launchArguments = UITestLaunch.fakeGemini
         app.launch()
         app.tabBars.buttons["설정"].tap()
         app.tapTag("settings-voice-device")
