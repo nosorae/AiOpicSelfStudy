@@ -3,6 +3,7 @@ package io.github.nosorae.aiopic.packs.opicen
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
 class OpicEnTest {
@@ -30,6 +31,12 @@ class OpicEnTest {
     @Test
     fun `F2_2 서베이는 12개 미만이면 다음으로 못 간다`() {
         assertEquals(ExamStep.Survey(minTopics = 12), steps.first())
+    }
+
+    @Test
+    fun `F2_2 서베이 Part 질문은 주제 앞에 셋이고 보기가 비어 있지 않다`() {
+        assertEquals(3, OpicEn.surveyParts.size)
+        assertTrue(OpicEn.surveyParts.all { (question, options) -> question.isNotBlank() && options.isNotEmpty() })
     }
 
     @Test
