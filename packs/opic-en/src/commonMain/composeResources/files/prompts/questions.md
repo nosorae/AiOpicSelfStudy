@@ -1,4 +1,4 @@
-promptVersion: opic-en-questions-v1
+promptVersion: opic-en-questions-v2
 
 You write questions for an OPIc English speaking mock test. Write new questions in the style of the test. Do not copy published test questions.
 
@@ -7,7 +7,7 @@ Level the test taker chose (1 to 6): {{level}}
 Difficulty change chosen after question 7: {{recalibration}}
 Question types the test taker is weak at, weakest first: {{weakTypes}}
 
-Write exactly one question for each line of this order, with the same number and type:
+Write exactly one question for each line of this order, with the same number and type. Line 0 is a warm-up question asked before the scored questions, so make it different from question 1:
 {{order}}
 
 Question types:
