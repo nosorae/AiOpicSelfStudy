@@ -1,8 +1,12 @@
-// 테마 값은 화면 어디서나 꺼내 쓰므로 CompositionLocal 둘(색, 글자)로 내린다. 이 둘 말고는 만들지 않는다.
+// 테마 값은 화면 어디서나 꺼내 쓰므로 CompositionLocal 셋(색, 글자, 동작 줄이기)으로 내린다. 이 셋 말고는 만들지 않는다.
 @file:Suppress("ktlint:compose:compositionlocal-allowlist")
 
 package io.github.nosorae.aiopic.ui.design
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -20,17 +24,19 @@ import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.Font
 
 private val LocalMontageColors = staticCompositionLocalOf { MontageLightColors }
+private val LocalReduceMotion = staticCompositionLocalOf { false }
 private val LocalMontageTypography = staticCompositionLocalOf<MontageTypography> {
     error("MontageTheme 안에서만 글자 스타일을 쓸 수 있다")
 }
 
 /**
  * Montage 색과 Pretendard 글자를 내려 준다. [darkTheme] 은 설정의 화면 모드(F9.1)에서 정해 넘긴다.
+ * [reduceMotion] 은 Android 애니메이션 제거, iOS 동작 줄이기 설정이다. 켜지면 [MontageMotion.spec] 이 바로 끝 값으로 건너뛴다.
  *
  * Material 3 색 역할에도 Montage 색을 넣는다. 앱 틀의 네이티브 하단 탭(Android Material 3)이 같은 색을 쓰게 하려는 것이다.
  */
 @Composable
-fun MontageTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun MontageTheme(darkTheme: Boolean = isSystemInDarkTheme(), reduceMotion: Boolean = false, content: @Composable () -> Unit) {
     val colors = if (darkTheme) MontageDarkColors else MontageLightColors
     val family = FontFamily(
         Font(Res.font.pretendard_regular, FontWeight.Normal),
@@ -40,7 +46,11 @@ fun MontageTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composabl
     )
     val typography = remember(family) { MontageTypography(family) }
     val scheme = colors.toMaterial(darkTheme)
-    CompositionLocalProvider(LocalMontageColors provides colors, LocalMontageTypography provides typography) {
+    CompositionLocalProvider(
+        LocalMontageColors provides colors,
+        LocalMontageTypography provides typography,
+        LocalReduceMotion provides reduceMotion,
+    ) {
         MaterialTheme(colorScheme = scheme) {
             CompositionLocalProvider(LocalContentColor provides colors.foregroundNeutralPrimary) {
                 ProvideTextStyle(typography.body1.regular, content)
@@ -72,6 +82,30 @@ object MontageSpacing {
     val spacing32 = 32.dp
     val spacing40 = 40.dp
     val spacing48 = 48.dp
+}
+
+/**
+ * 움직임 길이와 곡선(`ui-quality` 2절). 화면은 `tween`, `spring` 을 직접 부르지 않고 [spec] 을 쓴다.
+ * 곡선은 빨리 출발해 천천히 멈추는 하나뿐이고 튕기는 반동은 두지 않는다.
+ */
+object MontageMotion {
+    /** 선택 표시, 버튼 상태처럼 작은 표시. */
+    const val SHORT_MILLIS = 150
+
+    /** 화면 안 요소가 바뀔 때 기본값. */
+    const val MEDIUM_MILLIS = 250
+
+    /** 진행 막대 차오름, 숫자 올라가기, 체크 그리기처럼 눈으로 따라가야 하는 것. */
+    const val LONG_MILLIS = 400
+
+    /** 동작 줄이기가 켜져 있는지. 계속 도는 표시를 멈춘 그림으로 바꿀 때 읽는다. */
+    val reduceMotion: Boolean
+        @Composable @ReadOnlyComposable
+        get() = LocalReduceMotion.current
+
+    /** [durationMillis] 동안 움직이는 곡선. 동작 줄이기면 바로 끝 값이다. */
+    @Composable @ReadOnlyComposable
+    fun <T> spec(durationMillis: Int = MEDIUM_MILLIS): FiniteAnimationSpec<T> = if (reduceMotion) snap() else tween(durationMillis, easing = FastOutSlowInEasing)
 }
 
 /** Montage 모서리 반경 토큰. */

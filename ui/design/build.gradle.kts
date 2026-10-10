@@ -6,3 +6,14 @@ plugins {
 compose.resources {
     publicResClass = true
 }
+
+kotlin {
+    sourceSets {
+        // 움직임 부품을 테스트 시계로 멈춰 끝 장면과 동작 줄이기를 비교한다.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.compose.uiTestJunit4)
+            implementation(libs.compose.uiTestManifest)
+            implementation(libs.roborazzi.core)
+        }
+    }
+}
