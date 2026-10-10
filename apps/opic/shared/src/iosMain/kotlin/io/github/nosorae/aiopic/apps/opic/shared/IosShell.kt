@@ -8,8 +8,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
 import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
 import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
+import io.github.nosorae.aiopic.libs.debug.DebugTools
+import io.github.nosorae.aiopic.libs.debug.install
 import io.github.nosorae.aiopic.libs.haptics.api.iosHaptics
 import io.github.nosorae.aiopic.libs.keyvault.api.KeychainKeyVault
+import io.github.nosorae.aiopic.libs.recorder.api.IosRecorder
 import io.github.nosorae.aiopic.libs.tts.IosTts
 import io.github.nosorae.aiopic.libs.workqueue.api.ForegroundWorkQueue
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
@@ -17,6 +20,9 @@ import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import platform.AVFAudio.AVAudioSession
+import platform.AVFAudio.AVAudioSessionPortDescription
+import platform.AVFAudio.currentRoute
 import platform.Foundation.NSUserDefaults
 import platform.UIKit.UIAccessibilityIsReduceMotionEnabled
 import platform.UIKit.UIApplication
@@ -30,7 +36,14 @@ import platform.UIKit.UIWindowScene
  * 탭 표시와 뒤로 버튼은 Swift 가 [AppRoute] 표를 읽어 정한다. 그래프는 앱에 하나다.
  */
 class IosShell {
+    init {
+        // 그래프가 스위치를 읽고 클라이언트를 만들기 전에 설치한다. 릴리스 빌드는 빈 모듈이라 아무 일도 안 한다.
+        DebugTools.install()
+    }
+
     private val keyVault = KeychainKeyVault().also(UiTestLaunch::resetIfAsked)
+
+    private val workQueue = ForegroundWorkQueue(handler = { graph.analysisHandler.handle(it) }, scope = MainScope())
 
     private val graph: AppGraph = createAppGraph(
         settings = AppSettings(
@@ -40,12 +53,12 @@ class IosShell {
         keyVault = keyVault,
         database = opicDatabase(),
         recordingsRoot = recordingsRoot(),
-        recorder = UiTestLaunch.recorder(),
+        recorder = IosRecorder().withDebugTools(),
         tts = IosTts(),
         // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다. 앱이 떠 있는 동안만 보낸다(F5.1).
-        workQueue = ForegroundWorkQueue(handler = { graph.analysisHandler.handle(it) }, scope = MainScope()),
-        gemini = UiTestLaunch.geminiClient(),
-    )
+        workQueue = workQueue,
+        gemini = debugGeminiClient(),
+    ).apply { registerDebugPanels(queue = workQueue::pending, audio = ::audioSessionRows) }
 
     private val haptics = graph.settings.haptics(iosHaptics())
 
@@ -88,4 +101,18 @@ class IosShell {
             .flatMap { it.windows.filterIsInstance<UIWindow>() }
             .forEach { it.overrideUserInterfaceStyle = style }
     }
+}
+
+/** 앱 Swift 의 흔들기(`UIWindow.motionEnded`)가 부른다. 릴리스 빌드는 빈 모듈이라 아무 일도 안 한다. */
+fun openDebugTools() = DebugTools.open()
+
+private fun audioSessionRows(): List<Pair<String, String>> {
+    val session = AVAudioSession.sharedInstance()
+    val route = session.currentRoute
+    return listOf(
+        "category" to session.category.orEmpty(),
+        "mode" to session.mode.orEmpty(),
+        "inputs" to route.inputs.joinToString { (it as AVAudioSessionPortDescription).portType.orEmpty() },
+        "outputs" to route.outputs.joinToString { (it as AVAudioSessionPortDescription).portType.orEmpty() },
+    )
 }

@@ -8,6 +8,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
 import io.github.nosorae.aiopic.libs.haptics.api.Haptics
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
@@ -76,6 +77,8 @@ internal fun RouteContent(
             onOpenAppInfo = { onOpen(AppRoute.AppInfo) },
             modifier = modifier,
             onOpenSurvey = { onOpen(AppRoute.Survey) },
+            // 실제 디버깅 도구는 디버그 빌드에만 실린다. 릴리스의 빈 모듈은 installed 가 늘 false 라 줄이 없다.
+            onOpenDeveloperTools = if (DebugTools.installed) DebugTools::open else null,
         )
 
         AppRoute.Survey -> SurveyRoute(viewModel = viewModel { graph.surveyViewModel }, onDone = onBack, modifier = modifier)

@@ -83,6 +83,10 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
 
     override suspend fun saveSurveyAnswers(answers: SurveyAnswers) = write(SURVEY_ANSWERS, Json.encodeToString(answers))
 
+    /** 디버깅 화면의 설정 패널. 문항 파일은 수십 KB 라 길이만 보인다. 회차별 출제 목록은 DB 패널의 회차로 찾는다. */
+    fun debugRows(): List<Pair<String, String>> = listOf(THEME_MODE, MODEL_ID, FELL_BACK_FROM, VOICE_CONSENT, ANSWER_TIMER, HAPTICS).map { it to (read(it) ?: "(none)") } +
+        (QUESTION_FILE to (read(QUESTION_FILE)?.let { "${it.length} chars" } ?: "(none)"))
+
     companion object {
         private const val THEME_MODE = "theme_mode"
         private const val MODEL_ID = "model_id"

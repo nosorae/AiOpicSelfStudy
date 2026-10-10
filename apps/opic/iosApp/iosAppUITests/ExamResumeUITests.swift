@@ -11,7 +11,7 @@ final class ExamResumeUITests: XCTestCase {
     }
 
     func testExamResumesAtSameQuestionAfterTerminate() {
-        app.launchArguments = [UITestLaunch.reset, UITestLaunch.fakeGemini]
+        app.launchArguments = UITestLaunch.reset + UITestLaunch.fakeGemini
         app.launch()
         app.passFirstLaunch()
 
@@ -35,7 +35,7 @@ final class ExamResumeUITests: XCTestCase {
 
         // 녹음 중에 앱을 끝내고 다시 켠다. 저장된 것은 그대로 둔다.
         app.terminate()
-        app.launchArguments = [UITestLaunch.fakeGemini]
+        app.launchArguments = UITestLaunch.fakeGemini
         app.launch()
 
         let resume = app.tag("home-exam")
