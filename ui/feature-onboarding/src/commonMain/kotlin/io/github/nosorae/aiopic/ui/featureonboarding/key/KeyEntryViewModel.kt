@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 
 /**
  * 키 입력 화면(S1). [provider] 는 화면 인자다. 설정의 제공사별 키 관리에서 들어오면 그 제공사가 정해져 있고,
- * 처음 설정에서는 null 이라 사용자가 고른다.
+ * 처음 설정에서는 null 이라 제공사가 둘 이상이면 사용자가 고른다.
  */
 @AssistedInject
 class KeyEntryViewModel(
@@ -35,7 +35,7 @@ class KeyEntryViewModel(
 
     private fun submit() {
         val state = _uiState.value
-        val provider = state.selectedProvider ?: return
+        val provider = state.provider ?: return
         if (!state.canSubmit) return
         _uiState.update { it.copy(checking = true, error = null) }
         viewModelScope.launch {

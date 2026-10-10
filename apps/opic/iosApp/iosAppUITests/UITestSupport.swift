@@ -6,6 +6,8 @@ enum UITestLaunch {
     static let reset = "ui-test-reset"
     /** Gemini 대신 늘 "OK" 를 돌려주는 가짜를 쓴다. 가짜 키가 키 확인을 넘고, 출제는 내장 문항으로 간다. */
     static let fakeGemini = "ui-test-fake-gemini"
+    /** 가짜 Gemini 가 3초 늦게 답한다. 처리 중 표시를 볼 때 쓴다. */
+    static let slowGemini = "ui-test-slow-gemini"
 }
 
 extension XCUIApplication {

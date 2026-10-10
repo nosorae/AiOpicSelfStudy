@@ -18,7 +18,7 @@ class HomeViewModel(observeHomeUseCase: ObserveHomeUseCase) : ViewModel() {
     init {
         viewModelScope.launch {
             observeHomeUseCase().collect { home ->
-                _uiState.update { it.copy(canResume = home.canResume, pastSessions = home.pastSessions) }
+                _uiState.update { it.copy(resumeSessionId = home.resumeSessionId, pastSessions = home.pastSessions) }
             }
         }
     }

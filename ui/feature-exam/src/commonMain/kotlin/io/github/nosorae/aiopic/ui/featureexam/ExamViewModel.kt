@@ -72,7 +72,8 @@ class ExamViewModel(
     }
 
     fun onIntent(intent: ExamIntent) {
-        if (_uiState.value.step == null) return
+        val state = _uiState.value
+        if (state.step == null || (state.saving && intent != ExamIntent.NavigationHandled)) return
         when (intent) {
             // ponytail: Part 질문의 답은 출제에 쓰지 않아 저장하지 않는다. 출제가 직업, 거주 형태를 보게 되면 회차에 저장한다.
             is ExamIntent.SelectSurveyAnswer -> _uiState.update { it.copy(surveyAnswers = it.surveyAnswers + (intent.part to intent.option)) }
@@ -107,8 +108,18 @@ class ExamViewModel(
         }
     }
 
-    private fun apply(event: ExamEvent) {
-        viewModelScope.launch { commit { applyExamEventUseCase(it, event) } }
+    private fun apply(event: ExamEvent) = save { commit { applyExamEventUseCase(it, event) } }
+
+    /** 사용자가 누른 저장을 하는 동안 [ExamUiState.saving] 을 켜 둔다. 1초마다 하는 시간 저장은 여기로 오지 않는다. */
+    private fun save(block: suspend () -> Unit) {
+        _uiState.update { it.copy(saving = true) }
+        viewModelScope.launch {
+            try {
+                block()
+            } finally {
+                _uiState.update { it.copy(saving = false) }
+            }
+        }
     }
 
     private fun play() {
@@ -151,14 +162,12 @@ class ExamViewModel(
         if (timer.elapsed() - startedAt < NextDelay) return
         recordingStartedAt = null
         val scored = _uiState.value.step is ExamStep.Ask
-        viewModelScope.launch { commit { submitAnswerUseCase(it, scored) } }
+        save { commit { submitAnswerUseCase(it, scored) } }
     }
 
-    private fun exit() {
-        viewModelScope.launch {
-            stopAll()
-            _uiState.update { it.copy(navigation = ExamDestination.Exit) }
-        }
+    private fun exit() = save {
+        stopAll()
+        _uiState.update { it.copy(navigation = ExamDestination.Exit) }
     }
 
     /** 시계가 시간 끝을 알린 경우 시계 코루틴 안에서 불리므로 녹음을 먼저 멈추고 시계를 마지막에 멈춘다. */

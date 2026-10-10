@@ -42,11 +42,12 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `F3 진행 중인 회차가 있으면 이어 볼 수 있다`() = runTest(dispatcher) {
-        sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.InProgress))
+    fun `F3 진행 중인 회차가 있으면 그 회차를 이어 본다`() = runTest(dispatcher) {
+        sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished), ExamSession(id = "b", status = ExamStatus.InProgress))
 
         val viewModel = loadedViewModel()
 
+        assertEquals("b", viewModel.uiState.value.resumeSessionId)
         assertTrue(viewModel.uiState.value.canResume)
     }
 

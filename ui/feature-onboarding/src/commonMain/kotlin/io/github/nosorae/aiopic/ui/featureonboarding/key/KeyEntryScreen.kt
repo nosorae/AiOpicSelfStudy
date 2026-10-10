@@ -120,7 +120,7 @@ fun KeyEntryScreen(
                 state.providers.forEach { provider ->
                     MontageListCell(
                         title = provider.label,
-                        selected = provider == state.selectedProvider,
+                        selected = provider == state.provider,
                         enabled = !state.checking,
                         onClick = { onIntent(KeyEntryIntent.SelectProvider(provider)) },
                         modifier = Modifier.testTag("key-provider-${provider.id}"),

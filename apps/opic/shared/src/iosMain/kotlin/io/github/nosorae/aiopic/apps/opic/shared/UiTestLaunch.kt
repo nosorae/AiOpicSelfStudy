@@ -10,10 +10,12 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import platform.Foundation.NSBundle
 import platform.Foundation.NSProcessInfo
 import platform.Foundation.NSUserDefaults
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * XCUITest(iosAppUITests)가 앱을 띄울 때 주는 실행 인자. 사용자는 iOS 앱에 실행 인자를 줄 수 없어서 테스트에서만 켜진다.
@@ -28,9 +30,19 @@ internal object UiTestLaunch {
     /** 저장된 키, 설정, DB, 녹음을 지우고 첫 실행처럼 시작한다(F1.0). 시뮬레이터는 앱을 다시 설치해도 이것들이 남는다. */
     val reset = "ui-test-reset" in arguments
 
+    /** 가짜 Gemini 가 [SLOW_DELAY] 늦게 답한다. 키 확인과 출제 버튼의 처리 중 표시를 화면에서 볼 때 쓴다. */
+    private val slowGemini = "ui-test-slow-gemini" in arguments
+
     // ponytail: 테스트용 가짜 엔진이 앱 바이너리에 실린다. 실행 인자로만 켜지고 크기가 작아서 빌드 구성을 나누지 않는다.
     fun geminiClient(): GeminiClient = if (fakeGemini) {
-        GeminiClient(HttpClient(MockEngine { respond(OK_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }))
+        GeminiClient(
+            HttpClient(
+                MockEngine {
+                    if (slowGemini) delay(SLOW_DELAY)
+                    respond(OK_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                },
+            ),
+        )
     } else {
         GeminiClient()
     }
@@ -43,6 +55,8 @@ internal object UiTestLaunch {
         // Keychain 삭제는 기다릴 일이 없는 짧은 호출이라 앱 시작에서 막고 끝낸다.
         runBlocking { keyVault.delete(GeminiModels.PROVIDER) }
     }
+
+    private val SLOW_DELAY = 3.seconds
 
     private const val OK_RESPONSE = """{"candidates":[{"content":{"parts":[{"text":"OK"}]}}]}"""
 }

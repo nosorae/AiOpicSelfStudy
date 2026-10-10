@@ -87,6 +87,7 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
             topics = state.topics,
             selected = state.selectedTopics,
             canSubmit = state.canSubmitSurvey,
+            saving = state.saving,
             onToggle = { onIntent(ExamIntent.ToggleTopic(it)) },
             onSubmit = { onIntent(ExamIntent.SubmitSurvey) },
             onExit = onExit,
@@ -100,6 +101,7 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
             selected = state.selectedLevel?.minus(1),
             onSelect = { onIntent(ExamIntent.SelectLevel(it + 1)) },
             onSubmit = { onIntent(ExamIntent.SubmitLevel) },
+            saving = state.saving,
             onExit = onExit,
             modifier = modifier,
         )
@@ -111,6 +113,7 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
             selected = state.selectedRecalibration?.ordinal,
             onSelect = { onIntent(ExamIntent.SelectRecalibration(Recalibration.entries[it])) },
             onSubmit = { onIntent(ExamIntent.SubmitRecalibration) },
+            saving = state.saving,
             onExit = onExit,
             modifier = modifier,
         )
@@ -175,6 +178,7 @@ private fun SurveyStep(
     topics: List<String>,
     selected: Set<String>,
     canSubmit: Boolean,
+    saving: Boolean,
     onToggle: (String) -> Unit,
     onSubmit: () -> Unit,
     onExit: () -> Unit,
@@ -184,7 +188,7 @@ private fun SurveyStep(
         title = stringResource(Res.string.exam_survey_title),
         onExit = onExit,
         modifier = modifier,
-        bottomBar = { NextButton(enabled = canSubmit, onClick = onSubmit) },
+        bottomBar = { NextButton(enabled = canSubmit, loading = saving, onClick = onSubmit) },
     ) {
         val partCount = parts.size + 1
         parts.forEachIndexed { part, survey ->
@@ -225,6 +229,7 @@ private fun ChoiceStep(
     selected: Int?,
     onSelect: (Int) -> Unit,
     onSubmit: () -> Unit,
+    saving: Boolean,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -232,7 +237,7 @@ private fun ChoiceStep(
         title = title,
         onExit = onExit,
         modifier = modifier,
-        bottomBar = { NextButton(enabled = selected != null, onClick = onSubmit) },
+        bottomBar = { NextButton(enabled = selected != null, loading = saving, onClick = onSubmit) },
     ) {
         Description(description)
         Column {
@@ -273,14 +278,16 @@ private fun QuestionStep(
                         text = stringResource(Res.string.exam_next),
                         onClick = onNext,
                         enabled = state.canNext,
+                        loading = state.saving,
                         modifier = Modifier.weight(1f).testTag("exam-next"),
                     )
                 }
             } else {
+                // 첫 문항은 이때 질문을 받아 오고(F6.1) 질문을 다 읽어야 녹음이 시작돼서 그동안 Play 가 진행 표시를 보인다.
                 MontageButton(
                     text = stringResource(Res.string.exam_play),
                     onClick = onPlay,
-                    enabled = state.phase == QuestionPhase.Ready,
+                    loading = state.phase == QuestionPhase.Speaking,
                     modifier = Modifier.fillMaxWidth().testTag("exam-play"),
                 )
             }
@@ -343,12 +350,14 @@ private fun PartTitle(part: Int, count: Int) {
     )
 }
 
+/** 저장하는 동안([loading]) 진행 표시를 보인다. 그동안 다른 입력은 ViewModel 이 받지 않는다. */
 @Composable
-private fun NextButton(enabled: Boolean, onClick: () -> Unit) {
+private fun NextButton(enabled: Boolean, loading: Boolean, onClick: () -> Unit) {
     MontageButton(
         text = stringResource(Res.string.exam_next_step),
         onClick = onClick,
         enabled = enabled,
+        loading = loading,
         modifier = Modifier.fillMaxWidth().testTag("exam-next-step"),
     )
 }
@@ -403,6 +412,8 @@ internal object ExamSamples {
     val questionSpeaking = questionReady.copy(phase = QuestionPhase.Speaking)
     val questionReplayable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 3.seconds)
     val questionNextable = questionReady.copy(phase = QuestionPhase.Recording, recorded = 12.seconds, replayUsed = true)
+    val questionSaving = questionNextable.copy(saving = true)
+    val surveySaving = surveyReady.copy(saving = true)
     val questionTimer = questionReplayable.copy(answerTimer = true)
     val micError = check.copy(error = ExamError.MicUnavailable)
     val recalibrate = ExamUiState(step = ExamStep.Recalibrate, remaining = 21.minutes, selectedRecalibration = Recalibration.Same)

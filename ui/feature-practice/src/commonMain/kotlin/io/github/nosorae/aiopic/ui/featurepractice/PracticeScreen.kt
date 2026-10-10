@@ -95,6 +95,7 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                             text = stringResource(Res.string.practice_next),
                             onClick = { onIntent(PracticeIntent.SubmitAnswer) },
                             enabled = state.canNext,
+                            loading = state.saving,
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -102,7 +103,9 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                     MontageButton(
                         text = stringResource(Res.string.practice_play),
                         onClick = { onIntent(PracticeIntent.PlayQuestion) },
-                        enabled = state.canPlay,
+                        // 질문을 고르는 동안과 질문을 읽는 동안 진행 표시를 보인다. 녹음은 다 읽은 뒤에 시작된다.
+                        enabled = state.canPlay || state.preparing,
+                        loading = state.preparing,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -175,6 +178,7 @@ internal object PracticeSamples {
     val speaking = ready.copy(phase = PracticePhase.Speaking)
     val replayable = ready.copy(phase = PracticePhase.Recording, recorded = 3.seconds)
     val nextable = ready.copy(phase = PracticePhase.Recording, recorded = 12.seconds, replayUsed = true)
+    val saving = nextable.copy(saving = true)
     val micError = ready.copy(error = PracticeError.MicUnavailable)
     val noQuestion = PracticeUiState(error = PracticeError.QuestionUnavailable)
 }

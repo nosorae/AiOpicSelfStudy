@@ -40,10 +40,12 @@ fun scored(id: String, question: Question, score: Int) = Answer(
     ),
 )
 
+/** [saveTime] 은 답변 저장 한 번에 걸리는 시간이다. 처리 중 표시를 볼 때 늘린다. */
 class FakePracticeRepository(
     var pool: List<Question> = listOf(question("q1", "routine")),
     val answers: MutableList<Answer> = mutableListOf(),
     var flags: Set<CorrectionFlag> = emptySet(),
+    var saveTime: Duration = Duration.ZERO,
 ) : PracticeRepository {
     override suspend fun pool(): List<Question> = pool
 
@@ -54,6 +56,7 @@ class FakePracticeRepository(
     override fun recordingDirectory(answerId: String): String = "rec/$answerId"
 
     override suspend fun save(answer: Answer) {
+        delay(saveTime)
         answers += answer
     }
 }

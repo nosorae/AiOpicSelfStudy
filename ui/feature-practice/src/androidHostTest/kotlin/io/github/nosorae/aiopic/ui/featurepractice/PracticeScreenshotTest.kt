@@ -23,6 +23,8 @@ class PracticeScreenshotTest {
 
     @Test fun nextable() = shot(PracticeSamples.nextable)
 
+    @Test fun saving() = shot(PracticeSamples.saving)
+
     @Test fun micError() = shot(PracticeSamples.micError)
 
     @Test fun noQuestion() = shot(PracticeSamples.noQuestion)
