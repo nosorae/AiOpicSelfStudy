@@ -15,13 +15,13 @@ import org.robolectric.annotation.GraphicsMode
 class FlagExportScreenshotTest {
     @Test fun flagged() = capture(FlagExportSamples.flagged)
 
-    @Test fun flagged_copied() = capture(FlagExportSamples.flagged.copy(copied = true))
+    @Test fun flagged_copied() = capture(FlagExportSamples.copied)
 
-    @Test fun flagged_copied_dark() = capture(FlagExportSamples.flagged.copy(copied = true), dark = true)
+    @Test fun flagged_copied_dark() = capture(FlagExportSamples.copied, dark = true)
 
     @Config(fontScale = 2f)
     @Test
-    fun flagged_copied_fontScale200() = capture(FlagExportSamples.flagged.copy(copied = true))
+    fun flagged_copied_fontScale200() = capture(FlagExportSamples.copied)
 
     @Test fun empty() = capture(FlagExportSamples.empty)
 

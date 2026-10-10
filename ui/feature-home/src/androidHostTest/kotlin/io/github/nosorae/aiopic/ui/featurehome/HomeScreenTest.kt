@@ -50,4 +50,11 @@ class HomeScreenTest {
 
         assertEquals(listOf<String?>(null), opened)
     }
+
+    @Test
+    fun `F3 이어 볼 회차가 있으면 몇 문항을 마쳤는지 보인다`() {
+        show(HomeSamples.history)
+
+        rule.onNodeWithText("15문항 중 4문항을 마쳤습니다").assertExists()
+    }
 }

@@ -19,6 +19,7 @@ import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
+import io.github.nosorae.aiopic.ui.design.MontageStepTrail
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
 import org.jetbrains.compose.resources.stringResource
@@ -56,6 +57,15 @@ fun HomeScreen(
                     modifier = Modifier.padding(horizontal = gutter, vertical = MontageSpacing.spacing16),
                     verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
                 ) {
+                    if (state.canResume && state.resumeTotal > 0) {
+                        // 처음 보일 때는 움직이지 않는 그림이다. 몇 문항 남았는지를 글을 읽기 전에 보인다.
+                        MontageStepTrail(total = state.resumeTotal, done = state.resumeDone.coerceAtMost(state.resumeTotal))
+                        Text(
+                            text = stringResource(Res.string.home_resume_progress, state.resumeTotal, state.resumeDone),
+                            style = MontageTheme.typography.label1.regular,
+                            color = MontageTheme.colors.foregroundNeutralSecondary,
+                        )
+                    }
                     MontageButton(
                         text = stringResource(if (state.canResume) Res.string.home_resume_exam else Res.string.home_start_exam),
                         onClick = { onExamClick(state.resumeSessionId) },
@@ -109,6 +119,8 @@ internal object HomeSamples {
     val empty = HomeUiState(pastSessions = emptyList())
     val history = HomeUiState(
         resumeSessionId = "d",
+        resumeDone = 4,
+        resumeTotal = 15,
         pastSessions = listOf(
             PastSession(id = "c", number = 3, gradeRange = null, timeUp = false),
             PastSession(id = "b", number = 2, gradeRange = "IM2~IH", timeUp = true),

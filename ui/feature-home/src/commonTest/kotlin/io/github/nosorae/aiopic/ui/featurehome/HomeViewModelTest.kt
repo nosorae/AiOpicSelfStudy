@@ -1,7 +1,10 @@
 package io.github.nosorae.aiopic.ui.featurehome
 
+import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
+import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
+import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.GradeCheck
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlinx.coroutines.Dispatchers
@@ -19,24 +22,32 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 
 class HomeViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val sessions = MutableStateFlow<List<ExamSession>>(emptyList())
+
+    // 수준 1 이면 3문항, 수준 3 이상이면 4문항인 시험.
+    private val spec = ExamSpec(
+        timeLimit = 40.minutes,
+        levelCount = 6,
+        steps = listOf(ExamStep.LevelSelect) + List(3) { ExamStep.Ask(QuestionType("t")) } + ExamStep.Ask(QuestionType("t"), minLevel = 3),
+    )
 
     @BeforeTest fun setUp() = Dispatchers.setMain(dispatcher)
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.loadedViewModel(): HomeViewModel {
-        val viewModel = HomeViewModel(ObserveHomeUseCase { sessions })
+        val viewModel = HomeViewModel(ObserveHomeUseCase({ sessions }, spec))
         advanceUntilIdle()
         return viewModel
     }
 
     @Test
     fun `저장소를 읽기 전에는 지난 회차가 정해지지 않은 로딩 상태다`() {
-        val viewModel = HomeViewModel(ObserveHomeUseCase { sessions })
+        val viewModel = HomeViewModel(ObserveHomeUseCase({ sessions }, spec))
 
         assertNull(viewModel.uiState.value.pastSessions)
     }
@@ -49,6 +60,15 @@ class HomeViewModelTest {
 
         assertEquals("b", viewModel.uiState.value.resumeSessionId)
         assertTrue(viewModel.uiState.value.canResume)
+    }
+
+    @Test
+    fun `F3 이어 볼 회차가 고른 수준의 문항 중 몇 개를 답했는지 보인다`() = runTest(dispatcher) {
+        sessions.value = listOf(ExamSession(id = "b", level = 3, answerIds = listOf("x", "y"), status = ExamStatus.InProgress))
+
+        val viewModel = loadedViewModel()
+
+        assertEquals(2 to 4, viewModel.uiState.value.resumeDone to viewModel.uiState.value.resumeTotal)
     }
 
     @Test

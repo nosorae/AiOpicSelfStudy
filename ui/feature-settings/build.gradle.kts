@@ -16,6 +16,11 @@ kotlin {
             // 동의를 철회하면 분석 대기열을 비운다(F1.3).
             implementation(project(":libs:work-queue"))
         }
+        // 복사 완료 체크가 동작 줄이기에서 멈춰 있는지 화면을 띄워 프레임을 비교한다.
+        getByName("androidHostTest").dependencies {
+            implementation(libs.compose.uiTestJunit4)
+            implementation(libs.compose.uiTestManifest)
+        }
         androidMain.dependencies {
             // 문항 파일을 고르는 시스템 창을 띄운다.
             implementation(libs.androidx.activity.compose)

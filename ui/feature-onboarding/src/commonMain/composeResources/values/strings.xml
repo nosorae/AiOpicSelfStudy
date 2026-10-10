@@ -16,6 +16,8 @@
     <string name="key_entry_submit">키 확인하고 저장</string>
     <string name="key_entry_error_invalid">키가 맞지 않습니다. 복사한 키를 다시 확인하세요.</string>
     <string name="key_entry_error_retryable">키를 확인하지 못했습니다. 연결을 확인하고 잠시 뒤 다시 시도하세요.</string>
+    <string name="key_entry_checking">%1$s 에 키가 맞는지 묻고 있습니다. 맞으면 저장하고 바로 넘어갑니다.</string>
+    <string name="key_entry_saved">키를 확인했습니다</string>
     <string name="key_entry_free_tier_link">무료 등급 안내 보기</string>
     <string name="consent_title">음성 전송 동의</string>
     <string name="consent_send">답변을 분석하려고 녹음한 음성을 Google Gemini 로 보냅니다. 동의하기 전에는 어떤 녹음도 보내지 않습니다.</string>

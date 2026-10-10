@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -22,6 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,8 +35,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
+import io.github.nosorae.aiopic.ui.design.MontageCheckMark
 import io.github.nosorae.aiopic.ui.design.MontageIconButton
 import io.github.nosorae.aiopic.ui.design.MontageListCell
+import io.github.nosorae.aiopic.ui.design.MontageMotion
 import io.github.nosorae.aiopic.ui.design.MontageRadius
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
@@ -42,6 +49,7 @@ import io.github.nosorae.aiopic.ui.design.icon_normal_circle_close_fill
 import io.github.nosorae.aiopic.ui.design.icon_normal_external_link
 import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
 import io.github.nosorae.aiopic.ui.featureonboarding.Res
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_checking
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_clear_key
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_error_invalid
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_error_retryable
@@ -51,6 +59,7 @@ import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_key
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_key_description
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_key_placeholder
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_provider
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_saved
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_step_copy
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_step_create
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_step_paste
@@ -59,6 +68,7 @@ import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_submit
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_title
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_why_body
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_why_title
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import io.github.nosorae.aiopic.ui.design.Res as DesignRes
@@ -79,6 +89,8 @@ fun KeyEntryRoute(
     val currentOnDone by rememberUpdatedState(onDone)
     LaunchedEffect(state.navigation) {
         if (state.navigation == KeyEntryDestination.KeySaved) {
+            // 확인 체크가 다 그려지고 물결이 퍼질 때까지 보이고 넘어간다. 동작 줄이기여도 체크를 볼 틈은 같게 둔다.
+            delay(CHECK_HOLD_MILLIS)
             currentOnDone()
             viewModel.onIntent(KeyEntryIntent.NavigationHandled)
         }
@@ -96,18 +108,37 @@ fun KeyEntryScreen(
 ) {
     val gutter = MontageSpacing.spacing20
     val uriHandler = LocalUriHandler.current
+    // 확인 중이거나 확인돼 넘어가기 직전이면 다른 입력을 막는다.
+    val locked = state.checking || state.saved
     MontageScreen(
         modifier = modifier,
         topBar = { MontageTopBar(title = stringResource(Res.string.key_entry_title)) },
         bottomBar = {
-            MontageButton(
-                text = stringResource(Res.string.key_entry_submit),
-                onClick = { onIntent(KeyEntryIntent.SubmitKey) },
-                // 확인하는 동안 버튼은 진행 표시를 보이고, 다른 입력(제공사, 입력칸, 키 받기, 안내)은 모두 막는다.
-                enabled = state.canSubmit || state.checking,
-                loading = state.checking,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = gutter, vertical = MontageSpacing.spacing12).testTag("key-submit"),
-            )
+            Column(
+                modifier = Modifier.padding(horizontal = gutter, vertical = MontageSpacing.spacing12),
+                verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
+            ) {
+                if (state.saved) {
+                    SavedCheck()
+                } else {
+                    if (state.checking) {
+                        Text(
+                            text = stringResource(Res.string.key_entry_checking, state.keyPageProvider.label),
+                            style = MontageTheme.typography.label1Reading.regular,
+                            color = MontageTheme.colors.foregroundNeutralSecondary,
+                            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        )
+                    }
+                    MontageButton(
+                        text = stringResource(Res.string.key_entry_submit),
+                        onClick = { onIntent(KeyEntryIntent.SubmitKey) },
+                        // 확인하는 동안 버튼은 진행 표시를 보이고, 다른 입력(제공사, 입력칸, 키 받기, 안내)은 모두 막는다.
+                        enabled = state.canSubmit || state.checking,
+                        loading = state.checking,
+                        modifier = Modifier.fillMaxWidth().testTag("key-submit"),
+                    )
+                }
+            }
         },
     ) {
         Column(
@@ -121,7 +152,7 @@ fun KeyEntryScreen(
                     MontageListCell(
                         title = provider.label,
                         selected = provider == state.provider,
-                        enabled = !state.checking,
+                        enabled = !locked,
                         onClick = { onIntent(KeyEntryIntent.SelectProvider(provider)) },
                         modifier = Modifier.testTag("key-provider-${provider.id}"),
                     )
@@ -139,7 +170,7 @@ fun KeyEntryScreen(
                     text = stringResource(Res.string.key_entry_get_key, state.keyPageProvider.label),
                     onClick = { uriHandler.openUri(state.keyPageProvider.keyPageUrl) },
                     variant = MontageButtonVariant.Outlined,
-                    enabled = !state.checking,
+                    enabled = !locked,
                     leadingIcon = DesignRes.drawable.icon_normal_external_link,
                     modifier = Modifier.fillMaxWidth().padding(top = MontageSpacing.spacing4),
                 )
@@ -157,7 +188,7 @@ fun KeyEntryScreen(
                     },
                 ),
                 error = state.error != null,
-                enabled = !state.checking,
+                enabled = !locked,
                 // 키를 가리지 않는다. 40자 넘는 키를 붙여 넣은 뒤 다 들어갔는지 눈으로 보게 하려는 것이다.
                 // 자동 수정과 자동 대문자가 키 글자를 바꾸지 않게 끈다.
                 keyboardOptions = KeyboardOptions(
@@ -166,7 +197,7 @@ fun KeyEntryScreen(
                     autoCorrectEnabled = false,
                 ),
                 fontFamily = FontFamily.Monospace,
-                trailing = if (state.key.isNotEmpty() && !state.checking) {
+                trailing = if (state.key.isNotEmpty() && !locked) {
                     {
                         MontageIconButton(
                             icon = DesignRes.drawable.icon_normal_circle_close_fill,
@@ -184,12 +215,30 @@ fun KeyEntryScreen(
                 text = stringResource(Res.string.key_entry_free_tier_link),
                 onClick = onOpenFreeTierNotice,
                 variant = MontageButtonVariant.Text,
-                enabled = !state.checking,
+                enabled = !locked,
                 size = MontageButtonSize.Medium,
                 // 글자 버튼의 안쪽 여백 7dp 에 12dp 를 더해 글자를 다른 줄의 20dp 에 거의 맞춘다.
                 modifier = Modifier.padding(horizontal = MontageSpacing.spacing12),
             )
         }
+    }
+}
+
+/** 저장 버튼 자리에 버튼과 같은 높이로 체크와 결과 문구를 보인다. 체크는 그림뿐이라 문구를 화면 읽기 도구가 읽게 한다. */
+@Composable
+private fun SavedCheck() {
+    Row(
+        modifier = Modifier.fillMaxWidth().heightIn(min = MontageSpacing.spacing48),
+        horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MontageCheckMark(Modifier.size(MontageSpacing.spacing48))
+        Text(
+            text = stringResource(Res.string.key_entry_saved),
+            style = MontageTheme.typography.body1.bold,
+            color = MontageTheme.colors.foregroundBrandPrimary,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
     }
 }
 
@@ -247,11 +296,15 @@ private fun Step(number: Int, text: StringResource) {
     }
 }
 
+/** 확인 체크를 그리고(400ms) 물결이 퍼지는(400ms) 동안 머문다. */
+private const val CHECK_HOLD_MILLIS = MontageMotion.LONG_MILLIS * 2L
+
 /** 미리보기와 스크린샷 테스트가 함께 쓰는 고정 상태. */
 internal object KeyEntrySamples {
     val empty = KeyEntryUiState()
     val ready = KeyEntryUiState(selectedProvider = KeyProvider.Gemini, key = "test-key")
     val checking = ready.copy(checking = true)
+    val saved = ready.copy(saved = true)
     val invalid = ready.copy(error = DomainError.InvalidKey)
     val retryable = ready.copy(error = DomainError.Unavailable)
 }

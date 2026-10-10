@@ -3,6 +3,7 @@
     <string name="home_title">홈</string>
     <string name="home_start_exam">모의시험 시작</string>
     <string name="home_resume_exam">이어 보기</string>
+    <string name="home_resume_progress">%1$d문항 중 %2$d문항을 마쳤습니다</string>
     <string name="home_practice">한 문항 풀기</string>
     <string name="home_past_sessions">지난 회차</string>
     <string name="home_past_sessions_empty">아직 지난 회차가 없습니다. 모의시험을 마치면 여기에 쌓입니다.</string>

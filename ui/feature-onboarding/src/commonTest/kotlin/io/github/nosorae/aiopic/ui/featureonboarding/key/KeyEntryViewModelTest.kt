@@ -118,6 +118,19 @@ class KeyEntryViewModelTest {
     }
 
     @Test
+    fun `키가 확인되면 이동을 처리한 뒤에도 확인 표시를 두고 다시 보낼 수 없다`() = runTest(dispatcher) {
+        val viewModel = viewModel(provider = KeyProvider.Gemini)
+        viewModel.onIntent(KeyEntryIntent.ChangeKey("good-key"))
+        viewModel.onIntent(KeyEntryIntent.SubmitKey)
+        advanceUntilIdle()
+
+        viewModel.onIntent(KeyEntryIntent.NavigationHandled)
+
+        assertTrue(viewModel.uiState.value.saved)
+        assertFalse(viewModel.uiState.value.canSubmit)
+    }
+
+    @Test
     fun `키를 고치면 앞의 오류 문구가 사라진다`() = runTest(dispatcher) {
         val viewModel = viewModel(provider = KeyProvider.Gemini)
         viewModel.onIntent(KeyEntryIntent.ChangeKey("bad-key"))

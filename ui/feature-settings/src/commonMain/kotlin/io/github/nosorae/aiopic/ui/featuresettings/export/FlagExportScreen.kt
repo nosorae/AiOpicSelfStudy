@@ -2,13 +2,16 @@ package io.github.nosorae.aiopic.ui.featuresettings.export
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -18,6 +21,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.ui.design.MontageButton
+import io.github.nosorae.aiopic.ui.design.MontageCheckMark
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTheme
@@ -79,12 +83,16 @@ fun FlagExportScreen(state: FlagExportUiState, onIntent: (FlagExportIntent) -> U
                 color = colors.foregroundNeutralSecondary,
             )
             if (state.copied) {
-                Text(
-                    text = stringResource(Res.string.export_copied),
-                    style = typography.body1Reading.regular,
-                    color = colors.foregroundNeutralPrimary,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                )
+                // 복사는 바로 끝나서 기다림 표시 없이 끝났다는 체크만 그린다.
+                Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4), verticalAlignment = Alignment.CenterVertically) {
+                    MontageCheckMark(Modifier.size(MontageSpacing.spacing40))
+                    Text(
+                        text = stringResource(Res.string.export_copied),
+                        style = typography.body1Reading.regular,
+                        color = colors.foregroundNeutralPrimary,
+                        modifier = Modifier.weight(1f).semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
             }
         }
     }
@@ -93,11 +101,12 @@ fun FlagExportScreen(state: FlagExportUiState, onIntent: (FlagExportIntent) -> U
 /** 미리보기와 스크린샷 테스트가 같이 쓰는 고정 상태. */
 internal object FlagExportSamples {
     val flagged = FlagExportUiState(loading = false, count = 3, json = "[]")
+    val copied = flagged.copy(copied = true)
     val empty = FlagExportUiState(loading = false)
 }
 
 @Preview
 @Composable
 private fun FlagExportScreenPreview() {
-    MontageTheme { FlagExportScreen(state = FlagExportSamples.flagged.copy(copied = true), onIntent = {}) }
+    MontageTheme { FlagExportScreen(state = FlagExportSamples.copied, onIntent = {}) }
 }
