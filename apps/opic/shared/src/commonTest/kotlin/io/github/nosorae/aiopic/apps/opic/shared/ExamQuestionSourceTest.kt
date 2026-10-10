@@ -225,6 +225,9 @@ class ExamQuestionSourceTest {
             val tails = prompts.filter { "8. description" in it }
             assertEquals(setOf("easier", "same", "harder"), tails.map { it.split(" | ")[2] }.toSet(), "선택지마다 하나씩")
             assertTrue(tails.all { "2. description, ${topics[0]}" in it }, "앞에서 낸 질문을 함께 보낸다: ${tails.first()}")
+            exam.answerUntil(9)
+            assertEquals("generated ${choice.name.lowercase()} 9", exam.play())
+            assertEquals(4, prompts.size, "받은 뒤에는 다시 요청하지 않는다")
             viewModels.forEach(ViewModelStore::clear)
         }
     }

@@ -83,13 +83,14 @@ class StoreExamRepository(
         if (position < saved.size) return ExamQuestion(saved[position])
         var fellBack = false
         for (part in parts.filter { it.first >= saved.size && it.first <= position }) {
-            val request = if (part.first == 0) null else requests.remove(key(session, part)) ?: request(session, order, part, saved)
+            val request = if (part.first == 0) null else requests.getOrPut(key(session, part)) { request(session, order, part, saved) }
+            // 받은 뒤에 지운다. 기다리다 Play 가 취소돼도(나가기) 다음 Play 가 같은 요청을 이어 기다린다.
+            val generated = request?.await()
             // 재조정 뒤 몫이면 고르지 않은 선택지의 요청을 버린다.
             requests.filterKeys { it.startsWith("${session.id}/${part.first}/") }.forEach { (key, other) ->
                 other.cancel()
                 requests.remove(key)
             }
-            val generated = request?.await()
             val picked = pickQuestions(order, session.surveyTopics, pool(), maxOutsideTopics, Random(session.id.hashCode()), part) { generated } ?: return null
             fellBack = request != null && picked != generated
             saved = saved + picked
@@ -102,7 +103,7 @@ class StoreExamRepository(
     private fun prefetch(session: ExamSession, order: List<QuestionType>, parts: List<IntRange>, position: Int, saved: List<Question>) {
         val next = parts.getOrNull(1)?.takeIf { position >= BUILT_IN_LAST && saved.size <= it.first }
         next?.let { requests.getOrPut(key(session, it)) { request(session, order, it, saved) } }
-        val last = parts.getOrNull(2)?.takeIf { position >= it.first - 2 && saved.size >= parts[1].last + 1 } ?: return
+        val last = parts.getOrNull(2)?.takeIf { position >= it.first - 2 && saved.size in parts[1].last + 1..it.first } ?: return
         Recalibration.entries.forEach { choice ->
             val chosen = session.copy(recalibration = choice)
             requests.getOrPut(key(chosen, last)) { request(chosen, order, last, saved) }
