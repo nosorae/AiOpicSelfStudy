@@ -24,7 +24,14 @@ TEST_GLOBS = [
 ]
 
 # 첫 버전 범위 밖이거나 앱 코드로 확인할 대상이 아닌 번호와 그 이유.
-EXEMPT = {}
+EXEMPT = {
+    "F8.4": "작업 절차라 테스트 대신 문서로 확인한다 (docs/error-analysis.md 사례 표에 날짜로 시작하는 줄)",
+}
+
+# 예외로 둔 번호도 문서 쪽 근거가 있어야 한다. 근거가 없으면 테스트 없음으로 센다.
+DOC_CHECKS = {
+    "F8.4": lambda: re.search(r"^\| 20\d\d-", (ROOT / "docs/error-analysis.md").read_text(encoding="utf-8"), re.MULTILINE),
+}
 
 # 테스트 이름에는 점을 못 쓰는 플랫폼이 있어 F5_2 처럼 밑줄로도 적는다.
 ID = re.compile(r"F(\d+)[._](\d+)(?!\d)")
@@ -47,12 +54,13 @@ def tested_ids():
 def main():
     ids = spec_ids()
     tested = tested_ids()
-    missing = [i for i in ids if i not in tested and i not in EXEMPT]
-    for i, why in EXEMPT.items():
+    exempt = {i: why for i, why in EXEMPT.items() if i not in DOC_CHECKS or DOC_CHECKS[i]()}
+    missing = [i for i in ids if i not in tested and i not in exempt]
+    for i, why in exempt.items():
         print(f"예외 {i}: {why}")
     for i in missing:
         print(f"테스트 없음 {i}")
-    print(f"요구사항 {len(ids)}개, 테스트 있음 {len(ids) - len(missing) - len(EXEMPT)}개, 예외 {len(EXEMPT)}개, 없음 {len(missing)}개")
+    print(f"요구사항 {len(ids)}개, 테스트 있음 {len(ids) - len(missing) - len(exempt)}개, 예외 {len(exempt)}개, 없음 {len(missing)}개")
     return 1 if missing else 0
 
 
