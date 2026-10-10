@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -31,6 +33,9 @@ import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.libs.haptics.api.Haptics
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -232,6 +237,140 @@ class MotionTest {
     @Test fun playButtonPlaying() = assertKeepsMoving { MontagePlayButton(text = "Play", busy = true, onClick = {}) }
 
     @Test fun playButtonPlaying_reduceMotion() = assertStill { MontagePlayButton(text = "Play", busy = true, onClick = {}) }
+
+    /** 한 번 터지는 축하: 0.4초 지점은 첫 프레임(빈 영역)과도 끝(다 사라짐)과도 다르다. 0.4초 장면을 기준 이미지로 남긴다. */
+    private fun assertBursts(size: MontageCelebrationSize) {
+        show { MontageCelebration(size, Modifier.size(148.dp)) }
+        val first = frame()
+        rule.mainClock.advanceTimeBy(400)
+        val moving = frame()
+        rule.onRoot().captureRoboImage()
+        settle()
+
+        assertFalse("터지지 않는다", moving.sameAs(first))
+        assertTrue("다 끝났는데 조각이 남는다", frame().sameAs(first))
+    }
+
+    @Test fun celebrationLarge() = assertBursts(MontageCelebrationSize.Large)
+
+    @Test fun celebrationSmall() = assertBursts(MontageCelebrationSize.Small)
+
+    /** 동작 줄이기면 축하는 끝 장면(빈 영역) 그대로다. 라이트, 다크 배경 두 색 말고는 아무것도 그려지지 않는다. */
+    private fun assertCelebrationEmpty(size: MontageCelebrationSize) {
+        assertStill { MontageCelebration(size, Modifier.size(148.dp)) }
+        val shot = frame()
+        val pixels = IntArray(shot.width * shot.height).also { shot.getPixels(it, 0, shot.width, 0, 0, shot.width, shot.height) }
+        assertEquals("동작 줄이기인데 조각이 남는다", 2, pixels.toSet().size)
+    }
+
+    @Test fun celebrationLarge_reduceMotion() = assertCelebrationEmpty(MontageCelebrationSize.Large)
+
+    @Test fun celebrationSmall_reduceMotion() = assertCelebrationEmpty(MontageCelebrationSize.Small)
+
+    @Test
+    fun `큰 축하는 축하 진동, 작은 축하는 성공 진동을 한 번 내고 같은 키로 다시 그려도 내지 않는다`() {
+        val played = mutableListOf<HapticEffect>()
+        var visible by mutableStateOf(true)
+        rule.mainClock.autoAdvance = false
+        rule.setContent {
+            MontageTheme {
+                CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) {
+                    if (visible) {
+                        MontageCelebration(MontageCelebrationSize.Large, Modifier.size(148.dp), playOnceKey = "grade:s1")
+                        MontageCelebration(MontageCelebrationSize.Small, Modifier.size(48.dp))
+                    }
+                }
+            }
+        }
+        settle()
+        change { visible = false }
+        rule.mainClock.advanceTimeByFrame()
+        change { visible = true }
+        settle()
+
+        assertEquals(listOf(HapticEffect.Celebrate, HapticEffect.Success, HapticEffect.Success), played)
+    }
+
+    @Test
+    fun `동작 줄이기여도 축하 진동은 낸다`() {
+        val played = mutableListOf<HapticEffect>()
+        rule.mainClock.autoAdvance = false
+        rule.setContent {
+            MontageTheme(reduceMotion = true) {
+                CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) { MontageCelebration(MontageCelebrationSize.Large, Modifier.size(148.dp)) }
+            }
+        }
+        settle()
+
+        assertEquals(listOf(HapticEffect.Celebrate), played)
+    }
+
+    /** 꺼진 버튼이 켜지면 한 번 살짝 튄다. 0.1초 지점이 끝과 다르다. */
+    @Test
+    fun buttonPopsWhenEnabled() = assertEnables(reduceMotion = false) { start, moving, end ->
+        assertFalse("켜졌는데 그대로다", moving.sameAs(start))
+        assertFalse("튀지 않고 바로 끝이다", moving.sameAs(end))
+    }
+
+    @Test
+    fun buttonPopsWhenEnabled_reduceMotion() = assertEnables(reduceMotion = true) { _, moving, end ->
+        assertTrue("동작 줄이기인데 튄다", moving.sameAs(end))
+    }
+
+    private fun assertEnables(reduceMotion: Boolean, check: (Bitmap, Bitmap, Bitmap) -> Unit) {
+        var enabled by mutableStateOf(false)
+        show(reduceMotion) { MontageButton("다음", onClick = {}, enabled = enabled, modifier = Modifier.fillMaxWidth()) }
+        val start = frame()
+        change { enabled = true }
+        rule.mainClock.advanceTimeBy(100)
+        val moving = frame()
+        settle()
+        check(start, moving, frame())
+    }
+
+    /** 틀림으로 표시하면 제목 위에 주홍 줄이 왼쪽부터 그어진다. 끝 장면을 기준 이미지로 남긴다. */
+    @Test
+    fun strike() = assertStrikes(reduceMotion = false) { start, moving, end ->
+        assertFalse("표시했는데 그대로다", moving.sameAs(start))
+        assertFalse("줄이 그어지지 않고 바로 끝이다", moving.sameAs(end))
+        rule.onRoot().captureRoboImage()
+    }
+
+    @Test
+    fun strike_reduceMotion() = assertStrikes(reduceMotion = true) { _, moving, end ->
+        assertTrue("동작 줄이기인데 줄이 그어진다", moving.sameAs(end))
+    }
+
+    private fun assertStrikes(reduceMotion: Boolean, check: (Bitmap, Bitmap, Bitmap) -> Unit) {
+        var struck by mutableStateOf(false)
+        show(reduceMotion) { MontageListCell(title = "I went to the park yesterday with my friends.", struck = struck) }
+        assertChange({ struck = true }, check)
+    }
+
+    /** 목록에 새로 들어온 줄만 짧게 나타나고 아래 줄은 미끄러져 내려간다. 처음 있던 줄은 등장하지 않는다. */
+    @Test
+    fun listItemAppears() = assertListItems(reduceMotion = false) { start, moving, end ->
+        assertFalse("새 줄이 들어왔는데 그대로다", moving.sameAs(start))
+        assertFalse("새 줄이 움직이지 않고 바로 끝이다", moving.sameAs(end))
+    }
+
+    @Test
+    fun listItemAppears_reduceMotion() = assertListItems(reduceMotion = true) { _, moving, end ->
+        assertTrue("동작 줄이기인데 새 줄이 움직인다", moving.sameAs(end))
+    }
+
+    private fun assertListItems(reduceMotion: Boolean, check: (Bitmap, Bitmap, Bitmap) -> Unit) {
+        var rows by mutableStateOf(listOf("2회차", "1회차"))
+        show(reduceMotion) {
+            LazyColumn(Modifier.height(180.dp)) {
+                items(rows, key = { it }) { MontageListCell(title = it, modifier = montageItemMotion()) }
+            }
+        }
+        val first = frame()
+        settle()
+        assertTrue("처음 있던 줄이 등장한다", first.sameAs(frame()))
+        assertChange({ rows = listOf("3회차") + rows }, check)
+    }
 
     /** 듣기에서 답하기로 넘어간다. 피드백 단계까지 셋을 보인다. */
     private fun assertNextAnswerStep(reduceMotion: Boolean, check: (Bitmap, Bitmap, Bitmap) -> Unit) {

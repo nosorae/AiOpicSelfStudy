@@ -1,11 +1,16 @@
 package io.github.nosorae.aiopic.ui.featuresettings.export
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.libs.haptics.api.Haptics
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -13,7 +18,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** 복사한 뒤의 체크는 동작 줄이기면 첫 프레임부터 다 그려져 있고 움직이지 않는다. */
+/** 복사한 뒤의 체크는 동작 줄이기면 첫 프레임부터 다 그려져 있고 움직이지 않는다. 체크가 보이면 성공 진동을 낸다. */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
@@ -40,5 +45,17 @@ class FlagExportScreenTest {
         rule.mainClock.advanceTimeBy(2_000)
 
         assertTrue(!first.sameAs(rule.onRoot().captureToImage().asAndroidBitmap()))
+    }
+
+    @Test
+    fun `복사하면 체크와 함께 성공 진동을 낸다`() {
+        val played = mutableListOf<HapticEffect>()
+        rule.setContent {
+            MontageTheme { CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) { FlagExportScreen(state = FlagExportSamples.copied, onIntent = {}) } }
+        }
+
+        rule.waitForIdle()
+
+        assertEquals(listOf(HapticEffect.Success), played)
     }
 }

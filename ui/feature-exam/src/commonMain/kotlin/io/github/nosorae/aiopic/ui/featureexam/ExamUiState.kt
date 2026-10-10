@@ -41,6 +41,8 @@ data class ExamUiState(
     /** 누른 버튼(다음, Next, 나가기)의 저장이 도는 중이다. 끝날 때까지 그 버튼은 진행 표시를 보이고 다른 입력은 받지 않는다. */
     val saving: Boolean = false,
     val navigation: ExamDestination? = null,
+    /** 마지막 문항까지 답하고 끝났다. 시간이 다 돼 끝난 것과 가른다. 끝 축하는 이때만 보인다. */
+    val answeredAll: Boolean = false,
 ) {
     val canSubmitSurvey: Boolean get() = step is ExamStep.Survey && survey?.canSubmit == true
     val canReplay: Boolean get() = phase == QuestionPhase.Recording && !replayUsed && recorded < ReplayWindow && !saving

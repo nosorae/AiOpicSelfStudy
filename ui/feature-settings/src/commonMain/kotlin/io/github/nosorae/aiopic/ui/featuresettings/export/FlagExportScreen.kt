@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,6 +21,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageCheckMark
 import io.github.nosorae.aiopic.ui.design.MontageScreen
@@ -83,7 +86,9 @@ fun FlagExportScreen(state: FlagExportUiState, onIntent: (FlagExportIntent) -> U
                 color = colors.foregroundNeutralSecondary,
             )
             if (state.copied) {
-                // 복사는 바로 끝나서 기다림 표시 없이 끝났다는 체크만 그린다.
+                // 복사는 바로 끝나서 기다림 표시 없이 끝났다는 체크만 그리고, 체크가 보일 때 성공 진동을 낸다.
+                val haptics = LocalHaptics.current
+                LaunchedEffect(Unit) { haptics.play(HapticEffect.Success) }
                 Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4), verticalAlignment = Alignment.CenterVertically) {
                     MontageCheckMark(Modifier.size(MontageSpacing.spacing40))
                     Text(

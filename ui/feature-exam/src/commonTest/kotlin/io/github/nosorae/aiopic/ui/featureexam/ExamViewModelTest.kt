@@ -496,6 +496,30 @@ class ExamViewModelTest {
     }
 
     @Test
+    fun `마지막 문항까지 답하고 끝나면 다 답했다고 표시해 끝 축하를 보이게 한다`() = runTest(dispatcher) {
+        repository.sessions["s1"] = ExamSession(id = "s1", stepIndex = 6, level = 3, remaining = 10.minutes)
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+
+        advance(10.seconds)
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+
+        assertTrue(viewModel.uiState.value.answeredAll)
+    }
+
+    @Test
+    fun `시간이 다 돼 끝나면 다 답했다고 표시하지 않는다`() = runTest(dispatcher) {
+        repository.sessions["s1"] = ExamSession(id = "s1", stepIndex = 3, level = 3, remaining = 20.seconds)
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+
+        advance(17.seconds)
+
+        assertFalse(viewModel.uiState.value.answeredAll)
+    }
+
+    @Test
     fun `F3_3 다시 켜면 같은 문항에서 이어 녹음하고 다시 듣기를 안 썼으면 질문을 한 번 더 듣는다`() = runTest(dispatcher) {
         atFirstQuestion()
         recorder.start("rec/s1/3")

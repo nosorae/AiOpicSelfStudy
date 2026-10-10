@@ -31,7 +31,7 @@ import kotlin.time.Duration.Companion.seconds
  */
 @AssistedInject
 class ExamViewModel(
-    @Assisted private val sessionId: String,
+    @Assisted val sessionId: String,
     private val loadExamUseCase: LoadExamUseCase,
     private val applyExamEventUseCase: ApplyExamEventUseCase,
     private val playQuestionUseCase: PlayQuestionUseCase,
@@ -238,7 +238,7 @@ class ExamViewModel(
         }
         if (next.status != ExamStatus.InProgress) {
             stopAll()
-            _uiState.update { it.copy(navigation = ExamDestination.Finished) }
+            _uiState.update { it.copy(navigation = ExamDestination.Finished, answeredAll = next.status == ExamStatus.Finished) }
         } else if (next.remaining != null) {
             startClock(restart = false)
         }

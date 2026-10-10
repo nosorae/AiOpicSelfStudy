@@ -2,16 +2,20 @@ package io.github.nosorae.aiopic.ui.featurereport
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -20,6 +24,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
+import io.github.nosorae.aiopic.ui.design.MontageCelebration
+import io.github.nosorae.aiopic.ui.design.MontageCelebrationSize
 import io.github.nosorae.aiopic.ui.design.MontageGatheringDots
 import io.github.nosorae.aiopic.ui.design.MontageGradeScale
 import io.github.nosorae.aiopic.ui.design.MontageListCell
@@ -45,6 +51,7 @@ fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerI
  * 등급 범위와 근거, 무너진 문항, 답변 목록 순으로 그린다(F7.2). 시간이 다 된 회차는 답하지 못한 문항을 끝에 "시간 부족"으로 붙인다.
  * 이 화면의 움직임은 하나다. 등급이 나왔으면 등급 눈금의 구슬, 분석을 기다리는 중이면 분석한 답변 수만큼 차는 진행 점,
  * 분석은 다 끝나고 등급만 기다리면 모이는 점이다. 등급 구슬은 회차와 등급마다 한 번만 움직인다.
+ * 보는 중에 등급이 나오면 구슬이 멈춘 뒤 큰 축하가 한 번 터진다.
  */
 @Composable
 fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, modifier: Modifier = Modifier) {
@@ -87,18 +94,30 @@ private fun GradeHeader(report: SessionReport) {
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
     val scale = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8)
+    // 이 화면을 보는 동안 등급이 나왔을 때만 축하한다. 이미 등급이 나온 회차를 다시 여는 것은 상태가 바뀐 게 아니다.
+    val waited = rememberSaveable { grade == null }
     Column {
         SectionTitle(stringResource(Res.string.session_grade))
         val names = report.names.grades
         when {
-            grade != null && grade.low in names && grade.high in names -> MontageGradeScale(
-                names,
-                names.indexOf(grade.low),
-                names.indexOf(grade.high),
-                description = grade.range,
-                modifier = scale,
-                playOnceKey = "session-grade:${report.session.id}:${grade.range}",
-            )
+            grade != null && grade.low in names && grade.high in names -> Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                MontageGradeScale(
+                    names,
+                    names.indexOf(grade.low),
+                    names.indexOf(grade.high),
+                    description = grade.range,
+                    modifier = scale,
+                    playOnceKey = "session-grade:${report.session.id}:${grade.range}",
+                )
+                if (waited) {
+                    MontageCelebration(
+                        MontageCelebrationSize.Large,
+                        Modifier.matchParentSize().wrapContentSize(unbounded = true).requiredSize(CELEBRATION_SIZE),
+                        playOnceKey = "session-grade-celebration:${report.session.id}",
+                        delayMillis = GRADE_SETTLE_MILLIS,
+                    )
+                }
+            }
 
             report.grading -> MontageGatheringDots(stringResource(Res.string.session_grade_grading), scale)
 
@@ -163,3 +182,8 @@ private fun AnswerRow(number: Int, answer: Answer, names: ReportNames, broke: Bo
 private fun SessionReportScreenPreview() {
     MontageTheme { SessionReportScreen(state = ReportSamples.mixedModels, onOpenAnswer = {}) }
 }
+
+/** 등급 구슬이 스프링으로 미끄러져 멈추는 데 걸리는 시간. 축하는 그 뒤에 터진다. */
+private const val GRADE_SETTLE_MILLIS = 1_000
+
+private val CELEBRATION_SIZE = 280.dp

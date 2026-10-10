@@ -1,9 +1,13 @@
 package io.github.nosorae.aiopic.ui.design
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,12 +21,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -54,6 +63,8 @@ enum class MontageButtonSize(
  * Montage 버튼. 모양은 Montage 값을 따르고, 눈에 보이는 높이가 48dp 보다 작아도 눌리는 영역은 48dp 로 넓힌다.
  * [loading] 이면 글자 대신 진행 표시를 보이고 누를 수 없다. 글자는 투명하게 남겨 버튼 크기가 바뀌지 않게 한다.
  * [fill] 을 주면 배경 위에 왼쪽부터 그 비율(0~1)만큼 옅은 강조색을 채운다. 버튼이 켜지기까지 남은 시간을 보일 때 쓰고, 그리는 단계에서만 읽는다.
+ * 누르는 동안 살짝 줄어 눌린 것이 손가락 밑에서도 보인다. 꺼져 있던 버튼이 켜지면 한 번 살짝 튀어 이제 누를 수 있다는 것이 보인다.
+ * 처음 그릴 때 이미 켜져 있으면 튀지 않는다. 동작 줄이기면 둘 다 없다.
  */
 @Composable
 fun MontageButton(
@@ -79,6 +90,9 @@ fun MontageButton(
         else -> colors.surfaceBrandPrimary
     }
     val isText = variant == MontageButtonVariant.Text
+    val interaction = remember { MutableInteractionSource() }
+    val press = rememberPressScale(interaction)
+    val pop = rememberEnablePop(enabled)
     val shape = RoundedCornerShape(
         when (size) {
             MontageButtonSize.Large -> if (isText) MontageRadius.radius10 else MontageRadius.radius14
@@ -96,6 +110,10 @@ fun MontageButton(
     Row(
         modifier = modifier
             .minimumInteractiveComponentSize()
+            .graphicsLayer {
+                scaleX = press.value * pop.value
+                scaleY = scaleX
+            }
             .clip(shape)
             .background(background)
             .then(
@@ -119,7 +137,7 @@ fun MontageButton(
             .clickable(
                 enabled = enabled && !loading,
                 role = Role.Button,
-                interactionSource = null,
+                interactionSource = interaction,
                 indication = ripple(color = content),
                 onClick = onClick,
             )
@@ -149,6 +167,33 @@ fun MontageButton(
         }
     }
 }
+
+/** 누르는 동안 0.96 으로 줄었다가 떼면 돌아오는 크기. 그리는 단계에서 읽는다. 버튼과 칩이 같이 쓴다. */
+@Composable
+internal fun rememberPressScale(interaction: MutableInteractionSource): State<Float> {
+    val pressed by interaction.collectIsPressedAsState()
+    return animateFloatAsState(if (pressed && !MontageMotion.reduceMotion) PRESSED_SCALE else 1f, MontageMotion.spec(MontageMotion.SHORT_MILLIS), label = "press")
+}
+
+/** 꺼졌다 켜지는 순간 작게 줄었다가 스프링으로 한 번 지나쳐 제 크기로 돌아온다. */
+@Composable
+private fun rememberEnablePop(enabled: Boolean): State<Float> {
+    val reduceMotion = MontageMotion.reduceMotion
+    val spec = MontageMotion.settle<Float>()
+    val pop = remember { Animatable(1f) }
+    val wasEnabled = remember { booleanArrayOf(enabled) }
+    LaunchedEffect(enabled) {
+        if (enabled && !wasEnabled[0] && !reduceMotion) {
+            pop.snapTo(POP_FROM)
+            pop.animateTo(1f, spec)
+        }
+        wasEnabled[0] = enabled
+    }
+    return pop.asState()
+}
+
+private const val PRESSED_SCALE = 0.96f
+private const val POP_FROM = 0.92f
 
 @Composable
 private fun buttonContentColor(variant: MontageButtonVariant, type: MontageButtonType, enabled: Boolean): Color {
