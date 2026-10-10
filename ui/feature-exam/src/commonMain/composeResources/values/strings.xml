@@ -6,9 +6,11 @@
     <string name="survey_previous">이전</string>
     <string name="survey_next">다음</string>
     <string name="survey_save">저장하기</string>
-    <string name="survey_group_help">%1$d개 이상 고르세요. 고른 주제로 질문이 나와요.</string>
-    <string name="survey_group_count">이 묶음에서 %1$d개 고름</string>
-    <string name="survey_total_suffix">개 고름, 모두 합쳐 %1$d개 이상이어야 해요</string>
+    <string name="survey_group_help">고른 주제로 질문이 나와요.</string>
+    <string name="survey_need_group">이 묶음 %1$d개 이상</string>
+    <string name="survey_need_total">전체 %1$d개 이상</string>
+    <string name="survey_need_now">지금</string>
+    <string name="survey_need_unit">개</string>
     <string name="survey_total_short">이전을 눌러 앞 묶음에서 더 고를 수 있어요.</string>
     <string name="exam_level_title">난이도 고르기</string>
     <string name="exam_level_description">다음을 누르면 바꿀 수 없습니다.</string>

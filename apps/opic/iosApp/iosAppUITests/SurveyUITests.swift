@@ -29,6 +29,7 @@ final class SurveyUITests: XCTestCase {
         app.tabBars.buttons["설정"].tap()
         app.tapTag("settings-survey")
         for option in ["work-3", "student-1", "course-last-3", "housing-0"] { app.tapTag("survey-option-\(option)") }
+        XCTAssertTrue(waitUntil(5) { self.app.tag("survey-total").label == "12" }, "첫 묶음 화면에 전체 선택 수가 보이지 않는다")
         shot("3-묶음")
         for _ in 0..<3 { app.tapTag("survey-next") }
         XCTAssertTrue(waitUntil(5) { self.app.tag("survey-total").label == "12" }, "저장한 주제 12개가 채워져 있지 않다")

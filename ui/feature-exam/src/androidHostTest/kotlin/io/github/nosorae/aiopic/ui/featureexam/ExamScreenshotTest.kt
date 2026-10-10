@@ -53,6 +53,8 @@ class ExamScreenshotTest {
 
     @Test fun survey_dark() = shot(ExamSamples.survey, dark = true)
 
+    @Test fun surveyGroup_dark() = shot(ExamSamples.surveyGroup, dark = true)
+
     @Test fun surveyReady_dark() = shot(ExamSamples.surveyReady, dark = true)
 
     @Test fun questionReplayable_dark() = shot(ExamSamples.questionReplayable, dark = true)
@@ -60,6 +62,10 @@ class ExamScreenshotTest {
     @Config(fontScale = 2f)
     @Test
     fun survey_fontScale200() = shot(ExamSamples.survey)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun surveyGroup_fontScale200() = shot(ExamSamples.surveyGroup)
 
     @Config(fontScale = 2f)
     @Test
