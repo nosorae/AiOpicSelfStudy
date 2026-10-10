@@ -21,6 +21,8 @@ import org.robolectric.annotation.GraphicsMode
 class ExamLoadingScreenshotTest {
     @get:Rule val rule = createComposeRule()
 
+    @Test fun questionSpeaking() = still(ExamSamples.questionSpeaking)
+
     @Test fun questionLoading() = still(ExamSamples.questionLoading)
 
     @Test fun questionLoadingRecalibrated() = still(ExamSamples.questionLoadingRecalibrated)
