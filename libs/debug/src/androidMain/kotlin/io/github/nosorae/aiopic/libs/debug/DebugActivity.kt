@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,7 +22,9 @@ internal class DebugActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { DebugApp(DebugTools.core, onShare = ::share, onClose = ::finish) }
+        // 시스템 애니메이션 배율이 0 이면 동작 줄이기로 본다.
+        val reduceMotion = Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+        setContent { DebugApp(DebugTools.core, onShare = ::share, onClose = ::finish, reduceMotion = reduceMotion) }
         // 알림으로 다시 열 수 있게 처음 열 때 한 번 권한을 묻는다. 거절하면 흔들기와 앱의 메뉴로만 연다.
         if (savedInstanceState == null && Build.VERSION.SDK_INT >= 33 &&
             checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED

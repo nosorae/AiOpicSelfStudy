@@ -77,8 +77,10 @@ class DebugNetworkTest {
 
         client(core, engine).get("https://x.dev/long")
 
-        val body = core.calls.value.single().responseBody
-        assertEquals("a".repeat(90) + "***" + "b".repeat(7) + "\n(잘림: 원래 629 바이트)", body)
+        val call = core.calls.value.single()
+        assertEquals("a".repeat(90) + "***" + "b".repeat(7) + "\n(잘림: 원래 629 바이트)", call.responseBody)
+        // 목록의 크기는 자르기 전 크기다.
+        assertEquals(629, call.responseSize)
     }
 
     @Test
