@@ -32,4 +32,21 @@ class SaveKeyUseCaseTest {
 
         assertEquals("good-key", vault.get("gemini"))
     }
+
+    @Test
+    fun `마크다운에서 복사하며 딸려 온 역슬래시는 빼고 키 글자는 그대로 둔다`() {
+        assertEquals("AQ.abc-def_9", cleanKey("AQ\\.abc\\-def_9"))
+    }
+
+    @Test
+    fun `공백과 줄바꿈과 눈에 안 보이는 문자는 어디에 있든 뺀다`() {
+        assertEquals("good-key", cleanKey("\uFEFF good\u200B-\u2060key\n\t"))
+    }
+
+    @Test
+    fun `저장할 때도 정리한 키로 확인하고 저장한다`() = runTest {
+        saveKeyUseCase(KeyProvider.Gemini, "good\\-key\u200D")
+
+        assertEquals("good-key", vault.get("gemini"))
+    }
 }

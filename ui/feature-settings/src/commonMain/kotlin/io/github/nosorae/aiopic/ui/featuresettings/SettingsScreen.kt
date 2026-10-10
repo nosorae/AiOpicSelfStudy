@@ -29,6 +29,7 @@ import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.design.icon_normal_external_link
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
 import io.github.nosorae.aiopic.ui.featuresettings.key.KeyStatus
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionImportResult
@@ -36,6 +37,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.practice.rememberQuestionFile
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import io.github.nosorae.aiopic.ui.design.Res as DesignRes
 
 /**
  * ViewModel 을 관측하는 바깥 겹. 키 입력, 무료 등급 안내(동의 화면), 내보내기, 앱 정보는 단순 이동이라 화면을 등록한 쪽이 람다로 연다.
@@ -103,8 +105,20 @@ fun SettingsScreen(
             )
 
             SectionLabel(Res.string.settings_key_section)
+            val uriHandler = LocalUriHandler.current
             state.keys.forEach { key ->
                 KeyRow(key, onOpen = { onOpenKeyEntry(key.provider) }, onDelete = { onIntent(SettingsIntent.RequestKeyDeletion(key.provider)) })
+            }
+            // 키를 새로 받거나 바꿀 때 제공사의 키 발급 페이지를 시스템 브라우저로 연다(F1.1).
+            state.keys.forEach { key ->
+                MontageButton(
+                    text = stringResource(Res.string.settings_key_get, key.provider.label),
+                    onClick = { uriHandler.openUri(key.provider.keyPageUrl) },
+                    variant = MontageButtonVariant.Text,
+                    size = MontageButtonSize.Medium,
+                    leadingIcon = DesignRes.drawable.icon_normal_external_link,
+                    modifier = Modifier.padding(horizontal = MontageSpacing.spacing12),
+                )
             }
 
             SectionLabel(Res.string.settings_consent_section)
@@ -143,7 +157,6 @@ fun SettingsScreen(
                 )
             }
 
-            val uriHandler = LocalUriHandler.current
             MontageListCell(
                 title = stringResource(Res.string.settings_privacy_policy),
                 // 화면 모드 선택지로 읽히지 않게 묶음 사이 간격만큼 띄운다.
@@ -251,7 +264,7 @@ private fun QuestionImportNotice(result: QuestionImportResult) {
 private fun KeyRow(key: KeyStatus, onOpen: () -> Unit, onDelete: () -> Unit) {
     MontageListCell(
         title = key.provider.label,
-        caption = stringResource(if (key.saved) Res.string.settings_key_saved else Res.string.settings_key_missing),
+        caption = key.maskedKey?.let { stringResource(Res.string.settings_key_saved, it) } ?: stringResource(Res.string.settings_key_missing),
         chevron = !key.saved,
         onClick = onOpen,
     ) {
@@ -289,10 +302,10 @@ internal object SettingsSamples {
     val default = SettingsUiState(
         models = listOf(stable, preview),
         selectedModelId = stable.id,
-        keys = listOf(KeyStatus(KeyProvider.Gemini, saved = true)),
+        keys = listOf(KeyStatus(KeyProvider.Gemini, maskedKey = "AQ.…b1Ig")),
     )
     val previewSelected = default.copy(selectedModelId = preview.id)
-    val fellBack = default.copy(fellBackFrom = "gemini-2.0-flash", keys = listOf(KeyStatus(KeyProvider.Gemini, saved = false)))
+    val fellBack = default.copy(fellBackFrom = "gemini-2.0-flash", keys = listOf(KeyStatus(KeyProvider.Gemini, maskedKey = null)))
     val dark = default.copy(themeMode = ThemeMode.Dark)
 
     /** 동의를 철회했고, 타이머를 켰고, 불러온 파일이 있는데 방금 고른 파일은 틀렸다. */

@@ -9,6 +9,7 @@ import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.VoiceConsent
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
 import io.github.nosorae.aiopic.ui.featuresettings.key.KeyStatus
+import io.github.nosorae.aiopic.ui.featuresettings.key.maskKey
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
@@ -48,7 +49,7 @@ class LoadSettingsUseCase(
             models = modelCatalog.models,
             selectedModelId = choice.model.id,
             fellBackFrom = choice.fellBackFrom ?: modelSelectionStore.takeFellBackFrom(),
-            keys = KeyProvider.entries.map { KeyStatus(it, saved = keyVault.get(it.id) != null) },
+            keys = KeyProvider.entries.map { KeyStatus(it, maskedKey = keyVault.get(it.id)?.let(::maskKey)) },
             themeMode = themeModeStore.themeMode.value,
             consentGiven = voiceConsent.isGiven(),
             answerTimerOn = answerTimerStore.answerTimerOn(),

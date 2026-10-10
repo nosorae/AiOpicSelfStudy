@@ -89,12 +89,12 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `F1_2 제공사마다 키가 저장돼 있는지 보인다`() = runTest(dispatcher) {
-        vault.keys[KeyProvider.Gemini.id] = "test-key"
+    fun `F1_2 제공사마다 저장된 키를 앞 3자와 끝 4자만 보인다`() = runTest(dispatcher) {
+        vault.keys[KeyProvider.Gemini.id] = "AQ.fake-test-b1Ig"
 
         val state = loaded().uiState.value
 
-        assertEquals(listOf(KeyStatus(KeyProvider.Gemini, saved = true)), state.keys)
+        assertEquals(listOf(KeyStatus(KeyProvider.Gemini, maskedKey = "AQ.…b1Ig")), state.keys)
     }
 
     @Test
@@ -108,7 +108,7 @@ class SettingsViewModelTest {
         viewModel.send(SettingsIntent.DeleteKey)
 
         assertEquals(mapOf("other" to "other-key"), vault.keys)
-        assertEquals(listOf(KeyStatus(KeyProvider.Gemini, saved = false)), viewModel.uiState.value.keys)
+        assertEquals(listOf(KeyStatus(KeyProvider.Gemini, maskedKey = null)), viewModel.uiState.value.keys)
         assertNull(viewModel.uiState.value.deletingKey)
     }
 

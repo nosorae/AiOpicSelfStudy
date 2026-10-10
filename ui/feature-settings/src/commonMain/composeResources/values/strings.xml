@@ -11,7 +11,8 @@
     <string name="settings_model_fell_back">고른 모델(%1$s)을 더 쓸 수 없어서 기본 모델인 %2$s 로 바꿨습니다.</string>
     <string name="settings_free_tier_link">무료 등급 안내 보기</string>
     <string name="settings_key_section">API 키</string>
-    <string name="settings_key_saved">저장됨. 눌러서 바꾸기</string>
+    <string name="settings_key_saved">%1$s 저장됨. 눌러서 바꾸기</string>
+    <string name="settings_key_get">%1$s 키 받기</string>
     <string name="settings_key_missing">없음. 눌러서 넣기</string>
     <string name="settings_key_delete">지우기</string>
     <string name="settings_key_delete_title">%1$s 키를 지울까요?</string>
