@@ -15,11 +15,8 @@ val NextDelay = 10.seconds
 data class ExamUiState(
     /** 지금 단계. 회차를 읽기 전에는 null 이다. */
     val step: ExamStep? = null,
-    val surveyParts: List<SurveyPart> = emptyList(),
-    /** Part 위치마다 고른 답의 위치. */
-    val surveyAnswers: Map<Int, Int> = emptyMap(),
-    val topics: List<String> = emptyList(),
-    val selectedTopics: Set<String> = emptySet(),
+    /** 서베이 단계의 화면 상태. 회차를 읽기 전에는 null 이다. */
+    val survey: SurveyState? = null,
     val levelCount: Int = 0,
     val selectedLevel: Int? = null,
     val selectedRecalibration: Recalibration? = null,
@@ -41,7 +38,7 @@ data class ExamUiState(
     val saving: Boolean = false,
     val navigation: ExamDestination? = null,
 ) {
-    val canSubmitSurvey: Boolean get() = (step as? ExamStep.Survey)?.let { selectedTopics.size >= it.minTopics } ?: false
+    val canSubmitSurvey: Boolean get() = step is ExamStep.Survey && survey?.canSubmit == true
     val canReplay: Boolean get() = phase == QuestionPhase.Recording && !replayUsed && recorded < ReplayWindow && !saving
     val canNext: Boolean get() = phase == QuestionPhase.Recording && recorded >= NextDelay
 }
@@ -93,10 +90,16 @@ enum class ExamDestination {
 }
 
 sealed interface ExamIntent {
-    data class SelectSurveyAnswer(val part: Int, val option: Int) : ExamIntent
+    /** 지금 서베이 질문에서 [option] 보기를 골랐다. 바로 다음 화면으로 간다. */
+    data class ChooseSurveyOption(val option: String) : ExamIntent
 
     data class ToggleTopic(val topic: String) : ExamIntent
 
+    data object NextSurveyScreen : ExamIntent
+
+    data object PreviousSurveyScreen : ExamIntent
+
+    /** 서베이를 낸다. 묶음 최소와 전체 최소를 채웠을 때만 된다(F2.2). */
     data object SubmitSurvey : ExamIntent
 
     data class SelectLevel(val level: Int) : ExamIntent

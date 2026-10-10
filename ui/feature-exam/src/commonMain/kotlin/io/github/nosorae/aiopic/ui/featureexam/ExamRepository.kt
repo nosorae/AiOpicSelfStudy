@@ -13,9 +13,6 @@ interface ExamRepository {
 
     suspend fun save(session: ExamSession)
 
-    /** 가장 최근 회차의 서베이 선택. 새 회차의 서베이를 미리 채운다(F2.2). 없으면 빈 목록이다. */
-    suspend fun lastSurveyTopics(): List<String>
-
     /**
      * 회차의 지금 단계(연습 문항 또는 채점 문항)에 낼 질문. 같은 단계에는 언제 불러도 같은 질문을 돌려줘야 한다.
      * 앱을 다시 켜고 이어 볼 때 다른 질문이 나오면 안 된다. 낼 질문이 없으면 null 이다.

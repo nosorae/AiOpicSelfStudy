@@ -1,10 +1,15 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.libs.haptics.api.Haptics
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -52,6 +57,40 @@ class ExamScreenTest {
         show(ExamSamples.surveySaving)
 
         assertBusyButtonIgnoresClick("다음")
+    }
+
+    @Test
+    fun `F2_2 서베이 질문은 보기를 누르면 그 보기를 고른다는 Intent 하나만 보낸다`() {
+        show(ExamSamples.survey)
+
+        rule.onNodeWithText("가르치는 일").performClick()
+
+        assertEquals(listOf<ExamIntent>(ExamIntent.ChooseSurveyOption("teacher")), intents)
+    }
+
+    @Test
+    fun `서베이 주제 칩을 누르면 선택 진동을 내고 주제를 바꾼다`() {
+        val played = mutableListOf<HapticEffect>()
+        rule.setContent {
+            CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) {
+                MontageTheme { ExamScreen(state = ExamSamples.surveyGroup, onIntent = { intents += it }) }
+            }
+        }
+
+        rule.onNodeWithText("캠핑").performClick()
+
+        assertEquals(listOf(HapticEffect.Selection), played)
+        assertEquals(listOf<ExamIntent>(ExamIntent.ToggleTopic("캠핑")), intents)
+    }
+
+    @Test
+    fun `F2_2 마지막 묶음에서 전체가 12개보다 적으면 다음이 꺼져 있고 앞 묶음으로 돌아갈 수 있다`() {
+        show(ExamSamples.surveyShort)
+
+        rule.onNodeWithText("다음").assertIsNotEnabled()
+        rule.onNodeWithText("이전").performClick()
+
+        assertEquals(listOf<ExamIntent>(ExamIntent.PreviousSurveyScreen), intents)
     }
 
     @Test
