@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalUriHandler
@@ -15,6 +16,8 @@ import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +39,16 @@ class AppShellTest {
     private fun waitForExam() = rule.waitUntil(5_000) { rule.onAllNodes(hasText("관심 있는 항목을", substring = true)).fetchSemanticsNodes().isNotEmpty() }
 
     private fun pressBack() = rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }
+
+    @Test
+    fun `애니메이션 배율을 끄면 동작 줄이기로 본다`() {
+        val resolver = rule.activity.contentResolver
+        assertFalse(rule.activity.animationsOff())
+
+        Settings.Global.putFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
+
+        assertTrue(rule.activity.animationsOff())
+    }
 
     @Test
     fun `최상위 탭 화면에서는 하단 탭이 보인다`() {

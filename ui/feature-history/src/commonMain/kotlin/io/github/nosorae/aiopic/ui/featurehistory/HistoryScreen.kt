@@ -1,20 +1,27 @@
 package io.github.nosorae.aiopic.ui.featurehistory
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
+import io.github.nosorae.aiopic.ui.design.MontageGradeScale
 import io.github.nosorae.aiopic.ui.design.MontageListCell
+import io.github.nosorae.aiopic.ui.design.MontageProgressBar
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTheme
@@ -29,7 +36,8 @@ fun HistoryRoute(viewModel: HistoryViewModel, onOpenSession: (sessionId: String)
 
 /**
  * 기록 탭(S13, F7.3). 회차마다 예상 등급과 분석 모델을 저장한 순서대로 보이고, 모델이 섞인 회차는 표시한다(F5.7).
- * 아래에 문항 유형별 약점 점수를 약한 것부터 둔다. 회차를 누르면 [onOpenSession] 로 회차 리포트를 연다.
+ * 아래에 문항 유형별 약점 점수를 약한 것부터 막대와 함께 둔다. 회차를 누르면 [onOpenSession] 로 회차 리포트를 연다.
+ * 이 화면의 움직임은 하나다. 맨 위 등급 눈금에서 최근 회차 등급으로 구슬이 미끄러져 멈춘다. 약점 막대는 처음부터 그 길이다.
  */
 @Composable
 fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> Unit, modifier: Modifier = Modifier) {
@@ -40,7 +48,12 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
             state.empty -> Body(stringResource(Res.string.history_empty))
 
             else -> LazyColumn(Modifier.fillMaxWidth()) {
-                if (state.sessions.isNotEmpty()) item { SectionTitle(stringResource(Res.string.history_grades)) }
+                if (state.sessions.isNotEmpty()) {
+                    item {
+                        SectionTitle(stringResource(Res.string.history_grades))
+                        LatestGrade(state)
+                    }
+                }
                 itemsIndexed(state.sessions, key = { _, row -> row.session.id }) { index, row ->
                     val models = row.models.joinToString(", ")
                     MontageListCell(
@@ -55,7 +68,11 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
                     ) {
                         val grade = row.session.grade
                         Text(
-                            text = grade?.range ?: stringResource(Res.string.history_grade_pending),
+                            text = when {
+                                grade != null -> grade.range
+                                row.answered > 0 -> stringResource(Res.string.history_grade_waiting, row.analyzed, row.answered)
+                                else -> stringResource(Res.string.history_grade_pending)
+                            },
                             style = if (grade == null) MontageTheme.typography.label1.regular else MontageTheme.typography.headline2.bold,
                             color = if (grade == null) MontageTheme.colors.foregroundNeutralSecondary else MontageTheme.colors.foregroundNeutralStrong,
                         )
@@ -69,6 +86,7 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
                 }
                 items(state.weaknesses, key = { it.typeName }) { weakness ->
                     MontageListCell(title = weakness.typeName) {
+                        MontageProgressBar(weakness.score / 100f, Modifier.width(96.dp).height(4.dp).align(Alignment.CenterVertically))
                         Text(
                             text = stringResource(Res.string.history_score, weakness.score),
                             style = MontageTheme.typography.body2.bold,
@@ -78,6 +96,25 @@ fun HistoryScreen(state: HistoryUiState, onOpenSession: (sessionId: String) -> U
                 }
             }
         }
+    }
+}
+
+/** 등급이 나온 가장 최근 회차를 등급 눈금에 놓는다. 등급 이름이 시험 팩 눈금에 없으면 그리지 않는다. */
+@Composable
+private fun LatestGrade(state: HistoryUiState) {
+    val grade = state.sessions.lastOrNull { it.session.grade != null }?.session?.grade ?: return
+    val names = state.grades
+    if (grade.low !in names || grade.high !in names) return
+    val label = stringResource(Res.string.history_latest, grade.range)
+    Column {
+        MontageGradeScale(
+            names,
+            names.indexOf(grade.low),
+            names.indexOf(grade.high),
+            description = label,
+            modifier = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8),
+        )
+        Body(label)
     }
 }
 

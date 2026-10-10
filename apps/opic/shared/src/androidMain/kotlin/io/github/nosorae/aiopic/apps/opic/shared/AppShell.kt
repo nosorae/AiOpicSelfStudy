@@ -1,6 +1,8 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import android.content.Context
 import android.graphics.Color
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -29,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
@@ -81,7 +84,10 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
         val style = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark }
         activity?.enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
-    MontageTheme(darkTheme = dark) {
+    val context = LocalContext.current
+    // ponytail: 앱을 띄울 때 한 번 읽는다. 앱이 떠 있는 동안 설정을 바꾸면 다음 실행부터 반영된다. 바로 따라가야 하면 ContentObserver 를 단다.
+    val reduceMotion = remember(context) { context.animationsOff() }
+    MontageTheme(darkTheme = dark, reduceMotion = reduceMotion) {
         Scaffold(
             modifier = modifier,
             // 인셋은 화면(MontageScreen)이 맡는다. 탭 바가 있을 때만 그 높이를 여백으로 주고 소비한다.
@@ -126,6 +132,9 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
         }
     }
 }
+
+/** 개발자 옵션이나 접근성 설정에서 애니메이션을 끄면 애니메이터 배율이 0 이 된다. 이때 움직임 부품은 끝 장면을 바로 보인다. */
+internal fun Context.animationsOff(): Boolean = Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
 
 private fun SnapshotStateList<AppRoute>.selectTab(tab: AppRoute) = replaceAll(listOfNotNull(AppRoute.Home, tab.takeIf { it != AppRoute.Home }))
 

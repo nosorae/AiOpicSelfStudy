@@ -20,10 +20,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
+import io.github.nosorae.aiopic.ui.design.MontageGradeScale
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageRadius
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
+import io.github.nosorae.aiopic.ui.design.MontageStepTrail
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
 import org.jetbrains.compose.resources.stringResource
@@ -38,7 +40,10 @@ fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerI
     SessionReportScreen(state = state, onOpenAnswer = onOpenAnswer, modifier = modifier)
 }
 
-/** 등급 범위와 근거, 무너진 문항, 답변 목록 순으로 그린다(F7.2). 시간이 다 된 회차는 답하지 못한 문항을 끝에 "시간 부족"으로 붙인다. */
+/**
+ * 등급 범위와 근거, 무너진 문항, 답변 목록 순으로 그린다(F7.2). 시간이 다 된 회차는 답하지 못한 문항을 끝에 "시간 부족"으로 붙인다.
+ * 이 화면의 움직임은 하나다. 등급이 나왔으면 등급 눈금의 구슬, 기다리는 중이면 분석한 답변 수만큼 차는 진행 점이다.
+ */
 @Composable
 fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, modifier: Modifier = Modifier) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.session_title)) }) {
@@ -79,8 +84,16 @@ private fun GradeHeader(report: SessionReport) {
     val grade = report.session.grade
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
+    val scale = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8)
     Column {
         SectionTitle(stringResource(Res.string.session_grade))
+        val names = report.names.grades
+        when {
+            grade != null && grade.low in names && grade.high in names ->
+                MontageGradeScale(names, names.indexOf(grade.low), names.indexOf(grade.high), description = grade.range, modifier = scale)
+
+            grade == null && report.answers.isNotEmpty() -> MontageStepTrail(total = report.answers.size, done = report.analyzedCount, modifier = scale)
+        }
         FlowRow(
             modifier = Modifier.fillMaxWidth().padding(horizontal = MontageSpacing.spacing20),
             horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12),
@@ -90,7 +103,7 @@ private fun GradeHeader(report: SessionReport) {
             if (grade != null) {
                 Text(grade.range, style = typography.title1.bold, color = colors.foregroundNeutralStrong)
             } else {
-                Text(stringResource(Res.string.session_grade_pending), style = typography.body1Reading.regular, color = colors.foregroundNeutralSecondary)
+                Text(stringResource(Res.string.session_grade_waiting, report.answers.size, report.analyzedCount), style = typography.body1Reading.regular, color = colors.foregroundNeutralSecondary)
             }
             if (report.mixedModels) {
                 Text(

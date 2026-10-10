@@ -39,6 +39,7 @@ import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
+import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmRequest
@@ -175,6 +176,8 @@ interface AppGraph {
     @Provides fun flagExportStore(reads: StoreReads): FlagExportStore = reads
 
     @Provides fun examSpec(): ExamSpec = OpicEn.examSpec
+
+    @Provides fun gradeScale(): GradeScale = OpicEn.gradeScale
 
     /** 기록과 리포트에 보일 문항 유형 이름. 시험 팩의 유형 id 를 한국어로 옮긴다. */
     @Provides

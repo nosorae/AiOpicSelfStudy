@@ -32,6 +32,7 @@ internal object ReportSamples {
             ModelInfo(flash.provider, flash.modelId, "Gemini 3.8 Flash", hearsAudio = true, stability = Stability.Stable),
             ModelInfo(lite.provider, lite.modelId, "Gemini 3.5 Flash Lite", hearsAudio = true, stability = Stability.Stable),
         ),
+        grades = listOf("NL", "NM", "NH", "IL", "IM1", "IM2", "IM3", "IH", "AL"),
     )
 
     private val feedback = Feedback(

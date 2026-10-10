@@ -18,6 +18,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import platform.Foundation.NSUserDefaults
+import platform.UIKit.UIAccessibilityIsReduceMotionEnabled
 import platform.UIKit.UIApplication
 import platform.UIKit.UIUserInterfaceStyle
 import platform.UIKit.UIViewController
@@ -65,7 +66,8 @@ class IosShell {
         val themeMode by graph.themeModeStore.themeMode.collectAsState()
         // SwiftUI 가 그리는 탭 바와 내비게이션 바도 같은 모드를 따르게 창의 모드를 바꾼다(F9.1).
         LaunchedEffect(themeMode) { applyToWindows(themeMode) }
-        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) {
+        // 동작 줄이기는 화면을 그릴 때 읽는다. 설정을 바꾸면 다음에 다시 그리는 화면부터 따른다.
+        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme()), reduceMotion = UIAccessibilityIsReduceMotionEnabled()) {
             CompositionLocalProvider(LocalHaptics provides haptics) { RouteContent(route, graph, onOpen, onExit, onBack, onRestart, onBlockBack = onBlockBack) }
         }
     }
