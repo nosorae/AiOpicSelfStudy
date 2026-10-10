@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
 plugins {
-    alias(libs.plugins.aiopicKmpComposeExplicit)
+    alias(libs.plugins.aiopicKmpLibraryExplicit)
 }
 
 kotlin {

@@ -27,10 +27,6 @@ gradlePlugin {
             id = libs.plugins.aiopicKmpCompose.get().pluginId
             implementationClass = "io.github.nosorae.aiopic.buildlogic.KmpComposePlugin"
         }
-        register("kmpComposeExplicit") {
-            id = libs.plugins.aiopicKmpComposeExplicit.get().pluginId
-            implementationClass = "io.github.nosorae.aiopic.buildlogic.KmpComposeExplicitPlugin"
-        }
         register("uiFeature") {
             id = libs.plugins.aiopicUiFeature.get().pluginId
             implementationClass = "io.github.nosorae.aiopic.buildlogic.UiFeaturePlugin"

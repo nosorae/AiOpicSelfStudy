@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 
 plugins {
-    alias(libs.plugins.aiopicKmpComposeExplicit)
+    alias(libs.plugins.aiopicKmpLibraryExplicit)
 }
 
 kotlin {
@@ -22,7 +22,7 @@ kotlin {
 
 // 앱은 debug-noop 으로 컴파일하고 디버그 빌드에서 이 모듈로 바꿔 끼운다. noop 에만 있는 공개 API 가 있으면
 // 디버그 빌드가 실행 중에 그 함수를 못 찾고 죽는다. 그래서 noop 덤프의 모든 줄이 이 모듈 덤프에 있는지 본다.
-// 덤프가 코드와 같은지는 두 모듈의 checkKotlinAbi 가 본다. 모듈 이름 줄과 Compose 가 만든 $stableprop 줄은 모듈마다 달라 뺀다.
+// 덤프가 코드와 같은지는 두 모듈의 checkKotlinAbi 가 본다. 모듈 이름 줄은 모듈마다 달라 뺀다.
 val checkNoopAbi by tasks.registering {
     group = "verification"
     description = "debug-noop 의 공개 API 가 모두 이 모듈에 있는지 검사한다."
@@ -34,7 +34,7 @@ val checkNoopAbi by tasks.registering {
     doLast {
         val missing = dumps.flatMap { (real, noop) ->
             val realLines = real.readLines().toSet()
-            noop.readLines().filter { it !in realLines && "\$stableprop" !in it && !it.startsWith("// Library unique name") }
+            noop.readLines().filter { it !in realLines && !it.startsWith("// Library unique name") }
         }
         if (missing.isNotEmpty()) {
             throw GradleException(

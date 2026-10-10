@@ -23,7 +23,7 @@ DebugTools.panel("오디오") { listOf("경로" to audio.route(), "모드" to au
 | 기능 | 동작 |
 |---|---|
 | 로그 | 메모리에 최근 2,000줄(`DebugConfig.maxLogs`)만 둔다. 넘으면 오래된 것부터 버린다 |
-| 가림 | 저장하기 전에 Google API 키 형식(`AIza` 뒤 35자)과 URL 의 `key`, `api_key`, `access_token` 값을 `***` 로 바꾼다. 앱은 `DebugConfig.redactPatterns` 로 패턴을 더한다. 공유한 파일에도 키가 남지 않는다 |
+| 가림 | 저장하기 전에 Gemini 키 형식(`AQ.` 뒤 20자 이상, `AIza` 뒤 35자), `x-goog-api-key:` 헤더 값, URL 의 `key`, `api_key`, `access_token` 값을 `***` 로 바꾼다. 앱은 `DebugConfig.redactPatterns` 로 패턴을 더한다. 공유한 파일에도 키가 남지 않는다 |
 | 기능 스위치 | Android SharedPreferences, iOS NSUserDefaults 에 저장한다. `enabled` 를 읽을 때마다 저장된 값을 봐서 앱을 다시 시작하지 않아도 적용된다. 저장된 값이 없으면 기본값이다 |
 | 앱 패널 | 앱이 "이름, 값" 줄을 돌려주는 함수를 넘긴다. 함수가 실패하면 그 패널에 오류 메시지만 적는다 |
 | 기기와 앱 정보 | 앱 id, 버전과 빌드 번호, OS, 기기 모델, 언어, 남은 저장 공간 |

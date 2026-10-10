@@ -28,7 +28,6 @@ paths:
 |---|---|
 | `aiopic.kmp.library` | engine, packs |
 | `aiopic.kmp.library.explicit` | libs (explicit API 모드) |
-| `aiopic.kmp.compose.explicit` | 화면을 가진 libs (`libs/debug`, `libs/debug-noop`) |
 | `aiopic.kmp.compose` | `ui/design`, `ui/navigation`, `apps/opic/shared` |
 | `aiopic.ui.feature` | `ui/feature-*` (디자인, 내비게이션, ViewModel, 코루틴 테스트 의존 포함) |
 | `aiopic.android.application` | `apps/opic/androidApp` |

@@ -19,6 +19,7 @@ class DebugCoreTest {
     private val platform = MemoryPlatform(info = listOf("app" to "1.0 (7)"))
     private val core = DebugCore(clock).apply { install(DebugConfig(maxLogs = 3), platform) }
     private val key = "AIza" + "A".repeat(35)
+    private val geminiKey = "AQ." + "Ab_c-1".repeat(6)
 
     @Test
     fun keepsOnlyTheNewestLogsUpToTheLimit() {
@@ -31,12 +32,18 @@ class DebugCoreTest {
     fun redactsKeysInMessagesAndErrorsBeforeStoring() {
         val custom = DebugCore(clock).apply { install(DebugConfig(redactPatterns = listOf(Regex("secret-\\d+"))), platform) }
 
-        custom.log(DebugLevel.Error, "t", "key=$key url=https://x.dev/v1?alt=json&key=test-key secret-42", IllegalStateException("bad $key"))
+        custom.log(
+            DebugLevel.Error,
+            "t",
+            "key=$key gemini=$geminiKey x-goog-api-key: test-key url=https://x.dev/v1?alt=json&key=test-key secret-42",
+            IllegalStateException("bad $key $geminiKey"),
+        )
 
         val log = custom.logs.value.single()
-        assertEquals("key=*** url=https://x.dev/v1?alt=json&key=*** ***", log.message)
+        assertEquals("key=*** gemini=*** x-goog-api-key: *** url=https://x.dev/v1?alt=json&key=*** ***", log.message)
         assertFalse(key in log.error.orEmpty())
-        assertContains(log.error.orEmpty(), "IllegalStateException: bad ***")
+        assertFalse(geminiKey in log.error.orEmpty())
+        assertContains(log.error.orEmpty(), "IllegalStateException: bad *** ***")
     }
 
     @Test
