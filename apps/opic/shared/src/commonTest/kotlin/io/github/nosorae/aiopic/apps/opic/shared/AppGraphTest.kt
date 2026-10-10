@@ -48,7 +48,7 @@ class FakeKeyVault : KeyVault {
     }
 }
 
-private object FakeRecorder : Recorder {
+object FakeRecorder : Recorder {
     override suspend fun start(directory: String) = true
 
     override suspend fun stop() = emptyList<String>()
@@ -58,7 +58,7 @@ private object FakeRecorder : Recorder {
     override suspend fun merge(chunks: List<String>, output: String) = emptyList<Duration>()
 }
 
-private object FakeTts : Tts {
+object FakeTts : Tts {
     override suspend fun speak(text: String) = true
 
     override fun stop() = Unit

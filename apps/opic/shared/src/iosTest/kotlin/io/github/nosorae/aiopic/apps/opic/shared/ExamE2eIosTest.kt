@@ -34,6 +34,7 @@ import io.github.nosorae.aiopic.ui.featurereport.SessionReportViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
@@ -107,7 +108,7 @@ class ExamE2eIosTest {
             recorder = DiskRecorder(recordedDirectories),
             tts = SilentTts,
             workQueue = queue,
-            gemini = GeminiClient(HttpClient(MockEngine { respond(ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) })),
+            gemini = GeminiClient(HttpClient(MockEngine { respond(if ("brokeAt" in it.body.toByteArray().decodeToString()) GRADE_RESPONSE else ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) })),
             timer = { now },
         )
         return App(graph, database).also { launched += it }
@@ -168,9 +169,13 @@ class ExamE2eIosTest {
 
             // 분석 대기열(F5.1)을 비우면 리포트(F7.2)에 답변 12개가 저장한 응답의 점수로 나온다
             assertEquals(12, queue.ids.size)
-            queue.ids.forEach { assertEquals(WorkResult.Success, second.graph.analysisHandler.handle(it)) }
+            // 마지막 답변 분석 뒤 회차 등급 요청(F5.3)이 같은 대기열에 붙는다.
+            var next = 0
+            while (next < queue.ids.size) assertEquals(WorkResult.Success, second.graph.analysisHandler.handle(queue.ids[next++]))
+            assertEquals(13, queue.ids.size)
             val report = second.viewModel { sessionReportViewModelFactory.create("s1") }.uiState.first { it.report != null }.report!!
             assertEquals(ExamStatus.Finished, report.session.status)
+            assertEquals("IM2", report.session.grade?.low)
             assertEquals(List(12) { FAKE_SCORE }, report.answers.map { (it.analysis as AnswerAnalysis.Done).feedback.score })
             val answer = second.viewModel("answer-${report.answers.first().id}") { answerReportViewModelFactory.create(report.answers.first().id) }
             assertEquals(FAKE_TRANSCRIPT, (answer.uiState.first { it.answer != null }.answer!!.analysis as AnswerAnalysis.Done).feedback.transcript)
@@ -224,6 +229,8 @@ private object SilentTts : Tts {
 private const val FAKE_TRANSCRIPT = "I live in Seoul and I go jogging every morning."
 
 private const val FAKE_SCORE = 80
+
+private const val GRADE_RESPONSE = """{"candidates":[{"content":{"role":"model","parts":[{"text":"{\"checks\":[{\"id\":\"C1\",\"met\":true}],\"low\":\"IM2\",\"high\":\"IH\",\"reasons\":[\"C1 met.\"],\"brokeAt\":[]}"}]},"finishReason":"STOP"}]}"""
 
 /** 키 확인과 답변 분석 요청에 모두 같은 저장 응답을 돌려준다. Android 시나리오 테스트와 같은 응답이다. */
 private const val ANSWER_RESPONSE = """{"candidates":[{"content":{"role":"model","parts":[{"text":"{\"transcript\":\"$FAKE_TRANSCRIPT\",\"corrections\":[],\"upgrades\":[],\"tenseConsistent\":true,\"sentenceCount\":2,\"wordsPerMinute\":120.0,\"pauses\":[],\"pronunciation\":\"Clear.\",\"score\":$FAKE_SCORE}"}]},"finishReason":"STOP"}]}"""
