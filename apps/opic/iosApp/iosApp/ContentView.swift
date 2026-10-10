@@ -87,8 +87,7 @@ struct Tabs: View {
     @State private var busy = false
 
     var body: some View {
-        // 처리 중에는 탭 선택을 받지 않는다. 탭을 옮기면 처리 중인 화면이 가려져 결과를 놓친다.
-        TabView(selection: Binding(get: { tab }, set: { if !busy { tab = $0 } })) {
+        TabView(selection: $tab) {
             ForEach(AppRoute.companion.tabs, id: \.self) { root in
                 Tab(root.title, systemImage: icon(root), value: root) {
                     TabRoot(shell: shell, root: root, path: Binding(
@@ -98,6 +97,21 @@ struct Tabs: View {
                 }
             }
         }
+        .onChange(of: busy) { _, busy in setTabBarEnabled(!busy) }
+    }
+
+    /**
+     * 처리 중에는 탭 바가 눌리지 않게 한다. 탭을 옮기면 처리 중인 화면이 가려져 결과를 놓친다.
+     * 선택 바인딩에서 값을 무시해도 UIKit 탭 바는 먼저 탭을 바꿔 버려서 탭 바 자체의 입력을 끈다.
+     */
+    private func setTabBarEnabled(_ enabled: Bool) {
+        func find(_ controller: UIViewController?) -> UITabBarController? {
+            guard let controller else { return nil }
+            if let tabs = controller as? UITabBarController { return tabs }
+            return controller.children.lazy.compactMap { find($0) }.first ?? find(controller.presentedViewController)
+        }
+        let roots = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).map(\.rootViewController)
+        roots.compactMap { find($0) }.forEach { $0.tabBar.isUserInteractionEnabled = enabled }
     }
 
     private func icon(_ tab: AppRoute) -> String {

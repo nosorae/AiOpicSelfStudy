@@ -23,7 +23,7 @@ final class RecordingFailureUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["답변 리포트"].exists, "연습: 녹음을 못 썼는데 리포트로 갔다")
         attachScreenshot("연습 녹음 실패")
         tapWhenReady(app.buttons["다시 녹음"])
-        XCTAssertTrue(waitUntil(60) { self.app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '녹음 중'")).firstMatch.exists }, "연습: 다시 녹음이 시작되지 않았다")
+        XCTAssertTrue(waitUntil(60) { self.app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH '녹음 중'")).firstMatch.exists }, "연습: 다시 녹음이 시작되지 않았다")
 
         // 모의시험 장비 점검: 같은 단계에 남아 이유와 다시 녹음이 보인다.
         tapWhenReady(app.buttons["나가기"])
