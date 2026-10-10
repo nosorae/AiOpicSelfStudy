@@ -1,10 +1,15 @@
 package io.github.nosorae.aiopic.libs.tts
 
 import io.github.nosorae.aiopic.libs.tts.api.Tts
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.ObjCSignatureOverride
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.AVFAudio.AVAudioPlayer
+import platform.AVFAudio.AVAudioPlayerDelegateProtocol
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryOptionDefaultToSpeaker
 import platform.AVFAudio.AVAudioSessionCategoryPlayAndRecord
@@ -15,14 +20,16 @@ import platform.AVFAudio.AVSpeechSynthesisVoiceQualityDefault
 import platform.AVFAudio.AVSpeechSynthesizer
 import platform.AVFAudio.AVSpeechSynthesizerDelegateProtocol
 import platform.AVFAudio.AVSpeechUtterance
+import platform.Foundation.NSData
 import platform.Foundation.NSLog
+import platform.Foundation.create
 import platform.darwin.NSObject
 import kotlin.coroutines.resume
 
 /**
- * iOS 기기 음성으로 질문을 읽는다. 끝 알림은 메인 스레드로 오므로 [speak] 와 [stop] 도 메인 스레드에서 부른다.
+ * 미리 만든 음성을 [AVAudioPlayer] 로 틀거나 iOS 기기 음성으로 질문을 읽는다. 끝 알림은 메인 스레드로 오므로 [speak] 와 [stop] 도 메인 스레드에서 부른다.
  *
- * 읽기 전에 오디오 세션 카테고리를 녹음기(`EngineMicInput`)와 같은 녹음 겸용, 스피커 출력으로 맞춘다.
+ * 틀거나 읽기 전에 오디오 세션 카테고리를 녹음기(`EngineMicInput`)와 같은 녹음 겸용, 스피커 출력으로 맞춘다.
  * 앱 기본 카테고리(SoloAmbient)는 무음 모드에서 소리가 안 나서, 녹음을 한 번도 안 한 첫 질문만 들리지 않았다(#134).
  * 세션 활성화는 합성기가 읽을 때 스스로 한다. 앱을 켜자마자 활성화하면 다른 앱의 음악이 끊긴다.
  */
@@ -41,21 +48,65 @@ public class IosTts : Tts {
         override fun speechSynthesizer(synthesizer: AVSpeechSynthesizer, didCancelSpeechUtterance: AVSpeechUtterance) = finish(didCancelSpeechUtterance, false)
     }
 
-    /** 설치된 en-US 음성 가운데 고품질(Enhanced, Premium)이 있으면 그것을, 없으면 기본 음성을 쓴다(설계 8절). */
-    private val voice: AVSpeechSynthesisVoice? by lazy {
-        AVSpeechSynthesisVoice.speechVoices()
-            .filterIsInstance<AVSpeechSynthesisVoice>()
-            .filter { it.language == "en-US" && it.quality != AVSpeechSynthesisVoiceQualityDefault }
-            .maxByOrNull { it.quality }
-            ?: AVSpeechSynthesisVoice.voiceWithLanguage("en-US")
+    /** 지금 트는 음성 파일과 그 끝을 기다리는 호출. */
+    private var playing: Pair<AVAudioPlayer, CancellableContinuation<Boolean>>? = null
+
+    private val playerDelegate = object : NSObject(), AVAudioPlayerDelegateProtocol {
+        override fun audioPlayerDidFinishPlaying(player: AVAudioPlayer, successfully: Boolean) = endPlay(player, successfully)
     }
+
+    /** 설치된 en-US 음성 가운데 Premium, Enhanced, 기본 순으로 가장 좋은 것을 쓴다(설계 8절, #161). 앱을 켠 뒤 받은 음성은 다음 실행부터 쓴다. */
+    private val voice: AVSpeechSynthesisVoice? by lazy {
+        bestVoice(usVoices(), { true }, { it.quality.toInt() }) ?: AVSpeechSynthesisVoice.voiceWithLanguage("en-US")
+    }
+
+    private fun usVoices() = AVSpeechSynthesisVoice.speechVoices().filterIsInstance<AVSpeechSynthesisVoice>().filter { it.language == "en-US" }
+
+    override fun hasHighQualityVoice(): Boolean = usVoices().any { it.quality != AVSpeechSynthesisVoiceQualityDefault }
 
     init {
         synthesizer.delegate = delegate
     }
 
-    override suspend fun speak(text: String): Boolean = suspendCancellableCoroutine { cont ->
+    override suspend fun speak(text: String, audio: ByteArray?): Boolean {
         useSpeakerCategory()
+        if (audio != null) play(audio)?.let { return it }
+        // 미리 만든 음성을 못 틀었을 때를 기기 로그로 볼 수 있게 남긴다. 직접 조작 확인(XCUITest)도 이 줄을 본다.
+        NSLog("IosTts: 기기 음성으로 읽는다 (음성 파일 ${if (audio == null) "없음" else "못 틂"})")
+        return speakWithDevice(text)
+    }
+
+    /** 틀지 못하는 파일이면 null 이다. 그러면 기기 음성으로 읽는다. */
+    @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+    private suspend fun play(audio: ByteArray): Boolean? {
+        if (audio.isEmpty()) return null
+        val data = audio.usePinned { NSData.create(bytes = it.addressOf(0), length = audio.size.toULong()) }
+        // 틀 수 없는 내용이면 init 이 nil 을 돌려주고, Kotlin 생성자는 그것을 NullPointerException 으로 바꾼다.
+        val player = try {
+            AVAudioPlayer(data = data, error = null)
+        } catch (_: NullPointerException) {
+            return null
+        }
+        if (!player.prepareToPlay()) return null
+        NSLog("IosTts: 음성 파일을 튼다 (${audio.size}바이트)")
+        player.delegate = playerDelegate
+        return suspendCancellableCoroutine { cont ->
+            playing?.let { endPlay(it.first, false) }
+            playing = player to cont
+            cont.invokeOnCancellation { stop() }
+            if (!player.play()) endPlay(player, false)
+        }
+    }
+
+    private fun endPlay(player: AVAudioPlayer, done: Boolean) {
+        val current = playing ?: return
+        if (current.first != player) return
+        playing = null
+        player.stop()
+        if (current.second.isActive) current.second.resume(done)
+    }
+
+    private suspend fun speakWithDevice(text: String): Boolean = suspendCancellableCoroutine { cont ->
         val utterance = AVSpeechUtterance.speechUtteranceWithString(text).also { it.voice = voice }
         pending?.second?.resume(false)
         pending = utterance to cont
@@ -65,6 +116,7 @@ public class IosTts : Tts {
     }
 
     override fun stop() {
+        playing?.let { endPlay(it.first, false) }
         val current = pending ?: return
         pending = null
         synthesizer.stopSpeakingAtBoundary(AVSpeechBoundary.AVSpeechBoundaryImmediate)

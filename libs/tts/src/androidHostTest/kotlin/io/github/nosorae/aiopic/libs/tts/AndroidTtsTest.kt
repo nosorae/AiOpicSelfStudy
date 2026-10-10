@@ -54,4 +54,17 @@ class AndroidTtsTest {
 
         assertFalse(spoken.await())
     }
+
+    /** #161: 미리 만든 음성을 틀지 못하면 시험이 멈추지 않게 기기 음성으로 읽는다. */
+    @Test
+    fun speakFallsBackToDeviceVoiceWhenAudioCannotPlay() = runTest {
+        val spoken = async { tts.speak("Tell me about yourself.", audio = byteArrayOf(1, 2, 3)) }
+        engine.onInitListener.onInit(TextToSpeech.SUCCESS)
+        runCurrent()
+        assertEquals("Tell me about yourself.", engine.lastSpokenText)
+
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertTrue(spoken.await())
+    }
 }

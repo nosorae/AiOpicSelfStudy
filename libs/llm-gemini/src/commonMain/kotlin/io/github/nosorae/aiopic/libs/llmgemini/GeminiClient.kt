@@ -6,12 +6,14 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.content.TextContent
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
@@ -31,19 +33,7 @@ import kotlin.io.encoding.Base64
 public class GeminiClient(private val http: HttpClient = HttpClient()) {
     public suspend fun generate(request: LlmRequest): LlmResult {
         // 본문은 try 밖에서 만든다. 스키마 글이 JSON 이 아니면 연결 없음으로 숨지 않고 바로 드러나야 한다.
-        val body = TextContent(body(request).toString(), ContentType.Application.Json)
-        val response = try {
-            http.post("$BASE_URL/models/${request.model}:generateContent") {
-                // 키를 주소에 넣으면 접속 기록에 남아서 헤더로 보낸다.
-                header("x-goog-api-key", request.apiKey)
-                setBody(body)
-            }
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            // ponytail: 연결 오류를 플랫폼마다 가르지 않고 모두 연결 없음으로 본다. 다시 보내도 안 되는 오류가 섞이면 여기서 나눈다.
-            return LlmResult.Retryable(null)
-        }
+        val response = post(request.apiKey, request.model, body(request)) ?: return LlmResult.Retryable(null)
         val status = response.status.value
         val json = runCatching { Json.parseToJsonElement(response.bodyAsText()).jsonObject }.getOrDefault(JsonObject(emptyMap()))
         return when {
@@ -53,6 +43,40 @@ public class GeminiClient(private val http: HttpClient = HttpClient()) {
             status == 408 || status == 429 || status >= 500 -> LlmResult.Retryable(status)
             else -> LlmResult.Rejected(status, json["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull.orEmpty())
         }
+    }
+
+    /**
+     * [text] 를 [voice] 목소리로 읽은 오디오. 응답 그대로 24kHz 모노 16비트 WAV 다.
+     * 연결 없음, 한도 초과, 오디오 없는 응답 모두 null 이다. 부르는 쪽은 기기 음성으로 읽어서 실패 이유를 나누지 않는다.
+     */
+    public suspend fun speech(apiKey: String, model: String, voice: String, text: String): ByteArray? {
+        val body = buildJsonObject {
+            putJsonArray("contents") { addJsonObject { putJsonArray("parts") { addJsonObject { put("text", text) } } } }
+            putJsonObject("generationConfig") {
+                putJsonArray("responseModalities") { add("AUDIO") }
+                putJsonObject("speechConfig") { putJsonObject("voiceConfig") { putJsonObject("prebuiltVoiceConfig") { put("voiceName", voice) } } }
+            }
+        }
+        val response = post(apiKey, model, body)?.takeIf { it.status.value == 200 } ?: return null
+        return runCatching {
+            val data = Json.parseToJsonElement(response.bodyAsText()).jsonObject["candidates"]!!.jsonArray[0].jsonObject["content"]!!.jsonObject["parts"]!!.jsonArray
+                .firstNotNullOf { it.jsonObject["inlineData"]?.jsonObject?.get("data")?.jsonPrimitive?.content }
+            Base64.decode(data)
+        }.getOrNull()
+    }
+
+    /** 연결하지 못하면 null 이다. */
+    private suspend fun post(apiKey: String, model: String, body: JsonObject): HttpResponse? = try {
+        http.post("$BASE_URL/models/$model:generateContent") {
+            // 키를 주소에 넣으면 접속 기록에 남아서 헤더로 보낸다.
+            header("x-goog-api-key", apiKey)
+            setBody(TextContent(body.toString(), ContentType.Application.Json))
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        // ponytail: 연결 오류를 플랫폼마다 가르지 않고 모두 연결 없음으로 본다. 다시 보내도 안 되는 오류가 섞이면 여기서 나눈다.
+        null
     }
 
     private fun success(json: JsonObject): LlmResult {
