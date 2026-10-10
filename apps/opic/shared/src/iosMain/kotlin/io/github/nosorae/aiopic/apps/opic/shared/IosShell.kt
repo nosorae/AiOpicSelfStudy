@@ -1,15 +1,18 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
 import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
 import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
+import io.github.nosorae.aiopic.libs.haptics.api.iosHaptics
 import io.github.nosorae.aiopic.libs.keyvault.api.KeychainKeyVault
 import io.github.nosorae.aiopic.libs.tts.IosTts
 import io.github.nosorae.aiopic.libs.workqueue.api.ForegroundWorkQueue
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.MainScope
@@ -43,6 +46,8 @@ class IosShell {
         gemini = UiTestLaunch.geminiClient(),
     )
 
+    private val haptics = graph.settings.haptics(iosHaptics())
+
     /** 시작 분기(S0, F1.0). 저장된 키와 동의만 읽어 첫 화면을 [onDecided] 로 넘긴다. 그 전까지 Swift 는 실행 화면과 같은 빈 화면만 둔다. */
     fun decideStart(onDecided: (AppRoute) -> Unit) {
         MainScope().launch { onDecided(AppRoute.start(graph.decideStartUseCase())) }
@@ -60,7 +65,9 @@ class IosShell {
         val themeMode by graph.themeModeStore.themeMode.collectAsState()
         // SwiftUI 가 그리는 탭 바와 내비게이션 바도 같은 모드를 따르게 창의 모드를 바꾼다(F9.1).
         LaunchedEffect(themeMode) { applyToWindows(themeMode) }
-        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) { RouteContent(route, graph, onOpen, onExit, onBack, onRestart, onBlockBack = onBlockBack) }
+        MontageTheme(darkTheme = themeMode.isDark(isSystemInDarkTheme())) {
+            CompositionLocalProvider(LocalHaptics provides haptics) { RouteContent(route, graph, onOpen, onExit, onBack, onRestart, onBlockBack = onBlockBack) }
+        }
     }
 
     fun showsTabBar(route: AppRoute): Boolean = route.showsTabBar(Platform.Ios)

@@ -51,5 +51,6 @@ include(
     ":libs:keyvault",
     ":libs:tts",
     ":libs:timer",
+    ":libs:haptics",
     ":tools:eval",
 )

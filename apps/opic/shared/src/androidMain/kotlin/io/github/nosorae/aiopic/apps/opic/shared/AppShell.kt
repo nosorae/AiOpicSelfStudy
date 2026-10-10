@@ -17,6 +17,7 @@ import androidx.compose.material3.ShortNavigationBar
 import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,10 +29,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import io.github.nosorae.aiopic.libs.haptics.api.androidHaptics
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.Res
 import io.github.nosorae.aiopic.ui.design.icon_normal_calendar
@@ -45,11 +49,16 @@ import org.jetbrains.compose.resources.painterResource
 /**
  * 시작 분기(S0, F1.0)를 마친 Android 앱. [start] 가 첫 화면을 정하기 전에는 아무것도 그리지 않는다.
  * 그동안 MainActivity 가 같은 [start] 의 [StartUiState.keepSplash] 로 시스템 스플래시를 잡아 둔다.
+ * 화면이 쓰는 진동은 이 화면의 View 로 내고, 설정에서 끄면 내지 않는다.
  */
 @Composable
 fun OpicApp(graph: AppGraph, start: StartViewModel) {
     val state by start.uiState.collectAsState()
-    state.destination?.let { AppShell(graph, startStack = listOf(AppRoute.start(it))) }
+    val view = LocalView.current
+    val haptics = remember(view) { graph.settings.haptics(androidHaptics(view)) }
+    CompositionLocalProvider(LocalHaptics provides haptics) {
+        state.destination?.let { AppShell(graph, startStack = listOf(AppRoute.start(it))) }
+    }
 }
 
 /**

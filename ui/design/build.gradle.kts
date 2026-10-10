@@ -15,6 +15,10 @@ kotlin {
         }
     }
     sourceSets {
+        // 화면이 LocalHaptics 로 꺼낸 진동의 효과 종류를 직접 쓰게 공개 API 를 넘겨준다.
+        commonMain.dependencies {
+            api(project(":libs:haptics"))
+        }
         // 움직임 부품을 테스트 시계로 멈춰 끝 장면과 동작 줄이기를 비교한다.
         getByName("androidHostTest").dependencies {
             implementation(libs.compose.uiTestJunit4)

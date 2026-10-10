@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 축하 진동(VibrationEffect.Composition)을 Vibrator 로 직접 낸다. 나머지는 View 진동이라 권한이 필요 없다. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+</manifest>

@@ -7,6 +7,8 @@ import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.VoiceConsent
 import io.github.nosorae.aiopic.ui.featuresettings.consent.RevokeVoiceConsentUseCase
+import io.github.nosorae.aiopic.ui.featuresettings.haptics.HapticsStore
+import io.github.nosorae.aiopic.ui.featuresettings.haptics.SetHapticsUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.key.DeleteKeyUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
 import io.github.nosorae.aiopic.ui.featuresettings.model.SelectModelUseCase
@@ -34,10 +36,12 @@ class FakeSettingsStore(var modelId: String? = null) :
     ThemeModeStore,
     VoiceConsent,
     AnswerTimerStore,
-    QuestionFileStore {
+    QuestionFileStore,
+    HapticsStore {
     var consentGiven = true
     var answerTimerOn = false
     var questionFile: String? = null
+    var hapticsOn = true
 
     override val themeMode = MutableStateFlow(ThemeMode.System)
 
@@ -67,6 +71,12 @@ class FakeSettingsStore(var modelId: String? = null) :
         answerTimerOn = on
     }
 
+    override suspend fun hapticsOn(): Boolean = hapticsOn
+
+    override suspend fun setHapticsOn(on: Boolean) {
+        hapticsOn = on
+    }
+
     override suspend fun questionFile(): String? = questionFile
 
     override suspend fun saveQuestionFile(json: String) {
@@ -87,13 +97,14 @@ class FakeWorkQueue(vararg pending: String) : WorkQueue {
 
 /** 설정 화면 테스트마다 같은 가짜로 ViewModel 을 만든다. */
 fun settingsViewModel(store: FakeSettingsStore, vault: FakeKeyVault, queue: FakeWorkQueue = FakeWorkQueue()) = SettingsViewModel(
-    loadSettingsUseCase = LoadSettingsUseCase(FakeCatalog, store, store, vault, store, store, store),
+    loadSettingsUseCase = LoadSettingsUseCase(FakeCatalog, store, store, vault, store, store, store, store),
     selectModelUseCase = SelectModelUseCase(store),
     deleteKeyUseCase = DeleteKeyUseCase(vault),
     setThemeModeUseCase = SetThemeModeUseCase(store),
     revokeVoiceConsentUseCase = RevokeVoiceConsentUseCase(store, queue),
     setAnswerTimerUseCase = SetAnswerTimerUseCase(store),
     importQuestionsUseCase = ImportQuestionsUseCase(store),
+    setHapticsUseCase = SetHapticsUseCase(store),
 )
 
 class FakeKeyVault(vararg saved: Pair<String, String>) : KeyVault {
