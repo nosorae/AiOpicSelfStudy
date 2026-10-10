@@ -41,4 +41,12 @@ class QuestionPoolFileTest {
         assertEquals(setOf("self", "neighborhood", "home"), pool().map { it.topic }.toSet() - surveyTopics)
         assertEquals(OpicEn.questionPool(), pool())
     }
+
+    /** #161: 내장 문항은 모두 미리 만든 음성이 있어 첫 Play 와 내장 문항으로 바꾼 질문도 자연스러운 음성으로 읽는다. */
+    @Test
+    fun `내장 문항마다 미리 만든 음성이 있다`() = runTest {
+        val missing = pool().filter { OpicEn.questionVoice(it.id)?.isNotEmpty() != true }.map { it.id }
+        assertEquals(emptyList(), missing)
+        assertEquals(null, OpicEn.questionVoice("no-such-question"))
+    }
 }

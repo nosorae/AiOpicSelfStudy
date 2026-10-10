@@ -1,6 +1,6 @@
 # llm-gemini
 
-Gemini `generateContent` 를 부르는 HTTP 클라이언트다. 프롬프트, 녹음, 응답 스키마를 받아 모델이 돌려준 글을 준다. 분석 포트와 프롬프트 내용은 모른다. 그것을 잇는 어댑터는 `engine/ai-gemini` 에 있다([ADR 0019](../../docs/adr/0019-AI-분석은-받아쓰기와-글-분석-두-단계-포트.md)). 프로젝트의 다른 모듈을 의존하지 않는다.
+Gemini `generateContent` 를 부르는 HTTP 클라이언트다. 프롬프트, 녹음, 응답 스키마를 받아 모델이 돌려준 글을 주고, 음성 합성 모델로 질문 음성을 받는다. 분석 포트와 프롬프트 내용은 모른다. 그것을 잇는 어댑터는 `engine/ai-gemini` 에 있다([ADR 0019](../../docs/adr/0019-AI-분석은-받아쓰기와-글-분석-두-단계-포트.md)). 프로젝트의 다른 모듈을 의존하지 않는다.
 
 ```kotlin
 val client = GeminiClient() // 테스트는 MockEngine 을 넣은 HttpClient 를 준다
@@ -13,6 +13,7 @@ when (val result = client.generate(LlmRequest(apiKey, model, prompt, audio, resp
 }
 ```
 
+- `speech(apiKey, model, voice, text)` 는 글을 읽은 오디오(24kHz 모노 16비트 WAV)를 준다. 실패는 모두 null 이다. 부르는 쪽이 기기 음성으로 읽어서 이유를 나누지 않는다
 - 실패는 예외 대신 `LlmResult` 로 돌려준다. 429, 408, 5xx, 연결 없음은 `Retryable` 이다
 - JSON 응답이 필요하면 `responseSchema` 를 늘 준다. 스키마 없이 JSON 을 요청하면 마크다운 표가 올 때가 있다
 - `LlmRequest.toString()` 은 키를 찍지 않는다

@@ -55,6 +55,45 @@ class IosTtsTest {
         assertEquals(false, spoken.getCompleted())
     }
 
+    /** #161: 미리 만든 음성 파일을 끝까지 틀면 true 다. 0.2초 무음 WAV 를 튼다. */
+    @Test
+    fun speakPlaysAudioToTheEnd() {
+        val spoken = GlobalScope.async(Dispatchers.Main, CoroutineStart.UNDISPATCHED) { tts.speak("Hello.", silentWav()) }
+
+        runMainLoop(10.seconds) { spoken.isCompleted }
+
+        assertEquals(true, spoken.getCompleted())
+    }
+
+    /** 틀지 못하는 파일이면 기기 음성으로 읽어서 시험이 멈추지 않는다. */
+    @Test
+    fun speakFallsBackToDeviceVoiceWhenAudioCannotPlay() {
+        val spoken = GlobalScope.async(Dispatchers.Main, CoroutineStart.UNDISPATCHED) { tts.speak("Hi.", byteArrayOf(1, 2, 3)) }
+
+        runMainLoop(30.seconds) { spoken.isCompleted }
+
+        assertEquals(true, spoken.getCompleted())
+    }
+
+    @Test
+    fun stopEndsPlayingAudio() {
+        val spoken = GlobalScope.async(Dispatchers.Main, CoroutineStart.UNDISPATCHED) { tts.speak("Hello.", silentWav(seconds = 5)) }
+
+        tts.stop()
+        runMainLoop(5.seconds) { spoken.isCompleted }
+
+        assertEquals(false, spoken.getCompleted())
+    }
+
+    /** 24kHz 모노 16비트 무음 WAV. Gemini 음성과 같은 형식이다. */
+    private fun silentWav(seconds: Int = 0): ByteArray {
+        val dataSize = 24_000 * 2 * seconds + 9_600
+        fun Int.le(bytes: Int) = ByteArray(bytes) { (this shr (8 * it)).toByte() }
+        val header = "RIFF".encodeToByteArray() + (36 + dataSize).le(4) + "WAVEfmt ".encodeToByteArray() + 16.le(4) + 1.le(2) + 1.le(2) +
+            24_000.le(4) + 48_000.le(4) + 2.le(2) + 16.le(2) + "data".encodeToByteArray() + dataSize.le(4)
+        return header + ByteArray(dataSize)
+    }
+
     // 첫 중단 지점까지 바로 돌려서, speak 가 문장을 넘긴 뒤에 stop 을 부르게 한다.
     private fun speakOnMain(text: String): Deferred<Boolean> = GlobalScope.async(Dispatchers.Main, CoroutineStart.UNDISPATCHED) { tts.speak(text) }
 

@@ -24,6 +24,10 @@ data class SettingsUiState(
     val answerTimerOn: Boolean = false,
     /** 진동. 기본은 켬이다. */
     val hapticsOn: Boolean = true,
+    /** 질문을 자연스러운 음성으로 읽는다(#161). false 면 기기 음성이다. */
+    val naturalVoiceOn: Boolean = true,
+    /** 영어(미국) 고품질 기기 음성이 설치돼 있다. */
+    val highQualityDeviceVoice: Boolean = true,
     /** 불러온 문항 파일의 문항 수(F6.3). 없으면 0 이다. */
     val importedQuestionCount: Int = 0,
     /** 방금 불러온 결과 안내. 다시 불러오기 전까지 남는다. */
@@ -33,6 +37,9 @@ data class SettingsUiState(
 
     /** 미리보기 모델은 2주 공지로 내려갈 수 있어서 골라 둔 동안 안내한다(F5.8). */
     val showsPreviewNotice: Boolean get() = selectedModel?.stability == Stability.Preview
+
+    /** 기기 음성을 골랐는데 고품질 음성이 없으면 받는 곳을 한 줄로 안내한다. */
+    val showsDeviceVoiceGuide: Boolean get() = !naturalVoiceOn && !highQualityDeviceVoice
 }
 
 sealed interface SettingsIntent {
@@ -58,6 +65,9 @@ sealed interface SettingsIntent {
     data class SetAnswerTimer(val on: Boolean) : SettingsIntent
 
     data class SetHaptics(val on: Boolean) : SettingsIntent
+
+    /** 질문 음성을 고른다. false 면 기기 음성이다. */
+    data class SetNaturalVoice(val on: Boolean) : SettingsIntent
 
     /** 화면이 고른 파일의 내용을 넘긴다. 파일을 읽지 못했으면 null 이다. 고르기를 취소하면 보내지 않는다. */
     data class ImportQuestions(val json: String?) : SettingsIntent

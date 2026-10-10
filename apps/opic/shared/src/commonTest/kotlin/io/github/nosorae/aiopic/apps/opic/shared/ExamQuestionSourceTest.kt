@@ -64,6 +64,7 @@ class ExamQuestionSourceTest {
     private val viewModels = mutableListOf<ViewModelStore>()
     private val spoken = mutableListOf<String>()
     private val prompts = mutableListOf<String>()
+    private val voiceRequests = mutableListOf<String>()
     private val promptsLock = Mutex()
     private var now = Duration.ZERO
 
@@ -127,6 +128,11 @@ class ExamQuestionSourceTest {
                     MockEngine {
                         val prompt = Json.parseToJsonElement(it.body.toByteArray().decodeToString()).jsonObject["contents"]!!.jsonArray[0]
                             .jsonObject["parts"]!!.jsonArray[0].jsonObject["text"]!!.jsonPrimitive.content
+                        // 질문 음성 요청은 따로 모으고 받지 못한 것으로 둔다. 화면은 기기 음성으로 읽는다.
+                        if (QUESTION_VOICE_MODEL in it.url.toString()) {
+                            promptsLock.withLock { voiceRequests += prompt }
+                            return@MockEngine respond("{}", HttpStatusCode.TooManyRequests)
+                        }
                         // 미리 받는 요청 셋이 동시에 들어와서 목록에 하나씩 넣는다.
                         promptsLock.withLock { prompts += prompt }
                         respond(if (gemini == HttpStatusCode.OK) generated(prompt) else "{}", gemini)
@@ -134,7 +140,7 @@ class ExamQuestionSourceTest {
                 ),
             ),
             timer = { now },
-            pack = ExamPack(pool = { pool }, questionsPrompt = { PromptFile("questions-test", "{{topics}} | {{level}} | {{recalibration}} | {{weakTypes}} | {{asked}} |\n{{order}}") }),
+            pack = ExamPack(pool = { pool }, voice = { null }, questionsPrompt = { PromptFile("questions-test", "{{topics}} | {{level}} | {{recalibration}} | {{weakTypes}} | {{asked}} |\n{{order}}") }),
         )
         val store = ViewModelStore().also(viewModels::add)
         return ViewModelProvider.create(store, viewModelFactory { initializer { graph.examViewModelFactory.create(sessionId) } })[ExamViewModel::class]
@@ -230,6 +236,21 @@ class ExamQuestionSourceTest {
         }
     }
 
+    /** #161: 몫을 받으면 첫 질문 음성을, Play 하면 다음 질문 음성을 미리 받는다. 내장 문항은 앱에 있어 받지 않는다. */
+    @Test
+    fun `질문 음성을 출제와 함께 미리 받는다`() = exam {
+        val exam = launch(HttpStatusCode.OK)
+        exam.firstQuestion()
+        awaitVoices("generated not chosen yet 2")
+        exam.answerUntil(2)
+        exam.play()
+        awaitVoices("generated not chosen yet 2", "generated not chosen yet 3")
+    }
+
+    private suspend fun awaitVoices(vararg texts: String) {
+        while (voiceRequests.toSet() != texts.toSet()) withContext(Dispatchers.Default) { delay(10) }
+    }
+
     @Test
     fun `F6_2 Gemini 가 실패하면 내장 풀 질문이 나오고 화면에 알린다`() = exam {
         val exam = launch(HttpStatusCode.ServiceUnavailable)
@@ -269,7 +290,9 @@ class ExamQuestionSourceTest {
 
 /** 기기 음성 대신 읽은 글을 모은다. */
 private class SpeechLog(private val spoken: MutableList<String>) : Tts {
-    override suspend fun speak(text: String): Boolean = spoken.add(text)
+    override suspend fun speak(text: String, audio: ByteArray?): Boolean = spoken.add(text)
+
+    override fun hasHighQualityVoice() = true
 
     override fun stop() = Unit
 }

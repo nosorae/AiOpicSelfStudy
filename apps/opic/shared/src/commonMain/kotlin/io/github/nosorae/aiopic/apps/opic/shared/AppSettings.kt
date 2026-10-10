@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 
 /**
- * 설정 값(화면 모드, 고른 분석 모델, 음성 전송 동의, 답변 타이머, 불러온 문항 파일, 진동, 서베이 답)을 플랫폼 설정 저장소에 둔다.
+ * 설정 값(화면 모드, 고른 분석 모델, 음성 전송 동의, 답변 타이머, 불러온 문항 파일, 진동, 서베이 답, 질문 음성)을 플랫폼 설정 저장소에 둔다.
  * 플랫폼은 문자열 읽기와 쓰기 두 함수만 넘긴다(Android SharedPreferences, iOS NSUserDefaults). 키가 아니라서 암호화하지 않는다.
  */
 class AppSettings(private val read: (String) -> String?, private val write: (String, String) -> Unit) :
@@ -68,6 +68,11 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
     /** 플랫폼 진동에 설정의 켜기/끄기를 씌운다. 낼 때마다 읽어서 설정을 바꾸는 즉시 따른다. 기본은 켬이다. */
     fun haptics(platform: Haptics): Haptics = Haptics { if (read(HAPTICS) != "false") platform.play(it) }
 
+    /** 질문을 자연스러운 음성으로 읽는다(#161). 읽을 때마다 읽어서 설정을 바꾸는 즉시 따른다. 기본은 켬이다. */
+    val naturalVoiceOn: Boolean get() = read(NATURAL_VOICE) != "false"
+
+    fun setNaturalVoiceOn(on: Boolean) = write(NATURAL_VOICE, on.toString())
+
     // ponytail: 문항 파일을 설정 저장소에 문자열 하나로 둔다. 몇십 KB 까지는 괜찮고, 파일이 MB 단위로 커지면 앱 폴더 파일로 옮긴다.
     override suspend fun questionFile(): String? = read(QUESTION_FILE)
 
@@ -95,6 +100,7 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
         private const val ANSWER_TIMER = "answer_timer"
         private const val QUESTION_FILE = "question_file"
         private const val HAPTICS = "haptics"
+        private const val NATURAL_VOICE = "natural_voice"
         private const val EXAM_QUESTIONS = "exam_questions_"
         private const val SURVEY_ANSWERS = "survey_answers"
 

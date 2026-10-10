@@ -67,12 +67,14 @@ class FakePracticeRepository(
 class FakeTts(private val readTime: Duration = 3.seconds, var canSpeak: Boolean = true) : Tts {
     val spoken = mutableListOf<String>()
 
-    override suspend fun speak(text: String): Boolean {
+    override suspend fun speak(text: String, audio: ByteArray?): Boolean {
         if (!canSpeak) return false
         delay(readTime)
         spoken += text
         return true
     }
+
+    override fun hasHighQualityVoice() = true
 
     override fun stop() = Unit
 }

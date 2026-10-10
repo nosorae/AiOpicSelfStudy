@@ -180,6 +180,23 @@ fun SettingsScreen(
             )
             state.questionImport?.let { QuestionImportNotice(it) }
 
+            SectionLabel(Res.string.settings_voice_section)
+            MontageListCell(
+                title = stringResource(Res.string.settings_voice_natural),
+                caption = stringResource(Res.string.settings_voice_natural_caption),
+                selected = state.naturalVoiceOn,
+                onClick = { onIntent(SettingsIntent.SetNaturalVoice(on = true)) },
+                modifier = Modifier.testTag("settings-voice-natural"),
+            )
+            MontageListCell(
+                title = stringResource(Res.string.settings_voice_device),
+                caption = stringResource(Res.string.settings_voice_device_caption),
+                selected = !state.naturalVoiceOn,
+                onClick = { onIntent(SettingsIntent.SetNaturalVoice(on = false)) },
+                modifier = Modifier.testTag("settings-voice-device"),
+            )
+            if (state.showsDeviceVoiceGuide) Notice(stringResource(Res.string.settings_voice_device_guide))
+
             SectionLabel(Res.string.settings_theme_section)
             ThemeMode.entries.forEach { mode ->
                 MontageListCell(
@@ -356,6 +373,9 @@ internal object SettingsSamples {
         importedQuestionCount = 12,
         questionImport = QuestionImportResult.Invalid("id 가 겹친다: [my-1]"),
     )
+
+    /** 기기 음성을 골랐는데 고품질 기기 음성이 없다. */
+    val deviceVoice = default.copy(naturalVoiceOn = false, highQualityDeviceVoice = false)
     val imported = default.copy(answerTimerOn = true, importedQuestionCount = 12, questionImport = QuestionImportResult.Imported(12))
 }
 

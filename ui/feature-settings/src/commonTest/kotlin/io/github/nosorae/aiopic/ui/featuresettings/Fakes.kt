@@ -19,6 +19,8 @@ import io.github.nosorae.aiopic.ui.featuresettings.practice.SetAnswerTimerUseCas
 import io.github.nosorae.aiopic.ui.featuresettings.theme.SetThemeModeUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
+import io.github.nosorae.aiopic.ui.featuresettings.voice.QuestionVoiceStore
+import io.github.nosorae.aiopic.ui.featuresettings.voice.SetQuestionVoiceUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** 안정 모델 둘과 미리보기 모델 하나. 실제 Gemini 목록에는 아직 미리보기 모델이 없어 안내를 확인하려고 만든다. */
@@ -37,11 +39,14 @@ class FakeSettingsStore(var modelId: String? = null) :
     VoiceConsent,
     AnswerTimerStore,
     QuestionFileStore,
-    HapticsStore {
+    HapticsStore,
+    QuestionVoiceStore {
     var consentGiven = true
     var answerTimerOn = false
     var questionFile: String? = null
     var hapticsOn = true
+    var naturalVoiceOn = true
+    var highQualityDeviceVoice = true
 
     override val themeMode = MutableStateFlow(ThemeMode.System)
 
@@ -77,6 +82,14 @@ class FakeSettingsStore(var modelId: String? = null) :
         hapticsOn = on
     }
 
+    override suspend fun naturalVoiceOn(): Boolean = naturalVoiceOn
+
+    override suspend fun setNaturalVoiceOn(on: Boolean) {
+        naturalVoiceOn = on
+    }
+
+    override fun hasHighQualityDeviceVoice(): Boolean = highQualityDeviceVoice
+
     override suspend fun questionFile(): String? = questionFile
 
     override suspend fun saveQuestionFile(json: String) {
@@ -97,7 +110,7 @@ class FakeWorkQueue(vararg pending: String) : WorkQueue {
 
 /** 설정 화면 테스트마다 같은 가짜로 ViewModel 을 만든다. */
 fun settingsViewModel(store: FakeSettingsStore, vault: FakeKeyVault, queue: FakeWorkQueue = FakeWorkQueue()) = SettingsViewModel(
-    loadSettingsUseCase = LoadSettingsUseCase(FakeCatalog, store, store, vault, store, store, store, store),
+    loadSettingsUseCase = LoadSettingsUseCase(FakeCatalog, store, store, vault, store, store, store, store, store),
     selectModelUseCase = SelectModelUseCase(store),
     deleteKeyUseCase = DeleteKeyUseCase(vault),
     setThemeModeUseCase = SetThemeModeUseCase(store),
@@ -105,6 +118,7 @@ fun settingsViewModel(store: FakeSettingsStore, vault: FakeKeyVault, queue: Fake
     setAnswerTimerUseCase = SetAnswerTimerUseCase(store),
     importQuestionsUseCase = ImportQuestionsUseCase(store),
     setHapticsUseCase = SetHapticsUseCase(store),
+    setQuestionVoiceUseCase = SetQuestionVoiceUseCase(store),
 )
 
 class FakeKeyVault(vararg saved: Pair<String, String>) : KeyVault {
