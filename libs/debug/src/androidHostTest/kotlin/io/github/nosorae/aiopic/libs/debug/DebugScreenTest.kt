@@ -2,19 +2,28 @@ package io.github.nosorae.aiopic.libs.debug
 
 import android.content.ClipboardManager
 import android.content.Context
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.CompletableDeferred
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -208,5 +217,50 @@ class DebugScreenTest {
         rule.waitUntil { shared != null }
 
         assertContains(shared.orEmpty(), "E Rec: 녹음 실패")
+    }
+
+    @Test
+    fun sharingKeepsTheButtonAndBlocksOtherInputUntilTheReportIsReady() {
+        val gate = CompletableDeferred<Unit>()
+        core.panel("Slow") {
+            gate.await()
+            emptyList()
+        }
+        show()
+
+        rule.onNodeWithText("Share").performClick()
+        rule.onNodeWithText("Share").assertIsNotEnabled()
+        rule.onNodeWithText("Close").assertIsNotEnabled()
+        rule.onNodeWithText("Network").assertIsNotEnabled()
+        rule.onNodeWithContentDescription("Preparing report").assertExists()
+
+        gate.complete(Unit)
+        rule.waitUntil { shared != null }
+        rule.onNodeWithText("Share").assertIsEnabled()
+        rule.onNodeWithText("Close").assertIsEnabled()
+    }
+
+    @Test
+    fun reduceMotionDrawsTheWaitingBarAsOneStillFrame() {
+        val gate = CompletableDeferred<Unit>()
+        core.panel("Slow") {
+            gate.await()
+            emptyList()
+        }
+        rule.setContent { DebugScreen(core, onShare = {}, onClose = {}, reduceMotion = true) }
+
+        rule.onNodeWithText("Panels").performClick()
+
+        rule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(0.4f, 0f..1f))).assertExists()
+        rule.onAllNodes(hasProgressBarRangeInfo(ProgressBarRangeInfo.Indeterminate)).assertCountEquals(0)
+        gate.complete(Unit)
+    }
+
+    @Test
+    fun aLogRowWithAnExceptionIsTallEnoughToTap() {
+        core.log(DebugLevel.Error, "Rec", "recording failed", IllegalStateException("timeout"))
+        show()
+
+        rule.onNode(hasClickAction() and hasText("recording failed", substring = true)).assertHeightIsAtLeast(48.dp)
     }
 }

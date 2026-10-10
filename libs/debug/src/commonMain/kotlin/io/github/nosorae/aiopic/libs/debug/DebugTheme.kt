@@ -75,7 +75,7 @@ internal object DebugType {
     private val mono = FontFamily.Monospace
     val title = TextStyle(fontSize = 20.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold)
     val section = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
-    val body = TextStyle(fontSize = 15.sp, lineHeight = 21.sp)
+    val body = TextStyle(fontSize = 16.sp, lineHeight = 22.sp)
     val caption = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
     val code = TextStyle(fontFamily = mono, fontSize = 13.sp, lineHeight = 19.sp)
     val codeStrong = code.copy(fontWeight = FontWeight.Bold)
@@ -84,13 +84,11 @@ internal object DebugType {
 
 /** 4dp 단위 간격. 묶인 것 사이는 좁게, 묶음 사이는 넓게 둔다. */
 internal object DebugSpace {
-    val hairline = 1.dp
     val bar = 3.dp
     val xs = 4.dp
     val s = 8.dp
     val m = 12.dp
     val l = 16.dp
-    val xl = 24.dp
 
     /** 누르는 줄과 버튼의 최소 높이. 두 플랫폼 기준 중 큰 쪽이다. */
     val touch = 48.dp

@@ -25,6 +25,7 @@ import platform.Foundation.create
 import platform.Foundation.currentLocale
 import platform.Foundation.localeIdentifier
 import platform.Foundation.writeToFile
+import platform.UIKit.UIAccessibilityIsReduceMotionEnabled
 import platform.UIKit.UIActivityViewController
 import platform.UIKit.UIApplication
 import platform.UIKit.UIDevice
@@ -61,7 +62,12 @@ public fun DebugTools.install(config: DebugConfig = DebugConfig()) {
 public fun DebugTools.viewController(): UIViewController {
     lateinit var controller: UIViewController
     controller = ComposeUIViewController {
-        DebugApp(core, onShare = { share(controller, it) }, onClose = { controller.dismissViewControllerAnimated(true, null) })
+        DebugApp(
+            core,
+            onShare = { share(controller, it) },
+            onClose = { controller.dismissViewControllerAnimated(true, null) },
+            reduceMotion = UIAccessibilityIsReduceMotionEnabled(),
+        )
     }
     return controller
 }

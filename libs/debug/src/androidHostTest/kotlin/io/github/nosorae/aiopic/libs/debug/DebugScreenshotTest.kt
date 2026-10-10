@@ -61,7 +61,7 @@ class DebugScreenshotTest {
 
     private fun shot(dark: Boolean = false, records: Boolean = true, act: () -> Unit = {}) {
         if (records) records()
-        rule.setContent { DebugApp(core, onShare = {}, onClose = {}, dark = dark) }
+        rule.setContent { DebugApp(core, onShare = {}, onClose = {}, reduceMotion = false, dark = dark) }
         act()
         rule.onRoot().captureRoboImage()
     }

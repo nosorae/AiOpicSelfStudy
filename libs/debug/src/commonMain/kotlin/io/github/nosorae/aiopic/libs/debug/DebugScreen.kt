@@ -52,9 +52,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
@@ -72,12 +74,18 @@ private enum class DebugTab { Logs, Network, Switches, Panels, Info, Crashes }
 /**
  * 디버깅 화면. 앱 디자인 체계와 묶이지 않게 이 모듈의 토큰([DebugTheme])으로 그린다.
  * 탭은 로그, 네트워크, 스위치, 앱 패널, 기기와 앱 정보, 크래시이고, 공유는 [DebugCore.report] 전체를 [onShare] 로 넘긴다.
- * 직접 만든 움직임은 없다. Material 부품의 짧은 전환(탭 밑줄, 스위치)과 기다리는 동안의 막대뿐이다.
- * ponytail: iOS 동작 줄이기를 따로 읽지 않는다. 디버깅 화면에 계속 움직이는 것이 생기면 그때 읽는다.
+ * 직접 만든 움직임은 없다. Material 부품의 짧은 전환(탭 밑줄, 스위치)과 기다리는 동안 계속 도는 막대([Waiting])뿐이다.
+ * 동작 줄이기([reduceMotion])가 켜지면 막대는 멈춘 한 장면으로 그린다. 기다리는 중이라는 것은 옆의 문장과 막힌 버튼으로 남는다.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun DebugScreen(core: DebugCore, onShare: (String) -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+internal fun DebugScreen(
+    core: DebugCore,
+    onShare: (String) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    reduceMotion: Boolean = false,
+) {
     var tab by remember { mutableStateOf(DebugTab.Logs) }
     var sharing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -88,7 +96,8 @@ internal fun DebugScreen(core: DebugCore, onShare: (String) -> Unit, onClose: ()
                 TopAppBar(
                     title = { Text("Debug tools", style = DebugType.title) },
                     actions = {
-                        // 보고서는 앱 패널을 다시 읽어서 만들어 시간이 걸릴 수 있다. 그동안 버튼을 막고 막대로 보인다.
+                        // 보고서는 앱 패널을 다시 읽어서 만들어 시간이 걸릴 수 있다. 그동안 버튼 글자와 폭은 그대로 두고 막기만 하며,
+                        // 탭 줄 밑 막대로 기다림을 보인다. 다른 버튼과 탭, 본문도 끝날 때까지 막는다.
                         TextButton(
                             enabled = !sharing,
                             onClick = {
@@ -101,27 +110,31 @@ internal fun DebugScreen(core: DebugCore, onShare: (String) -> Unit, onClose: ()
                                     }
                                 }
                             },
-                        ) { Text(if (sharing) "Preparing report" else "Share") }
-                        TextButton(onClick = onClose) { Text("Close") }
+                        ) { Text("Share") }
+                        TextButton(enabled = !sharing, onClick = onClose) { Text("Close") }
                     },
                 )
                 PrimaryScrollableTabRow(selectedTabIndex = tab.ordinal, edgePadding = DebugSpace.s) {
                     DebugTab.entries.forEach {
-                        Tab(selected = it == tab, onClick = { tab = it }, text = { Text(it.name) })
+                        Tab(selected = it == tab, enabled = !sharing, onClick = { tab = it }, text = { Text(it.name) })
                     }
                 }
-                if (sharing) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (sharing) Waiting(reduceMotion, Modifier.semantics { contentDescription = "Preparing report" })
             }
         },
     ) { padding ->
-        val content = Modifier.fillMaxSize().padding(padding)
-        when (tab) {
-            DebugTab.Logs -> LogsTab(core, content)
-            DebugTab.Network -> NetworkTab(core, content)
-            DebugTab.Switches -> SwitchesTab(core, content)
-            DebugTab.Panels -> PanelsTab(core, content)
-            DebugTab.Info -> Rows(remember { core.info() }, content) { Empty("No device info", "The platform did not report any.") }
-            DebugTab.Crashes -> CrashesTab(core, content)
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            val content = Modifier.fillMaxSize()
+            when (tab) {
+                DebugTab.Logs -> LogsTab(core, content)
+                DebugTab.Network -> NetworkTab(core, content)
+                DebugTab.Switches -> SwitchesTab(core, content)
+                DebugTab.Panels -> PanelsTab(core, content, reduceMotion)
+                DebugTab.Info -> Rows(remember { core.info() }, content) { Empty("No device info", "The platform did not report any.") }
+                DebugTab.Crashes -> CrashesTab(core, content)
+            }
+            // 보고서를 만드는 동안 본문 위를 덮어 누름을 받기만 하고 아래로 넘기지 않는다.
+            if (sharing) Box(Modifier.matchParentSize().pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } })
         }
     }
 }
@@ -212,8 +225,15 @@ private fun LogRow(log: DebugLog, query: String, open: Boolean, onToggle: () -> 
     Row(
         Modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .then(if (log.error != null) Modifier.clickable(onClickLabel = if (open) "Hide stack" else "Show stack", onClick = onToggle) else Modifier),
+            // 예외가 있는 줄만 눌린다. 누르는 줄은 48dp 아래로 내려가지 않게 높이를 먼저 잡고 그 안에서 띠를 줄 높이에 맞춘다.
+            .then(
+                if (log.error != null) {
+                    Modifier.clickable(onClickLabel = if (open) "Hide stack" else "Show stack", onClick = onToggle).heightIn(min = DebugSpace.touch)
+                } else {
+                    Modifier
+                },
+            )
+            .height(IntrinsicSize.Min),
     ) {
         Box(Modifier.width(DebugSpace.bar).fillMaxHeight().background(stripe))
         Text(
@@ -347,7 +367,7 @@ private const val SLOW_MS = 1_000
 private fun StatusChip(label: String, color: Color) {
     val c = debugColors
     Box(
-        Modifier.widthIn(min = DebugSpace.statusChip).background(c.tint(color), DebugShape.chip).padding(horizontal = DebugSpace.xs, vertical = DebugSpace.xs / 2),
+        Modifier.widthIn(min = DebugSpace.statusChip).background(c.tint(color), DebugShape.chip).padding(horizontal = DebugSpace.xs),
         contentAlignment = Alignment.Center,
     ) {
         Text(label, style = DebugType.codeStrong, color = color)
@@ -541,7 +561,7 @@ private fun SwitchesTab(core: DebugCore, modifier: Modifier = Modifier) {
 // ---------- 패널, 정보 ----------
 
 @Composable
-private fun PanelsTab(core: DebugCore, modifier: Modifier = Modifier) {
+private fun PanelsTab(core: DebugCore, modifier: Modifier = Modifier, reduceMotion: Boolean = false) {
     val c = debugColors
     val panels by core.panels.collectAsState()
     var version by remember { mutableIntStateOf(0) }
@@ -561,7 +581,7 @@ private fun PanelsTab(core: DebugCore, modifier: Modifier = Modifier) {
         }
         val current = rows
         if (current == null) {
-            LinearProgressIndicator(Modifier.fillMaxWidth())
+            Waiting(reduceMotion)
             Text(
                 "Reading app panels. Each panel's name and value rows appear here.",
                 style = DebugType.body,
@@ -693,8 +713,27 @@ private fun SearchField(query: String, onQuery: (String) -> Unit, placeholder: S
     )
 }
 
-/** 플랫폼 창에 띄우는 입구. 기본은 시스템 다크 모드를 따른다. */
+/**
+ * 기다리는 동안의 막대. 끝을 모르는 기다림이라 계속 돈다. 동작 줄이기가 켜지면 같은 막대를 일부만 찬 한 장면으로 멈춘다.
+ * 0.4 는 빈 막대(아직 시작 안 함)나 꽉 찬 막대(끝남)로 읽히지 않는 값이다.
+ */
 @Composable
-internal fun DebugApp(core: DebugCore, onShare: (String) -> Unit, onClose: () -> Unit, dark: Boolean = isSystemInDarkTheme()) {
-    DebugTheme(dark) { DebugScreen(core, onShare, onClose) }
+private fun Waiting(reduceMotion: Boolean, modifier: Modifier = Modifier) {
+    if (reduceMotion) {
+        LinearProgressIndicator(progress = { 0.4f }, modifier = modifier.fillMaxWidth(), drawStopIndicator = {})
+    } else {
+        LinearProgressIndicator(modifier.fillMaxWidth())
+    }
+}
+
+/** 플랫폼 창에 띄우는 입구. 기본은 시스템 다크 모드를 따른다. [reduceMotion] 은 플랫폼의 동작 줄이기 설정이다. */
+@Composable
+internal fun DebugApp(
+    core: DebugCore,
+    onShare: (String) -> Unit,
+    onClose: () -> Unit,
+    reduceMotion: Boolean,
+    dark: Boolean = isSystemInDarkTheme(),
+) {
+    DebugTheme(dark) { DebugScreen(core, onShare, onClose, reduceMotion = reduceMotion) }
 }
