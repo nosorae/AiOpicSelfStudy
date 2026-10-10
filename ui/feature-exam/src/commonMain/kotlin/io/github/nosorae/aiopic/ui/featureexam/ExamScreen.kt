@@ -385,15 +385,15 @@ internal object ExamSamples {
             ),
         ),
         groups = listOf(
-            TopicGroup("leisure", "쉬는 날에는 주로 무엇을 하나요?", 2, listOf("영화 보기", "공연 보기", "콘서트 가기", "박물관 가기", "공원 가기", "캠핑", "해변 가기", "카페 가기", "쇼핑", "TV 보기").map { Topic(it, it) }),
-            TopicGroup("trips", "휴가나 출장은 어떻게 보내나요?", 1, listOf("국내 출장", "해외 출장", "집에서 쉬는 휴가", "국내 여행", "해외 여행").map { Topic(it, it) }),
+            TopicGroup("leisure", "쉬는 날에는 주로 무엇을 하나요?", 2, listOf("영화보기", "클럽/나이트클럽 가기", "공연보기", "콘서트보기", "박물관가기", "공원가기", "캠핑하기", "해변가기", "스포츠 관람", "주거 개선").map { Topic(it, it) }),
+            TopicGroup("trips", "휴가나 출장은 어떻게 보내나요?", 1, listOf("국내출장", "해외출장", "집에서 보내는 휴가", "국내 여행", "해외 여행").map { Topic(it, it) }),
         ),
         minTopics = 12,
     )
 
     val survey = ExamUiState(step = ExamStep.Survey(minTopics = 12), survey = SurveyState(surveySample, choices = mapOf("work" to "company")))
-    val surveyGroup = survey.copy(survey = survey.survey!!.copy(screen = 1, topics = setOf("영화 보기", "카페 가기", "쇼핑")))
-    val surveyShort = survey.copy(survey = survey.survey!!.copy(screen = 2, topics = setOf("영화 보기", "카페 가기", "국내 여행")))
+    val surveyGroup = survey.copy(survey = survey.survey!!.copy(screen = 1, topics = setOf("영화보기", "공연보기", "스포츠 관람")))
+    val surveyShort = survey.copy(survey = survey.survey!!.copy(screen = 2, topics = setOf("영화보기", "공연보기", "국내 여행")))
     val surveyReady = survey.copy(survey = survey.survey!!.copy(screen = 2, topics = surveySample.groups[0].topics.map { it.id }.toSet() + "국내 여행" + "해외 여행"))
     val level = ExamUiState(step = ExamStep.LevelSelect, levelCount = 6, selectedLevel = 4)
     val check = ExamUiState(step = ExamStep.Check)

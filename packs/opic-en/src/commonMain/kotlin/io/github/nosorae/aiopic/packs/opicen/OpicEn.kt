@@ -67,8 +67,9 @@ object OpicEn {
 
     /**
      * 서베이(F2.2). 구성(Part 1~2 하위 질문 갈래, Part 3 거주, Part 4 네 묶음과 묶음별 최소, 합쳐서 12개 이상)은 실제 시험 구성을 따르고
-     * 질문 문장은 이 앱의 말로 다시 썼다. 주제 id 는 내장 문항 풀의 주제 id 와 같아야 그 주제 문항이 나온다(F6.2).
-     * 풀의 home 은 사는 집 이야기라 서베이 밖 돌발 주제로 두고, 집에서 쉬는 휴가는 따로 home-vacation 으로 둔다.
+     * 질문 문장은 이 앱의 말로 다시 썼다. Part 4 선택지는 짧은 활동 이름이라 실제 시험 튜토리얼 목록의 이름을 그대로 쓴다.
+     * 주제 id 는 내장 문항 풀의 주제 id 와 같아야 그 주제 문항이 나온다(F6.2). 풀에 문항이 없는 주제는 같은 묶음 주제의 문항으로 대신한다.
+     * 풀의 home, cafes, shopping, tv 는 서베이 밖 돌발 주제로 두고, 집에서 보내는 휴가는 따로 home-vacation 으로 둔다.
      */
     val survey = Survey(
         questions = listOf(
@@ -99,28 +100,28 @@ object OpicEn {
         groups = listOf(
             group(
                 "leisure", "쉬는 날에는 주로 무엇을 하나요?", 2,
-                "movies" to "영화 보기", "performances" to "공연 보기", "concerts" to "콘서트 가기", "museums" to "박물관 가기", "parks" to "공원 가기",
-                "camping" to "캠핑", "beach" to "해변 가기", "cafes" to "카페 가기", "shopping" to "쇼핑", "tv" to "TV 보기",
+                "movies" to "영화보기", "clubs" to "클럽/나이트클럽 가기", "performances" to "공연보기", "concerts" to "콘서트보기", "museums" to "박물관가기",
+                "parks" to "공원가기", "camping" to "캠핑하기", "beach" to "해변가기", "watching-sports" to "스포츠 관람", "home-improvement" to "주거 개선",
             ),
             group(
                 "hobbies", "즐겨 하는 취미가 있나요?", 1,
-                "music" to "음악 듣기", "instrument" to "악기 연주", "singing" to "노래 부르기", "dancing" to "춤추기", "writing" to "글쓰기",
-                "drawing" to "그림 그리기", "cooking" to "요리", "pets" to "반려동물 키우기", "reading" to "책 읽기",
+                "reading-to-children" to "아이에게 책 읽어주기", "music" to "음악 감상하기", "instrument" to "악기 연주하기", "singing" to "혼자 노래부르거나 합창하기",
+                "dancing" to "춤추기", "writing" to "글쓰기(편지, 단문, 시 등)", "drawing" to "그림 그리기", "cooking" to "요리하기", "pets" to "애완동물 기르기",
             ),
             group(
                 "sports", "어떤 운동을 하나요?", 1,
-                "basketball" to "농구", "baseball" to "야구, 소프트볼", "soccer" to "축구", "american-football" to "미식축구", "hockey" to "하키",
+                "basketball" to "농구", "baseball" to "야구/소프트볼", "soccer" to "축구", "american-football" to "미식축구", "hockey" to "하키",
                 "cricket" to "크리켓", "golf" to "골프", "volleyball" to "배구", "tennis" to "테니스", "badminton" to "배드민턴", "table-tennis" to "탁구",
-                "swimming" to "수영", "cycling" to "자전거", "skiing" to "스키, 스노보드", "ice-skating" to "스케이트", "jogging" to "조깅", "walking" to "걷기",
-                "yoga" to "요가", "hiking" to "등산, 트레킹", "fishing" to "낚시", "gym" to "헬스", "no-exercise" to "운동 안 해요",
+                "swimming" to "수영", "cycling" to "자전거", "skiing" to "스키/스노우보드", "ice-skating" to "아이스 스케이트", "jogging" to "조깅", "walking" to "걷기",
+                "yoga" to "요가", "hiking" to "하이킹/트레킹", "fishing" to "낚시", "gym" to "헬스", "no-exercise" to "운동을 전혀 하지 않음",
             ),
             group(
                 "trips",
                 "휴가나 출장은 어떻게 보내나요?",
                 1,
-                "business-trip" to "국내 출장",
-                "overseas-business-trip" to "해외 출장",
-                "home-vacation" to "집에서 쉬는 휴가",
+                "business-trip" to "국내출장",
+                "overseas-business-trip" to "해외출장",
+                "home-vacation" to "집에서 보내는 휴가",
                 "domestic-travel" to "국내 여행",
                 "overseas-travel" to "해외 여행",
             ),

@@ -53,7 +53,7 @@ class SurveyPartsWiringTest {
         val survey = viewModel("survey") { graph.surveyViewModel }
         advanceUntilIdle()
         listOf("none", "no", "over-5-years", "family").forEach { survey.onIntent(SurveyIntent.ChooseOption(it)) }
-        val topics = listOf("movies", "parks", "cafes", "shopping", "tv", "music", "cooking", "reading", "jogging", "walking", "hiking", "domestic-travel")
+        val topics = listOf("movies", "parks", "clubs", "beach", "camping", "music", "cooking", "reading-to-children", "jogging", "walking", "hiking", "domestic-travel")
         topics.forEach { survey.onIntent(SurveyIntent.ToggleTopic(it)) }
         survey.onIntent(SurveyIntent.Submit)
         advanceUntilIdle()

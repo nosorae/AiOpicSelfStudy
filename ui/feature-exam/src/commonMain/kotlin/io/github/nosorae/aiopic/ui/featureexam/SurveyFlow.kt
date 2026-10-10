@@ -38,6 +38,7 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * 서베이 한 화면. 맨 위 진행 막대 아래에 질문 하나 또는 주제 묶음 하나를 그리고, 화면이 바뀌면 옆으로 밀려난다.
+ * 마지막 묶음 화면이면 모든 묶음에서 고른 수를 맨 아래에 고정해 보인다.
  * 앞으로 가면 새 화면이 오른쪽에서, 뒤로 가면 왼쪽에서 들어온다. 모의시험의 서베이 단계와 설정의 서베이가 같이 쓴다.
  */
 @Composable
@@ -59,6 +60,8 @@ fun SurveyFlow(state: SurveyState, onChoose: (String) -> Unit, onToggle: (String
             shown.question?.let { QuestionScreen(it, shown.choices[it.id], onChoose, scrolling) }
             shown.group?.let { GroupScreen(shown, it, onToggle, scrolling) }
         }
+        // 큰 글자에서 칩이 길어져도 스크롤 아래로 밀리지 않게 스크롤 밖, 버튼 바로 위에 둔다.
+        if (state.isLast) Total(state)
     }
 }
 
@@ -141,7 +144,6 @@ private fun GroupScreen(state: SurveyState, group: TopicGroup, onToggle: (String
                 )
             }
         }
-        if (state.isLast) Total(state)
     }
 }
 
@@ -150,7 +152,7 @@ private fun GroupScreen(state: SurveyState, group: TopicGroup, onToggle: (String
 private fun Total(state: SurveyState) {
     val enough = state.topics.size >= state.survey.minTopics
     val color = if (enough) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralPrimary
-    Column(Modifier.padding(top = MontageSpacing.spacing24), verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
+    Column(Modifier.padding(vertical = MontageSpacing.spacing12), verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
         Row(
             modifier = Modifier.padding(horizontal = Gutter),
             verticalAlignment = Alignment.Bottom,

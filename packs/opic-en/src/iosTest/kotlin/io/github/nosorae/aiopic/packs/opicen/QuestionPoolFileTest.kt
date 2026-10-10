@@ -8,6 +8,7 @@ import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /** 내장 문항 풀(F6.2)을 Res 로 읽어 본다. Compose 리소스를 읽어야 해서 [OpicPromptFileTest] 처럼 iOS 시뮬레이터에서만 돈다. */
 class QuestionPoolFileTest {
@@ -36,9 +37,9 @@ class QuestionPoolFileTest {
     }
 
     @Test
-    fun `F6_2 내장 풀의 주제는 자기소개와 서베이 밖 돌발 주제인 동네와 사는 집을 빼면 모두 서베이에서 고를 수 있다`() = runTest {
+    fun `F6_2 내장 풀의 주제는 자기소개와 서베이 밖 돌발 주제를 빼면 모두 서베이에서 고를 수 있다`() = runTest {
         val surveyTopics = OpicEn.survey.groups.flatMap { group -> group.topics.map { it.id } }.toSet()
-        assertEquals(setOf("self", "neighborhood", "home"), pool().map { it.topic }.toSet() - surveyTopics)
+        assertEquals(setOf("self", "neighborhood", "home", "cafes", "shopping", "tv"), pool().map { it.topic }.toSet() - surveyTopics)
         assertEquals(OpicEn.questionPool(), pool())
     }
 
@@ -48,5 +49,20 @@ class QuestionPoolFileTest {
         val missing = pool().filter { OpicEn.questionVoice(it.id)?.isNotEmpty() != true }.map { it.id }
         assertEquals(emptyList(), missing)
         assertEquals(null, OpicEn.questionVoice("no-such-question"))
+    }
+
+    @Test
+    fun `F6_2 내장 문항이 없는 서베이 주제만 골라도 묘사 문항은 같은 묶음 주제로 나온다`() = runTest {
+        val pool = pool()
+        val pooled = pool.map { it.topic }.toSet()
+        val description = OpicQuestionType.Description.type
+        OpicEn.survey.groups.forEach { group ->
+            group.topics.map { it.id }.filterNot { it in pooled }.forEach { topic ->
+                repeat(5) { seed ->
+                    val picked = assertNotNull(pickFromPool(pool, listOf(description), listOf(topic), Random(seed), OpicEn.survey.nearTopics(listOf(topic))))
+                    assertTrue(picked.single().topic in group.topics.map { it.id }, "$topic 대신 ${picked.single().topic}")
+                }
+            }
+        }
     }
 }

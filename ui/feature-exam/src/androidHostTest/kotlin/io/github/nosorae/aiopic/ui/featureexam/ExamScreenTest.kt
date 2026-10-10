@@ -1,9 +1,14 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -77,10 +82,10 @@ class ExamScreenTest {
             }
         }
 
-        rule.onNodeWithText("캠핑").performClick()
+        rule.onNodeWithText("캠핑하기").performClick()
 
         assertEquals(listOf(HapticEffect.Selection), played)
-        assertEquals(listOf<ExamIntent>(ExamIntent.ToggleTopic("캠핑")), intents)
+        assertEquals(listOf<ExamIntent>(ExamIntent.ToggleTopic("캠핑하기")), intents)
     }
 
     @Test
@@ -91,6 +96,14 @@ class ExamScreenTest {
         rule.onNodeWithText("이전").performClick()
 
         assertEquals(listOf<ExamIntent>(ExamIntent.PreviousSurveyScreen), intents)
+    }
+
+    @Test
+    fun `F2_2 마지막 묶음의 전체 선택 수는 스크롤 밖에 있어 큰 글자에서도 아래로 밀리지 않는다`() {
+        show(ExamSamples.surveyReady)
+
+        rule.onNodeWithTag("survey-total").assertIsDisplayed()
+        rule.onNode(hasTestTag("survey-total") and hasAnyAncestor(hasScrollAction())).assertDoesNotExist()
     }
 
     @Test
