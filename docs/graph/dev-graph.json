@@ -1354,8 +1354,10 @@
       ],
       "done": "./gradlew :apps:opic:shared:allTests && ./gradlew :apps:opic:shared:testAndroidHostTest --tests '*ResumeTimerTest*'",
       "done_desc": "ResumeTimerTest(앱): AppGraph 로 시험을 시작해 몇 문항 답한 뒤 그래프와 ViewModel 을 버리고(강제 종료) 가짜 단조 시계를 앞으로 돌린 다음 새 그래프로 이어 보면, 꺼져 있던 시간은 빼고(F2.5) 남은 시간이 이어서 줄어드는지, 문항 화면을 벗어나면 멈추는지, 40분을 넘기면 남은 문항이 시간 부족이 되는지(F2.6). 테스트가 실패하면 원인을 고친다",
-      "status": "todo",
-      "issue": 123
+      "status": "done",
+      "issue": 123,
+      "start": "2026-10-10",
+      "end": "2026-10-10"
     },
     {
       "id": "e2e-ios",
