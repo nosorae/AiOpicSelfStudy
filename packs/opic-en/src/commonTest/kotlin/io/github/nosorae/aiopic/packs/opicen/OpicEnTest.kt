@@ -3,6 +3,7 @@ package io.github.nosorae.aiopic.packs.opicen
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
 
@@ -34,9 +35,33 @@ class OpicEnTest {
     }
 
     @Test
-    fun `F2_2 서베이 Part 질문은 주제 앞에 셋이고 보기가 비어 있지 않다`() {
-        assertEquals(3, OpicEn.surveyParts.size)
-        assertTrue(OpicEn.surveyParts.all { (question, options) -> question.isNotBlank() && options.isNotEmpty() })
+    fun `F2_2 Part 1부터 3 은 하나만 고르는 질문이고 일과 학생 여부는 고른 답에 따라 하위 질문이 이어진다`() {
+        val survey = OpicEn.survey
+        assertEquals(listOf("work", "student", "housing"), survey.visibleQuestions(emptyMap()).map { it.id })
+        assertEquals(
+            listOf("work", "employed", "work-period", "manager", "student", "course-now", "housing"),
+            survey.visibleQuestions(mapOf("work" to "company", "employed" to "yes", "student" to "yes")).map { it.id },
+        )
+        assertEquals(listOf("work", "teach-at", "employed", "student", "course-last", "housing"), survey.visibleQuestions(mapOf("work" to "teacher", "student" to "no")).map { it.id })
+        assertEquals(5, survey.questions.last().options.size)
+    }
+
+    @Test
+    fun `F2_2 Part 4 는 네 묶음 46개이고 묶음별 최소는 여가 2 취미 1 운동 1 휴가 1 이다`() {
+        val groups = OpicEn.survey.groups
+        assertEquals(listOf(10, 9, 22, 5), groups.map { it.topics.size })
+        assertEquals(listOf(2, 1, 1, 1), groups.map { it.min })
+        assertEquals(46, groups.flatMap { it.topics }.map { it.id }.toSet().size, "주제 id 가 겹치지 않는다")
+    }
+
+    @Test
+    fun `F2_2 합쳐서 12개 미만이거나 묶음 최소를 못 채우면 받지 않는다`() {
+        val (leisure, hobbies, sports, trips) = OpicEn.survey.groups.map { group -> group.topics.map { it.id } }
+        val enough = leisure.take(5) + hobbies.take(3) + sports.take(3) + trips.take(1)
+
+        assertTrue(OpicEn.survey.accepts(enough))
+        assertFalse(OpicEn.survey.accepts(enough.drop(1)), "11개")
+        assertFalse(OpicEn.survey.accepts(leisure + sports.take(2)), "취미와 휴가가 0개")
     }
 
     @Test

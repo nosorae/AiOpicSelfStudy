@@ -114,6 +114,23 @@ class QuestionPickTest {
     }
 
     @Test
+    fun `F6_2 고른 주제의 문항이 풀에 없으면 가까운 주제 문항을 서베이 밖 주제보다 먼저 쓴다`() {
+        // 고른 주제(beach)는 풀에 없다. 같은 묶음의 park 가 다른 주제(home, music, gym)보다 먼저 나와야 한다.
+        repeat(20) { seed ->
+            val picked = pickFromPool(pool, listOf(describe, routine), listOf("beach"), Random(seed), near = listOf("park"))!!
+
+            assertEquals(listOf("park", "park"), picked.map { it.topic }, "seed $seed")
+        }
+    }
+
+    @Test
+    fun `F6_2 출제가 실패하면 가까운 주제로 내장 문항을 고른다`() = runTest {
+        val picked = pickQuestions(listOf(describe, routine), listOf("beach"), pool, maxOutsideTopics = 2, random = Random(3), near = listOf("music")) { null }!!
+
+        assertEquals(listOf("music", "music"), picked.map { it.topic })
+    }
+
+    @Test
     fun `풀에 남은 문항이 없는 유형이 있으면 null 이다`() {
         assertNull(pickFromPool(pool, listOf(roleplay, roleplay), topics, Random(0)))
         assertNull(pickFromPool(pool, listOf(QuestionType("comparison")), topics, Random(0)))
