@@ -36,9 +36,9 @@ class QuestionPoolFileTest {
     }
 
     @Test
-    fun `F6_2 내장 풀의 주제는 자기소개와 서베이 밖 돌발 주제인 동네를 빼면 모두 서베이에서 고를 수 있다`() = runTest {
+    fun `F6_2 내장 풀의 주제는 자기소개와 서베이 밖 돌발 주제인 동네와 사는 집을 빼면 모두 서베이에서 고를 수 있다`() = runTest {
         val surveyTopics = OpicEn.survey.groups.flatMap { group -> group.topics.map { it.id } }.toSet()
-        assertEquals(setOf("self", "neighborhood"), pool().map { it.topic }.toSet() - surveyTopics)
+        assertEquals(setOf("self", "neighborhood", "home"), pool().map { it.topic }.toSet() - surveyTopics)
         assertEquals(OpicEn.questionPool(), pool())
     }
 }

@@ -67,6 +67,7 @@ object OpicEn {
     /**
      * 서베이(F2.2). 구성(Part 1~2 하위 질문 갈래, Part 3 거주, Part 4 네 묶음과 묶음별 최소, 합쳐서 12개 이상)은 실제 시험 구성을 따르고
      * 질문 문장은 이 앱의 말로 다시 썼다. 주제 id 는 내장 문항 풀의 주제 id 와 같아야 그 주제 문항이 나온다(F6.2).
+     * 풀의 home 은 사는 집 이야기라 서베이 밖 돌발 주제로 두고, 집에서 쉬는 휴가는 따로 home-vacation 으로 둔다.
      */
     val survey = Survey(
         questions = listOf(
@@ -118,7 +119,7 @@ object OpicEn {
                 1,
                 "business-trip" to "국내 출장",
                 "overseas-business-trip" to "해외 출장",
-                "home" to "집에서 쉬는 휴가",
+                "home-vacation" to "집에서 쉬는 휴가",
                 "domestic-travel" to "국내 여행",
                 "overseas-travel" to "해외 여행",
             ),
