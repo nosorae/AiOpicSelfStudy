@@ -61,24 +61,25 @@ class GeminiAnalyzer(
             audio = recordings.map { AudioPart(it.bytes, it.mimeType) },
             responseSchema = prompt.responseSchema,
         )
-        return when (val result = client.generate(request)) {
-            // ponytail: 읽을 수 없는 JSON 은 다시 요청하지 않고 거절한다. 스키마를 주면 드물어서다. 잘린 응답이 잦으면 출력 검사처럼 한 번 다시 보낸다.
-            is LlmResult.Success -> try {
-                AnalysisResult.Success(json.decodeFromString(serializer, result.text))
-            } catch (_: SerializationException) {
-                AnalysisResult.Failed(AnalysisError.Rejected)
-            } catch (_: IllegalArgumentException) {
-                AnalysisResult.Failed(AnalysisError.Rejected)
+        // 읽을 수 없는 JSON(출력 한도에 잘린 응답 등)은 출력 검사(F5.4)처럼 한 번 다시 요청하고, 두 번째도 못 읽으면 거절한다.
+        repeat(2) {
+            when (val result = client.generate(request)) {
+                is LlmResult.Success -> result.text.decodeOrNull(serializer)?.let { return AnalysisResult.Success(it) }
+                is LlmResult.Retryable -> return AnalysisResult.Failed(AnalysisError.Retryable)
+                LlmResult.InvalidKey -> return AnalysisResult.Failed(AnalysisError.InvalidKey)
+                LlmResult.ModelNotFound -> return AnalysisResult.Failed(AnalysisError.ModelUnavailable)
+                is LlmResult.Rejected -> return AnalysisResult.Failed(AnalysisError.Rejected)
             }
-
-            is LlmResult.Retryable -> AnalysisResult.Failed(AnalysisError.Retryable)
-
-            LlmResult.InvalidKey -> AnalysisResult.Failed(AnalysisError.InvalidKey)
-
-            LlmResult.ModelNotFound -> AnalysisResult.Failed(AnalysisError.ModelUnavailable)
-
-            is LlmResult.Rejected -> AnalysisResult.Failed(AnalysisError.Rejected)
         }
+        return AnalysisResult.Failed(AnalysisError.Rejected)
+    }
+
+    private fun <T> String.decodeOrNull(serializer: KSerializer<T>): T? = try {
+        json.decodeFromString(serializer, this)
+    } catch (_: SerializationException) {
+        null
+    } catch (_: IllegalArgumentException) {
+        null
     }
 
     private companion object {
