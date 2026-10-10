@@ -21,7 +21,7 @@ class OpicPromptTest {
     fun `F5_2 답변 분석 응답 예시는 스키마 그대로 읽힌다`() {
         val response = Json.decodeFromString<AnswerResponse>(ANSWER_FIXTURE)
 
-        assertEquals("a apartment", response.corrections.single().original)
+        assertEquals("a apartment" to 10, response.corrections.single().let { it.original to it.deducted })
     }
 
     @Test
@@ -65,6 +65,14 @@ class OpicPromptTest {
     }
 
     @Test
+    fun `F8_2 답변 분석 스키마는 교정마다 깎은 점수를 정수로 꼭 받는다`() {
+        val correction = OpicPrompt.Answer.responseSchema.obj("properties", "corrections", "items")
+
+        assertEquals("integer", correction.obj("properties", "deducted").getValue("type").jsonPrimitive.content)
+        assertEquals(setOf("original", "corrected", "deducted"), correction.strings("required"))
+    }
+
+    @Test
     fun `F5_5 답변 분석 스키마의 이유 코드는 고를 수 있는 값만 둔다`() {
         val reason = OpicPrompt.Answer.responseSchema.obj("properties", "unscorableReason")
 
@@ -101,7 +109,7 @@ class OpicPromptTest {
         const val ANSWER_FIXTURE = """
             {
               "transcript": "I live in a apartment. Last year I move to Seoul.",
-              "corrections": [{"original": "a apartment", "corrected": "I live in an apartment."}],
+              "corrections": [{"original": "a apartment", "corrected": "I live in an apartment.", "deducted": 10}],
               "upgrades": [{"original": "I live in an apartment.", "better": "I've been living in a cozy two-bedroom apartment."}],
               "tenseConsistent": false,
               "sentenceCount": 2,

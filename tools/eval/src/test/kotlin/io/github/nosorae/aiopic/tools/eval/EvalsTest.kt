@@ -1,5 +1,7 @@
 package io.github.nosorae.aiopic.tools.eval
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -50,6 +52,14 @@ class EvalsTest {
     fun gradeOutsideTheScaleBreaksTheOrder() {
         val table = levelTable(listOf("NL" to grade("NL", "NL"), "AL" to grade("A1", "B2")))
         assertContains(table, "등급 순서: 틀리다")
+    }
+
+    @Test
+    fun answerSchemaAsksDeductedScorePerCorrection() {
+        val correction = Json.parseToJsonElement(ANSWER_SCHEMA).jsonObject["properties"]!!.jsonObject["corrections"]!!.jsonObject["items"]!!.jsonObject
+
+        assertEquals("""["original","corrected","deducted"]""", correction["required"].toString())
+        assertEquals("""{"type":"integer"}""", correction["properties"]!!.jsonObject["deducted"].toString())
     }
 
     @Test

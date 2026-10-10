@@ -66,7 +66,7 @@ fun askGemini(apiKey: String, model: String, prompt: String, schema: String, aud
 val ANSWER_SCHEMA = """
 {"type":"object","properties":{
  "transcript":{"type":"string"},
- "corrections":{"type":"array","items":{"type":"object","properties":{"original":{"type":"string"},"corrected":{"type":"string"}},"required":["original","corrected"]}},
+ "corrections":{"type":"array","items":{"type":"object","properties":{"original":{"type":"string"},"corrected":{"type":"string"},"deducted":{"type":"integer"}},"required":["original","corrected","deducted"]}},
  "upgrades":{"type":"array","items":{"type":"object","properties":{"original":{"type":"string"},"better":{"type":"string"}},"required":["original","better"]}},
  "tenseConsistent":{"type":"boolean"},
  "sentenceCount":{"type":"integer"},

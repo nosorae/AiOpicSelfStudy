@@ -1,6 +1,5 @@
 package io.github.nosorae.aiopic.packs.opicen
 
-import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.answer.model.Upgrade
 import kotlinx.serialization.Serializable
@@ -12,7 +11,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AnswerResponse(
     val transcript: String,
-    val corrections: List<Correction>,
+    val corrections: List<CorrectionResponse>,
     val upgrades: List<Upgrade>,
     val tenseConsistent: Boolean,
     val sentenceCount: Int,
@@ -25,6 +24,12 @@ data class AnswerResponse(
     /** 평가할 수 없을 때만 온다(F5.5). */
     val unscorableReason: UnscorableReason? = null,
 )
+
+/**
+ * 교정 하나. 도메인 `Correction` 은 옛 답변 때문에 [deducted] 가 null 일 수 있지만, 스키마에서는 모델이 꼭 채우게 한다(F8.2, ADR 0027).
+ */
+@Serializable
+data class CorrectionResponse(val original: String, val corrected: String, val deducted: Int)
 
 @Serializable
 data class PauseSeconds(val startSeconds: Double, val lengthSeconds: Double)

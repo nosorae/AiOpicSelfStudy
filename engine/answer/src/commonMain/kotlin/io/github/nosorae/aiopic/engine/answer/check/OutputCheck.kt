@@ -19,8 +19,13 @@ fun checkFeedback(feedback: Feedback): Checked<Feedback> {
     val problems = mutableListOf<String>()
     fun <T> List<T>.keep(what: String, ok: (T) -> Boolean) = partition(ok).also { (_, dropped) -> dropped.forEach { problems += "$what: $it" } }.first
 
+    val corrections = feedback.corrections.keep("전문에 없는 교정") { it.original.isNotBlank() && it.original.squashSpaces() in transcript }
+    // 깎은 점수는 교정 하나를 틀림으로 표시했을 때 되돌릴 몫이다(F8.2). 틀렸으면 교정은 보여 주고 깎은 점수만 버린다.
+    val deducted = corrections.mapNotNull { it.deducted }
+    val deductedOk = deducted.all { it >= 0 } && deducted.sum() <= 100 - feedback.score
+    if (!deductedOk) problems += "범위 밖 깎은 점수: $deducted, score=${feedback.score}"
     val kept = feedback.copy(
-        corrections = feedback.corrections.keep("전문에 없는 교정") { it.original.isNotBlank() && it.original.squashSpaces() in transcript },
+        corrections = if (deductedOk) corrections else corrections.map { it.copy(deducted = null) },
         upgrades = feedback.upgrades.keep("전문에 없는 표현") { it.original.isNotBlank() && it.original.squashSpaces() in transcript },
         pauses = feedback.pauses.keep("범위 밖 멈춤") { it.start >= Duration.ZERO && it.length > Duration.ZERO },
     )
