@@ -83,13 +83,12 @@ class StoreRepositoriesTest {
     }
 
     @Test
-    fun `F2_2 가장 최근에 서베이를 고른 회차의 주제를 돌려준다`() = runTest {
-        assertEquals(emptyList(), exam().lastSurveyTopics())
-        exam().save(ExamSession("s1", surveyTopics = listOf("영화")))
-        exam().save(ExamSession("s2", surveyTopics = listOf("공원", "요리")))
-        exam().save(ExamSession("s3"))
+    fun `F6_2 고른 주제의 내장 문항이 없으면 같은 서베이 묶음의 주제로 고른다`() = runTest {
+        val near = StoreExamRepository(store, queue, spec, { pool }, "root", settings, maxOutsideTopics = 0, CoroutineScope(EmptyCoroutineContext), { listOf("공원") }) { _, _, _ -> null }
+        val session = ExamSession("s1", surveyTopics = listOf("해변"), level = 3)
 
-        assertEquals(listOf("공원", "요리"), exam().lastSurveyTopics())
+        // 점검의 연습 문항이 첫 고르기다. 풀에 해변이 없으니 서베이 밖(영화, 요리)이 아니라 같은 묶음의 공원을 고른다.
+        assertEquals("공원", near.question(session.copy(stepIndex = 2))?.question?.topic)
     }
 
     @Test

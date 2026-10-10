@@ -10,15 +10,17 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * 화면마다 라이트 한 장, 문항 화면은 진행마다 한 장. 녹음 중 화면과 서베이는 다크와 글자 200% 도 찍는다. 입력은 [ExamSamples] 다.
- * 서베이 라이트는 Part 1~4 가 한 장에 다 들어오게 높이를 넉넉히 잡는다.
+ * 서베이는 한 화면에 질문 하나라 질문 화면, 묶음 화면, 마지막 묶음(모자람, 채움)을 한 장씩 찍는다.
  */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class ExamScreenshotTest {
-    @Config(qualifiers = "w360dp-h1800dp-xhdpi")
-    @Test
-    fun survey() = shot(ExamSamples.survey)
+    @Test fun survey() = shot(ExamSamples.survey)
+
+    @Test fun surveyGroup() = shot(ExamSamples.surveyGroup)
+
+    @Test fun surveyShort() = shot(ExamSamples.surveyShort)
 
     @Test fun surveyReady() = shot(ExamSamples.surveyReady)
 
@@ -51,11 +53,17 @@ class ExamScreenshotTest {
 
     @Test fun survey_dark() = shot(ExamSamples.survey, dark = true)
 
+    @Test fun surveyReady_dark() = shot(ExamSamples.surveyReady, dark = true)
+
     @Test fun questionReplayable_dark() = shot(ExamSamples.questionReplayable, dark = true)
 
     @Config(fontScale = 2f)
     @Test
     fun survey_fontScale200() = shot(ExamSamples.survey)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun surveyReady_fontScale200() = shot(ExamSamples.surveyReady)
 
     @Config(fontScale = 2f)
     @Test

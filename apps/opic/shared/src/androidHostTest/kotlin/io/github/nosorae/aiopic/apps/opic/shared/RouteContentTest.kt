@@ -23,7 +23,8 @@ class RouteContentTest {
         AppRoute.Settings -> "분석 모델"
         is AppRoute.ReportDetail -> "이 회차를 찾을 수 없습니다."
         is AppRoute.AnswerReport -> "이 답변을 찾을 수 없습니다."
-        is AppRoute.Exam -> "관심 있는 항목을"
+        is AppRoute.Exam -> "지금 하는 일은 어느 쪽에"
+        AppRoute.Survey -> "지금 하는 일은 어느 쪽에"
         is AppRoute.Practice -> "약점 점수가 낮은 유형에서"
         is AppRoute.KeyEntry, AppRoute.StartKeyEntry -> "키 확인하고 저장"
         AppRoute.FreeTierNotice, AppRoute.StartConsent -> "동의하고 계속하기"
@@ -55,6 +56,8 @@ class RouteContentTest {
     @Test fun keyEntry() = assertDraws(AppRoute.KeyEntry("gemini"))
 
     @Test fun freeTierNotice() = assertDraws(AppRoute.FreeTierNotice)
+
+    @Test fun survey() = assertDraws(AppRoute.Survey)
 
     @Test fun flagExport() = assertDraws(AppRoute.FlagExport)
 

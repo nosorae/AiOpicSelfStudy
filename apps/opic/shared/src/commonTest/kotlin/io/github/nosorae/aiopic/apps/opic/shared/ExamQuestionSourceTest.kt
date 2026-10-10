@@ -12,7 +12,6 @@ import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.tts.api.Tts
-import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.packs.opicen.OpicQuestionType
 import io.github.nosorae.aiopic.packs.opicen.PromptFile
 import io.github.nosorae.aiopic.ui.featureexam.ExamIntent
@@ -68,7 +67,7 @@ class ExamQuestionSourceTest {
     private val promptsLock = Mutex()
     private var now = Duration.ZERO
 
-    private val topics = OpicEn.surveyTopics.take(12)
+    private val topics = testSurveyTopics
 
     private val pool = OpicQuestionType.entries.flatMap { type ->
         (1..3).map { Question("pool-${type.name}-$it", "pool ${type.type.id} $it", type.type, if (type == OpicQuestionType.SelfIntro) "self" else topics[it]) }
@@ -143,10 +142,9 @@ class ExamQuestionSourceTest {
 
     /** 서베이, 수준 1, 점검 연습 문항을 지나 1번 문항의 질문을 듣는다. */
     private suspend fun ExamViewModel.firstQuestion(): String {
-        uiState.first { it.step is ExamStep.Survey }
+        uiState.first { it.step is ExamStep.Survey && it.survey != null }
         // 두 번째 회차부터는 지난 회차의 주제가 미리 골라져 있다(F2.2).
-        uiState.value.selectedTopics.let { picked -> topics.filter { it !in picked } }.forEach { onIntent(ExamIntent.ToggleTopic(it)) }
-        onIntent(ExamIntent.SubmitSurvey)
+        submitSurvey(topics)
         uiState.first { it.step == ExamStep.LevelSelect }
         onIntent(ExamIntent.SelectLevel(1))
         onIntent(ExamIntent.SubmitLevel)

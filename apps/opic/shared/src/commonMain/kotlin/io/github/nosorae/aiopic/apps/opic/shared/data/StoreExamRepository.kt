@@ -29,7 +29,7 @@ import kotlin.random.Random
  * 질문은 회차를 세 몫으로 나눠 받는다(ADR 0030). 점검의 연습 문항과 1번(자기소개)은 [pool] 에서 바로 고른다.
  * 2번부터 재조정 앞까지는 1번 Play 때, 재조정 뒤 문항은 재조정 두 문항 전 Play 때 [scope] 에서 [generate] 로 미리 요청한다.
  * 재조정 뒤 몫은 아직 고르기 전이라 선택지마다 하나씩 요청해 두고 고른 것을 쓴다. 실패하면 [pool] 에서 고른다(F6.2).
- * 서베이 밖 주제는 [maxOutsideTopics] 개까지 받는다.
+ * 서베이 밖 주제는 [maxOutsideTopics] 개까지 받는다. 내장 문항으로 고를 때 고른 주제의 문항이 없으면 [near] 가 주는 같은 묶음 주제를 먼저 쓴다.
  */
 // ponytail: 미리 받는 요청은 이 객체의 메모리에만 있어서 앱이 꺼지면 사라진다. 이어 볼 때는 그 몫을 Play 에서 다시 요청하고 기다린다.
 class StoreExamRepository(
@@ -41,6 +41,8 @@ class StoreExamRepository(
     private val settings: AppSettings,
     private val maxOutsideTopics: Int,
     private val scope: CoroutineScope,
+    /** 고른 주제와 같은 서베이 묶음의 나머지 주제. */
+    private val near: (List<String>) -> List<String> = { emptyList() },
     /** 회차(재조정 포함), 받을 문항의 (번호, 유형), 이미 낸 질문으로 모델에 질문을 받는다. 키, 동의가 없거나 실패하면 null 이다. */
     private val generate: suspend (ExamSession, List<IndexedValue<QuestionType>>, List<Question>) -> List<Question>?,
 ) : ExamRepository {
@@ -54,8 +56,6 @@ class StoreExamRepository(
         store.save(session)
         if (session.status != ExamStatus.InProgress) requestGradeIfReady(store, queue, session.id)
     }
-
-    override suspend fun lastSurveyTopics(): List<String> = store.sessions().first().lastOrNull { it.surveyTopics.isNotEmpty() }?.surveyTopics.orEmpty()
 
     /**
      * 지금 단계의 질문. 이미 낸 몫은 회차 id 로 저장한 목록에서 읽어서 앱을 다시 켜고 이어 봐도 같은 질문이 나온다(F3.3).
@@ -91,7 +91,7 @@ class StoreExamRepository(
                 other.cancel()
                 requests.remove(key)
             }
-            val picked = pickQuestions(order, session.surveyTopics, pool(), maxOutsideTopics, Random(session.id.hashCode()), part) { generated } ?: return null
+            val picked = pickQuestions(order, session.surveyTopics, pool(), maxOutsideTopics, Random(session.id.hashCode()), part, near(session.surveyTopics)) { generated } ?: return null
             fellBack = request != null && picked != generated
             saved = saved + picked
         }

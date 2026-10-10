@@ -51,6 +51,27 @@ extension XCUIApplication {
         tapTag("consent-agree", timeout: 30)
     }
 
+    /**
+     * 서베이를 끝까지 넘긴다. Part 1~3 은 하위 질문이 가장 적은 길(일한 적 없음, 학생 아님, 수업 5년 넘음, 혼자)로 고르고,
+     * 네 묶음에서 묶음 최소를 넘게 합쳐 12개를 고른다. 하나만 고르는 질문은 고르면 바로 다음 화면이다.
+     */
+    func finishSurvey() {
+        for option in ["work-3", "student-1", "course-last-3", "housing-0"] { tapTag("survey-option-\(option)") }
+        let groups = [
+            ["movies", "performances", "concerts", "museums", "parks"],
+            ["music", "instrument", "singing"],
+            ["basketball", "baseball", "soccer"],
+            ["domestic-travel"],
+        ]
+        for (index, topics) in groups.enumerated() {
+            for topic in topics { tapTag("survey-topic-\(topic)") }
+            if index == groups.count - 1 {
+                XCTAssertTrue(waitUntil(5) { self.tag("survey-total").label == "12" }, "전체 선택 수 12 가 보이지 않는다")
+            }
+            tapTag("survey-next")
+        }
+    }
+
     /** 녹음 시작 표시("녹음 중")가 보일 때까지 기다린다. 녹음 내용은 보지 않는다. */
     func waitRecording() {
         let phase = tag("exam-phase")

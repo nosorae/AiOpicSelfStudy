@@ -16,13 +16,7 @@ final class ExamResumeUITests: XCTestCase {
         app.passFirstLaunch()
 
         app.tapTag("home-exam")
-        for part in 0..<3 { app.tapTag("survey-\(part)-0") }
-        // Compose 는 화면 하나라 아래 버튼 띠에 가린 주제도 누를 수 있다고 나온다. 끝까지 올려 주제가 버튼 띠 위로 오게 한다.
-        app.swipeUp()
-        app.swipeUp()
-        for topic in 0..<12 { app.tapTag("survey-topic-\(topic)") }
-        XCTAssertTrue(app.staticTexts["12개 고름"].waitForExistence(timeout: 5), "주제 12개가 골라지지 않았다")
-        app.tapTag("exam-next-step")
+        app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")
 

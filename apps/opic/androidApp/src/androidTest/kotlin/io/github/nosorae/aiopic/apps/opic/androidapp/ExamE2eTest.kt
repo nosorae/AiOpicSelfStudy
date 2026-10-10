@@ -61,9 +61,12 @@ class ExamE2eTest {
         click("동의하고 계속하기")
 
         click("모의시험 시작")
-        // 서베이 주제 12개 이상(F2.2), 난이도 1단계(12문항)
-        SURVEY_TOPICS.forEach { compose.onNode(hasText(it)).performScrollTo().performClick() }
-        click("다음")
+        // 서베이(F2.2): 한 화면에 질문 하나, 고르면 바로 다음 화면. 네 묶음에서 묶음 최소를 넘게 합쳐 12개. 난이도 1단계(12문항)
+        SURVEY_OPTIONS.forEach(::click)
+        SURVEY_GROUPS.forEach { topics ->
+            topics.forEach { compose.onNode(hasText(it)).performScrollTo().performClick() }
+            click("다음")
+        }
         click("1단계")
         click("다음")
 
@@ -162,8 +165,16 @@ class ExamE2eTest {
     private fun waitFor(matcher: SemanticsMatcher, timeoutMs: Long) = compose.waitUntil(timeoutMs) { compose.onAllNodes(matcher).fetchSemanticsNodes().isNotEmpty() }
 
     private companion object {
-        /** 시험 팩의 서베이 주제 14개 가운데 앞 12개. */
-        val SURVEY_TOPICS = listOf("movies", "music", "parks", "cafes", "shopping", "overseas-travel", "home", "jogging", "tv", "walking", "cooking", "domestic-travel")
+        /** Part 1~3 에서 하위 질문이 가장 적은 길. */
+        val SURVEY_OPTIONS = listOf("일해 본 적 없어요", "아니요", "수업을 들은 지 5년이 넘었어요", "혼자 집이나 아파트에서")
+
+        /** 여가, 취미, 운동, 휴가 묶음에서 5, 3, 3, 1개. */
+        val SURVEY_GROUPS = listOf(
+            listOf("영화 보기", "공연 보기", "콘서트 가기", "공원 가기", "카페 가기"),
+            listOf("음악 듣기", "요리", "책 읽기"),
+            listOf("조깅", "걷기", "헬스"),
+            listOf("해외 여행"),
+        )
 
         const val SCREEN_TIMEOUT = 15_000L
 

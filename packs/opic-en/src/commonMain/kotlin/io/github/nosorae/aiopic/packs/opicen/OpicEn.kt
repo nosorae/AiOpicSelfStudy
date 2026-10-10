@@ -2,6 +2,11 @@ package io.github.nosorae.aiopic.packs.opicen
 
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.question.model.Survey
+import io.github.nosorae.aiopic.engine.question.model.SurveyOption
+import io.github.nosorae.aiopic.engine.question.model.SurveyQuestion
+import io.github.nosorae.aiopic.engine.question.model.Topic
+import io.github.nosorae.aiopic.engine.question.model.TopicGroup
 import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
@@ -25,7 +30,7 @@ object OpicEn {
     val examSpec = ExamSpec(
         timeLimit = 40.minutes,
         levelCount = 6,
-        steps = listOf(ExamStep.Survey(minTopics = 12), ExamStep.LevelSelect, ExamStep.Check) +
+        steps = listOf(ExamStep.Survey(minTopics = MIN_TOPICS), ExamStep.LevelSelect, ExamStep.Check) +
             ask(OpicQuestionType.SelfIntro) +
             (surveySet + surveySet).map { ask(it) } +
             ExamStep.Recalibrate +
@@ -39,27 +44,87 @@ object OpicEn {
 
     val gradeScale = GradeScale(OpicGrade.entries.map { it.name })
 
-    /**
-     * 서베이 주제 고르기 앞의 Part 1~3 질문과 보기(F2.2). 화면 모듈은 팩을 모르므로 질문 글자와 보기 목록 쌍으로 두고 앱이 화면 타입으로 옮긴다.
-     * 답은 출제에 쓰지 않는다. 실제 시험과 같은 순서를 밟아 보게 하려는 화면이다.
-     */
-    val surveyParts: List<Pair<String, List<String>>> = listOf(
-        "현재 귀하는 어느 분야에 종사하고 계십니까?" to listOf("사업, 회사", "재택근무, 재택사업", "교사, 교육자", "일 경험 없음"),
-        "현재 귀하는 학생이십니까?" to listOf("예", "아니요"),
-        "현재 귀하는 어디에 살고 계십니까?" to listOf(
-            "개인주택이나 아파트에 홀로 거주",
-            "친구나 룸메이트와 함께 주택이나 아파트에 거주",
-            "가족과 함께 주택이나 아파트에 거주",
-            "학교 기숙사",
-            "군대 막사",
-        ),
-    )
+    /** Part 4 에서 합쳐서 고를 주제 수. 서베이 단계와 [survey] 가 같은 값을 쓴다. */
+    private const val MIN_TOPICS = 12
 
-    /** 서베이에서 고를 수 있는 주제. 내장 문항 풀의 주제 id 와 같아야 그 주제 문항이 나온다(F6.2). */
-    // ponytail: 화면에 주제 id 를 그대로 보인다. 한국어 이름은 문구 노드(u-copy)가 붙인다.
-    val surveyTopics = listOf(
-        "movies", "music", "parks", "cafes", "shopping", "overseas-travel", "home",
-        "jogging", "tv", "walking", "cooking", "domestic-travel", "beach", "neighborhood",
+    private fun question(id: String, text: String, vararg options: SurveyOption) = SurveyQuestion(id, text, options.toList())
+
+    private fun option(id: String, label: String, vararg next: SurveyQuestion) = SurveyOption(id, label, next.toList())
+
+    private fun group(id: String, title: String, min: Int, vararg topics: Pair<String, String>) = TopicGroup(id, title, min, topics.map { (topicId, label) -> Topic(topicId, label) })
+
+    private val workPeriod = question(
+        "work-period",
+        "일한 지 얼마나 됐나요?",
+        option("first-under-2-months", "2개월이 안 됐고 첫 직장이에요"),
+        option("under-2-months", "2개월이 안 됐고 전에도 일했어요"),
+        option("over-2-months", "2개월이 넘었어요"),
+    )
+    private val manager = question("manager", "다른 사람을 관리하는 자리인가요?", option("yes", "네"), option("no", "아니요"))
+    private val employed = question("employed", "지금 일을 하고 있나요?", option("yes", "네", workPeriod, manager), option("no", "아니요"))
+    private val courses = arrayOf(option("degree", "학위 과정 수업"), option("career", "일에 필요한 기술을 배우는 수업"), option("language", "어학 수업"))
+
+    /**
+     * 서베이(F2.2). 구성(Part 1~2 하위 질문 갈래, Part 3 거주, Part 4 네 묶음과 묶음별 최소, 합쳐서 12개 이상)은 실제 시험 구성을 따르고
+     * 질문 문장은 이 앱의 말로 다시 썼다. 주제 id 는 내장 문항 풀의 주제 id 와 같아야 그 주제 문항이 나온다(F6.2).
+     * 풀의 home 은 사는 집 이야기라 서베이 밖 돌발 주제로 두고, 집에서 쉬는 휴가는 따로 home-vacation 으로 둔다.
+     */
+    val survey = Survey(
+        questions = listOf(
+            question(
+                "work",
+                "지금 하는 일은 어느 쪽에 가깝나요?",
+                option("company", "회사나 사업", employed),
+                option("home-office", "집에서 하는 일이나 사업", employed),
+                option("teacher", "가르치는 일", question("teach-at", "어디서 가르치나요?", option("college", "대학이나 그 이상"), option("school", "초중고"), option("adult", "성인 교육 기관")), employed),
+                option("none", "일해 본 적 없어요"),
+            ),
+            question(
+                "student",
+                "지금 학생인가요?",
+                option("yes", "네", question("course-now", "어떤 수업을 듣고 있나요?", *courses)),
+                option("no", "아니요", question("course-last", "가장 최근에 들은 수업은 무엇인가요?", *courses, option("over-5-years", "수업을 들은 지 5년이 넘었어요"))),
+            ),
+            question(
+                "housing",
+                "지금 누구와 어디서 지내나요?",
+                option("alone", "혼자 집이나 아파트에서"),
+                option("roommates", "친구나 룸메이트와 집이나 아파트에서"),
+                option("family", "가족과 집이나 아파트에서"),
+                option("dormitory", "학교 기숙사에서"),
+                option("barracks", "군대 숙소에서"),
+            ),
+        ),
+        groups = listOf(
+            group(
+                "leisure", "쉬는 날에는 주로 무엇을 하나요?", 2,
+                "movies" to "영화 보기", "performances" to "공연 보기", "concerts" to "콘서트 가기", "museums" to "박물관 가기", "parks" to "공원 가기",
+                "camping" to "캠핑", "beach" to "해변 가기", "cafes" to "카페 가기", "shopping" to "쇼핑", "tv" to "TV 보기",
+            ),
+            group(
+                "hobbies", "즐겨 하는 취미가 있나요?", 1,
+                "music" to "음악 듣기", "instrument" to "악기 연주", "singing" to "노래 부르기", "dancing" to "춤추기", "writing" to "글쓰기",
+                "drawing" to "그림 그리기", "cooking" to "요리", "pets" to "반려동물 키우기", "reading" to "책 읽기",
+            ),
+            group(
+                "sports", "어떤 운동을 하나요?", 1,
+                "basketball" to "농구", "baseball" to "야구, 소프트볼", "soccer" to "축구", "american-football" to "미식축구", "hockey" to "하키",
+                "cricket" to "크리켓", "golf" to "골프", "volleyball" to "배구", "tennis" to "테니스", "badminton" to "배드민턴", "table-tennis" to "탁구",
+                "swimming" to "수영", "cycling" to "자전거", "skiing" to "스키, 스노보드", "ice-skating" to "스케이트", "jogging" to "조깅", "walking" to "걷기",
+                "yoga" to "요가", "hiking" to "등산, 트레킹", "fishing" to "낚시", "gym" to "헬스", "no-exercise" to "운동 안 해요",
+            ),
+            group(
+                "trips",
+                "휴가나 출장은 어떻게 보내나요?",
+                1,
+                "business-trip" to "국내 출장",
+                "overseas-business-trip" to "해외 출장",
+                "home-vacation" to "집에서 쉬는 휴가",
+                "domestic-travel" to "국내 여행",
+                "overseas-travel" to "해외 여행",
+            ),
+        ),
+        minTopics = MIN_TOPICS,
     )
 
     /**

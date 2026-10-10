@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.ui.featureexam
 
+import io.github.nosorae.aiopic.engine.question.model.SurveyAnswers
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
@@ -33,6 +34,7 @@ class ExamViewModelTest {
     private val repository = FakeExamRepository()
     private val tts = FakeTts(readTime = 3.seconds)
     private val recorder = FakeRecorder()
+    private val surveyStore = FakeSurveyStore()
 
     @BeforeTest fun setUp() = Dispatchers.setMain(dispatcher)
 
@@ -42,11 +44,12 @@ class ExamViewModelTest {
         val apply = ApplyExamEventUseCase(repository, content)
         return ExamViewModel(
             sessionId = "s1",
-            loadExamUseCase = LoadExamUseCase(repository, content),
+            loadExamUseCase = LoadExamUseCase(repository, surveyStore, content),
             applyExamEventUseCase = apply,
             playQuestionUseCase = PlayQuestionUseCase(repository, tts, recorder),
             submitAnswerUseCase = SubmitAnswerUseCase(repository, recorder, apply),
             stopRecordingUseCase = StopRecordingUseCase(recorder),
+            submitSurveyUseCase = SubmitSurveyUseCase(SaveSurveyAnswersUseCase(surveyStore), apply),
             timer = MonotonicTimer { dispatcher.scheduler.currentTime.milliseconds },
         )
     }
@@ -101,75 +104,100 @@ class ExamViewModelTest {
     }
 
     @Test
-    fun `F2_2 서베이는 지난 회차의 선택을 미리 채운다`() = runTest(dispatcher) {
-        repository.lastTopics = listOf("영화", "요리", "없어진 주제")
+    fun `F2_2 서베이는 저장한 답으로 미리 채우고 없어진 주제는 뺀다`() = runTest(dispatcher) {
+        surveyStore.saved = SurveyAnswers(mapOf("work" to "student"), listOf("영화", "요리", "없어진 주제"))
 
         val viewModel = viewModel()
         advanceUntilIdle()
 
-        assertEquals(setOf("영화", "요리"), viewModel.uiState.value.selectedTopics)
+        assertEquals(setOf("영화", "요리"), viewModel.uiState.value.survey?.topics)
+        assertEquals(mapOf("work" to "student"), viewModel.uiState.value.survey?.choices)
     }
 
     @Test
-    fun `F2_2 서베이에서 최소 개수보다 적게 고르면 다음으로 못 간다`() = runTest(dispatcher) {
+    fun `F2_2 서베이에서 묶음 최소나 전체 최소를 못 채우면 다음으로 못 간다`() = runTest(dispatcher) {
         val viewModel = viewModel()
         advanceUntilIdle()
-
-        viewModel.onIntent(ExamIntent.ToggleTopic("영화"))
-        viewModel.onIntent(ExamIntent.SubmitSurvey)
-        advanceUntilIdle()
-
-        assertFalse(viewModel.uiState.value.canSubmitSurvey)
-        assertIs<ExamStep.Survey>(viewModel.uiState.value.step)
-    }
-
-    @Test
-    fun `F2_2 서베이는 주제 앞의 Part 질문을 보이고 Part 마다 하나를 고른다`() = runTest(dispatcher) {
-        val viewModel = viewModel()
-        advanceUntilIdle()
-
-        viewModel.onIntent(ExamIntent.SelectSurveyAnswer(part = 0, option = 1))
-        viewModel.onIntent(ExamIntent.SelectSurveyAnswer(part = 1, option = 0))
-        viewModel.onIntent(ExamIntent.SelectSurveyAnswer(part = 0, option = 0))
-
-        assertEquals(testContent.surveyParts, viewModel.uiState.value.surveyParts)
-        assertEquals(mapOf(0 to 0, 1 to 0), viewModel.uiState.value.surveyAnswers)
-    }
-
-    /** Part 질문은 고르지 않았다. 다음으로 가는 조건은 Part 4 주제 수 하나다(F2.2). */
-    @Test
-    fun `F2_1 서베이를 내면 수준 선택으로 가고 고른 주제가 저장된다`() = runTest(dispatcher) {
-        val viewModel = viewModel()
-        advanceUntilIdle()
+        answerQuestions(viewModel)
 
         viewModel.onIntent(ExamIntent.ToggleTopic("영화"))
         viewModel.onIntent(ExamIntent.ToggleTopic("공원"))
         viewModel.onIntent(ExamIntent.SubmitSurvey)
         advanceUntilIdle()
 
+        assertFalse(viewModel.uiState.value.canSubmitSurvey, "취미 묶음이 0개다")
+        assertIs<ExamStep.Survey>(viewModel.uiState.value.step)
+    }
+
+    @Test
+    fun `F2_2 서베이는 한 화면에 질문 하나이고 고르면 바로 다음 화면이며 하위 질문은 이어지는 화면으로 나온다`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onIntent(ExamIntent.ChooseSurveyOption("office"))
+        assertEquals("period", viewModel.uiState.value.survey?.question?.id)
+        viewModel.onIntent(ExamIntent.PreviousSurveyScreen)
+        viewModel.onIntent(ExamIntent.ChooseSurveyOption("student"))
+
+        assertEquals("home", viewModel.uiState.value.survey?.question?.id)
+    }
+
+    @Test
+    fun `F2_1 서베이를 내면 수준 선택으로 가고 고른 주제가 회차에 저장된다`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        answerQuestions(viewModel)
+
+        viewModel.onIntent(ExamIntent.ToggleTopic("영화"))
+        viewModel.onIntent(ExamIntent.NextSurveyScreen)
+        viewModel.onIntent(ExamIntent.ToggleTopic("요리"))
+        viewModel.onIntent(ExamIntent.SubmitSurvey)
+        advanceUntilIdle()
+
         assertEquals(ExamStep.LevelSelect, viewModel.uiState.value.step)
-        assertEquals(listOf("영화", "공원"), repository.sessions.getValue("s1").surveyTopics)
+        assertEquals(listOf("영화", "요리"), repository.sessions.getValue("s1").surveyTopics)
+    }
+
+    @Test
+    fun `서베이를 내면 답이 저장돼 다음 서베이와 설정이 같은 값을 읽는다`() = runTest(dispatcher) {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        answerQuestions(viewModel)
+
+        viewModel.onIntent(ExamIntent.ToggleTopic("영화"))
+        viewModel.onIntent(ExamIntent.ToggleTopic("요리"))
+        viewModel.onIntent(ExamIntent.SubmitSurvey)
+        advanceUntilIdle()
+
+        assertEquals(SurveyAnswers(mapOf("work" to "student", "home" to "alone"), listOf("영화", "요리")), surveyStore.saved)
     }
 
     @Test
     fun `다음을 누르면 저장이 끝날 때까지 처리 중이고 그동안 다른 입력을 받지 않는다`() = runTest(dispatcher) {
         val viewModel = viewModel()
         advanceUntilIdle()
+        answerQuestions(viewModel)
         repository.saveTime = 1.seconds
         viewModel.onIntent(ExamIntent.ToggleTopic("영화"))
-        viewModel.onIntent(ExamIntent.ToggleTopic("공원"))
+        viewModel.onIntent(ExamIntent.ToggleTopic("요리"))
 
         viewModel.onIntent(ExamIntent.SubmitSurvey)
         runCurrent()
-        viewModel.onIntent(ExamIntent.ToggleTopic("요리"))
+        viewModel.onIntent(ExamIntent.ToggleTopic("공원"))
         viewModel.onIntent(ExamIntent.SubmitSurvey)
 
         assertTrue(viewModel.uiState.value.saving)
-        assertEquals(setOf("영화", "공원"), viewModel.uiState.value.selectedTopics)
+        assertEquals(setOf("영화", "요리"), viewModel.uiState.value.survey?.topics)
         advanceUntilIdle()
         assertFalse(viewModel.uiState.value.saving)
         assertEquals(ExamStep.LevelSelect, viewModel.uiState.value.step)
-        assertEquals(listOf("영화", "공원"), repository.sessions.getValue("s1").surveyTopics)
+        assertEquals(listOf("영화", "요리"), repository.sessions.getValue("s1").surveyTopics)
+    }
+
+    /** 하나만 고르는 질문(일: 학생, 사는 곳: 혼자)을 지나 첫 묶음 화면에 선다. */
+    private fun answerQuestions(viewModel: ExamViewModel) {
+        viewModel.onIntent(ExamIntent.ChooseSurveyOption("student"))
+        viewModel.onIntent(ExamIntent.ChooseSurveyOption("alone"))
     }
 
     @Test

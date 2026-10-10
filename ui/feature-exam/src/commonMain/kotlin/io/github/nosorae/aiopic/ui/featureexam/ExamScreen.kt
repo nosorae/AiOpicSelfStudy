@@ -2,7 +2,6 @@ package io.github.nosorae.aiopic.ui.featureexam
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,18 +15,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.question.model.Survey
+import io.github.nosorae.aiopic.engine.question.model.SurveyOption
+import io.github.nosorae.aiopic.engine.question.model.SurveyQuestion
+import io.github.nosorae.aiopic.engine.question.model.Topic
+import io.github.nosorae.aiopic.engine.question.model.TopicGroup
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
-import io.github.nosorae.aiopic.ui.design.MontageChip
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
@@ -81,20 +82,7 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit, modifier: Mod
     when (val step = state.step) {
         null -> StepScaffold(title = "", onExit = onExit, modifier = modifier) {}
 
-        is ExamStep.Survey -> SurveyStep(
-            parts = state.surveyParts,
-            answers = state.surveyAnswers,
-            onAnswer = { part, option -> onIntent(ExamIntent.SelectSurveyAnswer(part, option)) },
-            minTopics = step.minTopics,
-            topics = state.topics,
-            selected = state.selectedTopics,
-            canSubmit = state.canSubmitSurvey,
-            saving = state.saving,
-            onToggle = { onIntent(ExamIntent.ToggleTopic(it)) },
-            onSubmit = { onIntent(ExamIntent.SubmitSurvey) },
-            onExit = onExit,
-            modifier = modifier,
-        )
+        is ExamStep.Survey -> SurveyStep(state = state, onIntent = onIntent, onExit = onExit, modifier = modifier)
 
         ExamStep.LevelSelect -> ChoiceStep(
             title = stringResource(Res.string.exam_level_title),
@@ -150,15 +138,7 @@ private fun StepScaffold(
     MontageScreen(
         modifier = modifier,
         topBar = {
-            MontageTopBar(title = title) {
-                MontageButton(
-                    text = stringResource(Res.string.exam_exit),
-                    onClick = onExit,
-                    variant = MontageButtonVariant.Text,
-                    type = MontageButtonType.Assistive,
-                    size = MontageButtonSize.Medium,
-                )
-            }
+            MontageTopBar(title = title) { ExitButton(onExit) }
         },
         bottomBar = { Row(Modifier.padding(horizontal = Gutter, vertical = MontageSpacing.spacing12)) { bottomBar() } },
     ) {
@@ -171,55 +151,27 @@ private fun StepScaffold(
     }
 }
 
-/** Part 질문을 차례로 두고 마지막 Part 에서 관심 주제를 고른다. 다음으로 가는 조건은 마지막 Part 의 주제 수 하나다(F2.2). */
+/** 서베이를 한 화면에 질문 하나씩 넘긴다. 마지막 묶음에서 다음을 누르면 서베이를 낸다(F2.2). */
 @Composable
-private fun SurveyStep(
-    parts: List<SurveyPart>,
-    answers: Map<Int, Int>,
-    onAnswer: (part: Int, option: Int) -> Unit,
-    minTopics: Int,
-    topics: List<String>,
-    selected: Set<String>,
-    canSubmit: Boolean,
-    saving: Boolean,
-    onToggle: (String) -> Unit,
-    onSubmit: () -> Unit,
-    onExit: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    StepScaffold(
-        title = stringResource(Res.string.exam_survey_title),
-        onExit = onExit,
+private fun SurveyStep(state: ExamUiState, onIntent: (ExamIntent) -> Unit, onExit: () -> Unit, modifier: Modifier = Modifier) {
+    // 회차를 읽으며 서베이를 먼저 채우고 단계를 정해서 서베이 단계에서는 늘 있다.
+    val survey = state.survey ?: return
+    MontageScreen(
         modifier = modifier,
-        bottomBar = { NextButton(enabled = canSubmit, loading = saving, onClick = onSubmit) },
+        topBar = { MontageTopBar(title = stringResource(Res.string.exam_survey_title)) { ExitButton(onExit) } },
+        bottomBar = {
+            SurveyButtons(
+                state = survey,
+                submitText = stringResource(Res.string.exam_next_step),
+                saving = state.saving,
+                onPrevious = { onIntent(ExamIntent.PreviousSurveyScreen) },
+                onNext = { onIntent(ExamIntent.NextSurveyScreen) },
+                onSubmit = { onIntent(ExamIntent.SubmitSurvey) },
+                modifier = Modifier.padding(horizontal = Gutter, vertical = MontageSpacing.spacing12),
+            )
+        },
     ) {
-        val partCount = parts.size + 1
-        parts.forEachIndexed { part, survey ->
-            PartTitle(part + 1, partCount)
-            Description(survey.question)
-            Column {
-                survey.options.forEachIndexed { option, text ->
-                    MontageListCell(title = text, selected = answers[part] == option, onClick = { onAnswer(part, option) }, modifier = Modifier.testTag("survey-$part-$option"))
-                }
-            }
-        }
-        PartTitle(partCount, partCount)
-        Description(stringResource(Res.string.exam_survey_description, minTopics))
-        Text(
-            text = stringResource(Res.string.exam_survey_count, selected.size),
-            style = MontageTheme.typography.label1.bold,
-            color = if (canSubmit) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralSecondary,
-            modifier = Modifier.padding(horizontal = Gutter),
-        )
-        FlowRow(
-            modifier = Modifier.padding(horizontal = Gutter),
-            horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
-            verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
-        ) {
-            topics.forEachIndexed { index, topic ->
-                MontageChip(text = topic, onClick = { onToggle(topic) }, active = topic in selected, modifier = Modifier.testTag("survey-topic-$index"))
-            }
-        }
+        SurveyFlow(survey, onChoose = { onIntent(ExamIntent.ChooseSurveyOption(it)) }, onToggle = { onIntent(ExamIntent.ToggleTopic(it)) })
     }
 }
 
@@ -369,13 +321,15 @@ private fun Description(text: String) {
     )
 }
 
+/** 시험 중에는 탭이 없고 앞으로만 가서 위쪽에 "나가기" 하나만 둔다. */
 @Composable
-private fun PartTitle(part: Int, count: Int) {
-    Text(
-        text = stringResource(Res.string.exam_survey_part, part, count),
-        style = MontageTheme.typography.label1.bold,
-        color = MontageTheme.colors.foregroundNeutralSecondary,
-        modifier = Modifier.padding(start = Gutter, end = Gutter, top = MontageSpacing.spacing12).semantics { heading() },
+private fun ExitButton(onExit: () -> Unit) {
+    MontageButton(
+        text = stringResource(Res.string.exam_exit),
+        onClick = onExit,
+        variant = MontageButtonVariant.Text,
+        type = MontageButtonType.Assistive,
+        size = MontageButtonSize.Medium,
     )
 }
 
@@ -420,26 +374,27 @@ private val ExamError.message: StringResource
 
 /** 미리보기와 스크린샷 테스트가 함께 쓰는 고정 상태. 화면마다 하나, 문항 화면은 진행마다 하나다. */
 internal object ExamSamples {
-    private val topics = listOf("영화 보기", "공원 가기", "요리하기", "음악 감상", "해변 가기", "캠핑", "조깅", "헬스", "여행(국내)", "여행(해외)", "카페 가기", "독서", "게임", "쇼핑", "콘서트 보기")
     private val ask = ExamStep.Ask(QuestionType("routine"))
 
-    private val surveyParts = listOf(
-        SurveyPart("현재 귀하는 어느 분야에 종사하고 계십니까?", listOf("사업, 회사", "재택근무, 재택사업", "교사, 교육자", "일 경험 없음")),
-        SurveyPart("현재 귀하는 학생이십니까?", listOf("예", "아니요")),
-        SurveyPart(
-            "현재 귀하는 어디에 살고 계십니까?",
-            listOf("개인주택이나 아파트에 홀로 거주", "친구나 룸메이트와 함께 주택이나 아파트에 거주", "가족과 함께 주택이나 아파트에 거주", "학교 기숙사", "군대 막사"),
+    private val surveySample = Survey(
+        questions = listOf(
+            SurveyQuestion(
+                "work",
+                "지금 하는 일은 어느 쪽에 가깝나요?",
+                listOf(SurveyOption("company", "회사나 사업"), SurveyOption("home-office", "집에서 하는 일이나 사업"), SurveyOption("teacher", "가르치는 일"), SurveyOption("none", "일해 본 적 없어요")),
+            ),
         ),
+        groups = listOf(
+            TopicGroup("leisure", "쉬는 날에는 주로 무엇을 하나요?", 2, listOf("영화 보기", "공연 보기", "콘서트 가기", "박물관 가기", "공원 가기", "캠핑", "해변 가기", "카페 가기", "쇼핑", "TV 보기").map { Topic(it, it) }),
+            TopicGroup("trips", "휴가나 출장은 어떻게 보내나요?", 1, listOf("국내 출장", "해외 출장", "집에서 쉬는 휴가", "국내 여행", "해외 여행").map { Topic(it, it) }),
+        ),
+        minTopics = 12,
     )
 
-    val survey = ExamUiState(
-        step = ExamStep.Survey(minTopics = 12),
-        surveyParts = surveyParts,
-        surveyAnswers = mapOf(0 to 0, 1 to 1, 2 to 2),
-        topics = topics,
-        selectedTopics = topics.take(5).toSet(),
-    )
-    val surveyReady = survey.copy(selectedTopics = topics.take(12).toSet())
+    val survey = ExamUiState(step = ExamStep.Survey(minTopics = 12), survey = SurveyState(surveySample, choices = mapOf("work" to "company")))
+    val surveyGroup = survey.copy(survey = survey.survey!!.copy(screen = 1, topics = setOf("영화 보기", "카페 가기", "쇼핑")))
+    val surveyShort = survey.copy(survey = survey.survey!!.copy(screen = 2, topics = setOf("영화 보기", "카페 가기", "국내 여행")))
+    val surveyReady = survey.copy(survey = survey.survey!!.copy(screen = 2, topics = surveySample.groups[0].topics.map { it.id }.toSet() + "국내 여행" + "해외 여행"))
     val level = ExamUiState(step = ExamStep.LevelSelect, levelCount = 6, selectedLevel = 4)
     val check = ExamUiState(step = ExamStep.Check)
     val questionReady = ExamUiState(step = ask, questionNumber = 3, questionCount = 15, remaining = 36.minutes + 12.seconds)

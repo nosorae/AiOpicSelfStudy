@@ -10,7 +10,6 @@ import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
-import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.packs.opicen.OpicQuestionType
 import io.github.nosorae.aiopic.ui.featureexam.ExamDestination
 import io.github.nosorae.aiopic.ui.featureexam.ExamIntent
@@ -48,7 +47,7 @@ class ResumeTimerTest {
     private var now = Duration.ZERO
     private var graph: AppGraph? = null
 
-    private val topics = OpicEn.surveyTopics.take(12)
+    private val topics = testSurveyTopics
     private val pool = OpicQuestionType.entries.flatMap { type ->
         (1..3).map { Question("pool-${type.name}-$it", "pool ${type.type.id} $it", type.type, if (type == OpicQuestionType.SelfIntro) "self" else topics[it]) }
     }
@@ -106,9 +105,8 @@ class ResumeTimerTest {
 
     /** 서베이, 수준 1, 점검을 지나 1번 문항에 답하고 2번 문항 앞에 선다. 40분은 1번 문항에서 켜진다. */
     private suspend fun ExamViewModel.toSecondQuestion() {
-        uiState.first { it.step is ExamStep.Survey }
-        topics.forEach { onIntent(ExamIntent.ToggleTopic(it)) }
-        onIntent(ExamIntent.SubmitSurvey)
+        uiState.first { it.step is ExamStep.Survey && it.survey != null }
+        submitSurvey(topics)
         uiState.first { it.step == ExamStep.LevelSelect }
         onIntent(ExamIntent.SelectLevel(1))
         onIntent(ExamIntent.SubmitLevel)

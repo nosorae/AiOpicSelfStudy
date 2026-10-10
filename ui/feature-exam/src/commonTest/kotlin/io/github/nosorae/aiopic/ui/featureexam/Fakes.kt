@@ -3,6 +3,12 @@ package io.github.nosorae.aiopic.ui.featureexam
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.question.model.Survey
+import io.github.nosorae.aiopic.engine.question.model.SurveyAnswers
+import io.github.nosorae.aiopic.engine.question.model.SurveyOption
+import io.github.nosorae.aiopic.engine.question.model.SurveyQuestion
+import io.github.nosorae.aiopic.engine.question.model.Topic
+import io.github.nosorae.aiopic.engine.question.model.TopicGroup
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
@@ -15,7 +21,20 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-/** 서베이(Part 1~2 와 주제 2개 이상), 수준(1~3), 점검, 1번, 재조정, 2번, 수준 3 이상만 3번. 40분. */
+/** 일(회사원이면 근무 기간이 이어진다), 사는 곳, 여가 묶음과 취미 묶음(각 1개 이상), 합쳐서 2개 이상. */
+val testSurvey = Survey(
+    questions = listOf(
+        SurveyQuestion("work", "하는 일", listOf(SurveyOption("office", "회사원", listOf(SurveyQuestion("period", "근무 기간", listOf(SurveyOption("short", "짧게"), SurveyOption("long", "오래"))))), SurveyOption("student", "학생"))),
+        SurveyQuestion("home", "사는 곳", listOf(SurveyOption("alone", "혼자"), SurveyOption("family", "가족과"))),
+    ),
+    groups = listOf(
+        TopicGroup("leisure", "여가", 1, listOf(Topic("영화", "영화"), Topic("공원", "공원"))),
+        TopicGroup("hobbies", "취미", 1, listOf(Topic("요리", "요리"), Topic("여행", "여행"))),
+    ),
+    minTopics = 2,
+)
+
+/** 서베이(위 [testSurvey]), 수준(1~3), 점검, 1번, 재조정, 2번, 수준 3 이상만 3번. 40분. */
 val testContent = ExamContent(
     spec = ExamSpec(
         timeLimit = 40.minutes,
@@ -30,12 +49,19 @@ val testContent = ExamContent(
             ExamStep.Ask(QuestionType("issue"), minLevel = 3),
         ),
     ),
-    topics = listOf("영화", "공원", "요리", "여행"),
-    surveyParts = listOf(SurveyPart("하는 일", listOf("회사원", "학생")), SurveyPart("사는 곳", listOf("혼자", "가족과"))),
+    survey = testSurvey,
 )
 
+class FakeSurveyStore(var saved: SurveyAnswers? = null) : SurveyStore {
+    override suspend fun surveyAnswers(): SurveyAnswers? = saved
+
+    override suspend fun saveSurveyAnswers(answers: SurveyAnswers) {
+        saved = answers
+    }
+}
+
 /** [saveTime] 은 회차 저장 한 번에 걸리는 시간이다. 처리 중 표시를 볼 때 늘린다. */
-class FakeExamRepository(var lastTopics: List<String> = emptyList(), var saveTime: Duration = Duration.ZERO) : ExamRepository {
+class FakeExamRepository(var saveTime: Duration = Duration.ZERO) : ExamRepository {
     val sessions = mutableMapOf<String, ExamSession>()
     val answers = mutableListOf<Answer>()
 
@@ -45,8 +71,6 @@ class FakeExamRepository(var lastTopics: List<String> = emptyList(), var saveTim
         delay(saveTime)
         sessions[session.id] = session
     }
-
-    override suspend fun lastSurveyTopics(): List<String> = lastTopics
 
     /** 질문 하나를 받는 데 걸리는 시간과 그 질문이 내장 문항으로 바꾼 것인지. 불러오는 중 안내를 볼 때 바꾼다. */
     var questionTime: Duration = Duration.ZERO

@@ -133,9 +133,8 @@ class ExamE2eIosTest {
 
             // 서베이 12개, 1단계(12문항), 장비 점검, 1번 문항, 2번 문항 녹음 중에 죽는다
             val exam = first.viewModel { examViewModelFactory.create("s1") }
-            val topics = exam.uiState.first { it.step is ExamStep.Survey }.topics
-            topics.take(12).forEach { exam.onIntent(ExamIntent.ToggleTopic(it)) }
-            exam.onIntent(ExamIntent.SubmitSurvey)
+            exam.uiState.first { it.step is ExamStep.Survey && it.survey != null }
+            exam.submitSurvey()
             exam.uiState.first { it.step == ExamStep.LevelSelect }
             exam.onIntent(ExamIntent.SelectLevel(1))
             exam.onIntent(ExamIntent.SubmitLevel)

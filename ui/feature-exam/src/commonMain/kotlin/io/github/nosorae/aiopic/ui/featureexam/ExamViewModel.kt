@@ -37,6 +37,7 @@ class ExamViewModel(
     private val playQuestionUseCase: PlayQuestionUseCase,
     private val submitAnswerUseCase: SubmitAnswerUseCase,
     private val stopRecordingUseCase: StopRecordingUseCase,
+    private val submitSurveyUseCase: SubmitSurveyUseCase,
     private val timer: MonotonicTimer,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ExamUiState())
@@ -60,9 +61,7 @@ class ExamViewModel(
             content = loaded.content
             _uiState.update {
                 it.copy(
-                    surveyParts = content.surveyParts,
-                    topics = content.topics,
-                    selectedTopics = loaded.prefilledTopics.toSet(),
+                    survey = loaded.survey,
                     levelCount = content.spec.levelCount,
                     answerTimer = content.answerTimer,
                 )
@@ -75,15 +74,16 @@ class ExamViewModel(
         val state = _uiState.value
         if (state.step == null || (state.saving && intent != ExamIntent.NavigationHandled)) return
         when (intent) {
-            // ponytail: Part 질문의 답은 출제에 쓰지 않아 저장하지 않는다. 출제가 직업, 거주 형태를 보게 되면 회차에 저장한다.
-            is ExamIntent.SelectSurveyAnswer -> _uiState.update { it.copy(surveyAnswers = it.surveyAnswers + (intent.part to intent.option)) }
+            is ExamIntent.ChooseSurveyOption -> updateSurvey { it.choose(intent.option) }
 
-            is ExamIntent.ToggleTopic -> _uiState.update {
-                it.copy(selectedTopics = if (intent.topic in it.selectedTopics) it.selectedTopics - intent.topic else it.selectedTopics + intent.topic)
-            }
+            is ExamIntent.ToggleTopic -> updateSurvey { it.toggle(intent.topic) }
 
-            ExamIntent.SubmitSurvey -> if (_uiState.value.canSubmitSurvey) {
-                apply(ExamEvent.SurveySubmitted(content.topics.filter { it in _uiState.value.selectedTopics }))
+            ExamIntent.NextSurveyScreen -> updateSurvey { it.next() }
+
+            ExamIntent.PreviousSurveyScreen -> updateSurvey { it.back() }
+
+            ExamIntent.SubmitSurvey -> state.survey?.takeIf { state.canSubmitSurvey }?.answers()?.let { answers ->
+                save { commit { submitSurveyUseCase(it, answers) } }
             }
 
             is ExamIntent.SelectLevel -> _uiState.update { it.copy(selectedLevel = intent.level) }
@@ -107,6 +107,8 @@ class ExamViewModel(
             ExamIntent.NavigationHandled -> _uiState.update { it.copy(navigation = null) }
         }
     }
+
+    private fun updateSurvey(change: (SurveyState) -> SurveyState) = _uiState.update { state -> state.copy(survey = state.survey?.let(change)) }
 
     private fun apply(event: ExamEvent) = save { commit { applyExamEventUseCase(it, event) } }
 

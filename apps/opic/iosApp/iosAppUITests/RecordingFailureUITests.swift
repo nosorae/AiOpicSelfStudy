@@ -28,10 +28,7 @@ final class RecordingFailureUITests: XCTestCase {
         // 모의시험 장비 점검: 같은 단계에 남아 이유와 다시 녹음이 보인다.
         tapWhenReady(app.buttons["나가기"])
         app.tapTag("home-exam")
-        app.swipeUp()
-        app.swipeUp()
-        for topic in 0..<12 { app.tapTag("survey-topic-\(topic)") }
-        app.tapTag("exam-next-step")
+        app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")
         XCTAssertTrue(app.staticTexts["장비 점검"].waitForExistence(timeout: 30), "장비 점검 화면이 보이지 않는다")

@@ -2,6 +2,7 @@ package io.github.nosorae.aiopic.apps.opic.shared
 
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.question.model.SurveyAnswers
 import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
 import io.github.nosorae.aiopic.libs.haptics.api.Haptics
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
@@ -83,6 +84,34 @@ class AppSettingsTest {
         settings.saveQuestionFile("""[{"id": "my-1", "text": "Describe your room.", "type": "description", "topic": "home"}]""")
 
         assertEquals(listOf(builtIn, Question("my-1", "Describe your room.", QuestionType("description"), "home")), practicePool(reopen()) { listOf(builtIn) })
+    }
+
+    @Test
+    fun `서베이 답은 앱을 다시 켜도 남는다`() = runTest {
+        assertNull(reopen().surveyAnswers())
+        val answers = SurveyAnswers(mapOf("work" to "none"), listOf("movies", "golf"))
+
+        reopen().saveSurveyAnswers(answers)
+
+        assertEquals(answers, reopen().surveyAnswers())
+    }
+
+    @Test
+    fun `한 문항 연습은 유형마다 서베이에서 고른 주제의 질문만 남기고 고른 주제가 없는 유형은 그대로 둔다`() {
+        fun q(id: String, type: String, topic: String) = Question(id, id, QuestionType(type), topic)
+        val pool = listOf(q("d-park", "description", "parks"), q("d-golf", "description", "golf"), q("self", "self-intro", "self"))
+
+        assertEquals(listOf(q("d-golf", "description", "golf"), q("self", "self-intro", "self")), preferTopics(pool, listOf("golf")))
+        assertEquals(pool, preferTopics(pool, emptyList()))
+    }
+
+    @Test
+    fun `저장한 서베이 주제의 질문이 한 문항 연습 풀에 남는다`() = runTest {
+        fun q(id: String, topic: String) = Question(id, id, QuestionType("description"), topic)
+        val settings = reopen()
+        settings.saveSurveyAnswers(SurveyAnswers(topics = listOf("golf")))
+
+        assertEquals(listOf(q("golf", "golf")), practicePool(settings) { listOf(q("park", "parks"), q("golf", "golf")) })
     }
 
     @Test

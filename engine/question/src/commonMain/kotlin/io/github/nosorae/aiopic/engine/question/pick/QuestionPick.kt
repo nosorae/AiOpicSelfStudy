@@ -13,6 +13,7 @@ import kotlin.random.Random
  *
  * [order] 는 이번 회차에 낼 문항 유형 순서 전체다. 시험 팩의 단계와 고른 수준으로 부르는 쪽이 만든다.
  * [generate] 는 부르는 쪽이 주제, 수준, 재조정, 약점 유형을 프롬프트에 채워 [part] 몫만 모델에 받는 함수다.
+ * [near] 는 풀에서 고를 때 서베이 주제 다음으로 먼저 쓸 주제다(같은 서베이 묶음의 다른 주제).
  * 엔진은 시험 이름도 제공사도 모르고 결과 모양만 본다.
  */
 suspend fun pickQuestions(
@@ -22,9 +23,10 @@ suspend fun pickQuestions(
     maxOutsideTopics: Int,
     random: Random = Random,
     part: IntRange = order.indices,
+    near: List<String> = emptyList(),
     generate: suspend () -> List<Question>?,
 ): List<Question>? = generate()?.takeIf { checkQuestions(it, order.slice(part), topics, maxOutsideTopics).isEmpty() }
-    ?: pickFromPool(pool, order, topics, random)?.slice(part)
+    ?: pickFromPool(pool, order, topics, random, near)?.slice(part)
 
 /**
  * 생성한 질문이 [order] 와 같은 유형 순서인지, 빈 질문이 없는지, 서베이 밖 주제가 [maxOutsideTopics] 개 이하인지 본다.
@@ -40,11 +42,12 @@ fun checkQuestions(questions: List<Question>, order: List<QuestionType>, topics:
 
 /**
  * 풀에서 [order] 의 유형마다 아직 안 낸 문항 하나를 고른다(F6.2). 바로 앞 문항과 같은 주제를 먼저 고르고,
- * 없으면 서베이 주제를 섞은 순서대로, 그래도 없으면 서베이 밖 주제에서 고른다.
+ * 없으면 서베이 주제를 섞은 순서대로, 다음은 [near] 주제를 섞은 순서대로, 그래도 없으면 서베이 밖 주제에서 고른다.
  * 앞 문항 주제를 먼저 보니 묘사, 습관, 경험 같은 3문항 세트와 롤플레이 셋이 한 주제로 묶인다.
+ * 고른 주제의 내장 문항이 없을 때 [near] 를 먼저 보니, 해변을 골랐으면 아무 주제가 아니라 같은 여가 묶음의 공원 문항이 나온다.
  */
-fun pickFromPool(pool: List<Question>, order: List<QuestionType>, topics: List<String>, random: Random): List<Question>? {
-    val rank = topics.shuffled(random).withIndex().associate { (index, topic) -> topic to index }
+fun pickFromPool(pool: List<Question>, order: List<QuestionType>, topics: List<String>, random: Random, near: List<String> = emptyList()): List<Question>? {
+    val rank = (topics.shuffled(random) + near.filterNot { it in topics }.shuffled(random)).withIndex().associate { (index, topic) -> topic to index }
     val used = mutableSetOf<String>()
     var last: String? = null
     return order.map { type ->

@@ -5,7 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class AppRouteTest {
-    private val subScreens = listOf(AppRoute.ReportDetail("s"), AppRoute.AnswerReport("a"), AppRoute.KeyEntry("gemini"), AppRoute.FreeTierNotice, AppRoute.FlagExport, AppRoute.AppInfo)
+    private val subScreens = listOf(AppRoute.ReportDetail("s"), AppRoute.AnswerReport("a"), AppRoute.KeyEntry("gemini"), AppRoute.FreeTierNotice, AppRoute.Survey, AppRoute.FlagExport, AppRoute.AppInfo)
     private val everyRoute = AppRoute.tabs + subScreens + listOf(AppRoute.Exam("s"), AppRoute.Practice("a"), AppRoute.StartKeyEntry, AppRoute.StartConsent)
 
     private fun tabBar(platform: Platform) = everyRoute.filter { it.showsTabBar(platform) }
