@@ -19,6 +19,8 @@ class KeyEntryScreenshotTest {
 
     @Test fun checking() = shot(KeyEntrySamples.checking)
 
+    @Test fun saved() = shot(KeyEntrySamples.saved)
+
     @Test fun invalid() = shot(KeyEntrySamples.invalid)
 
     @Test fun retryable() = shot(KeyEntrySamples.retryable)

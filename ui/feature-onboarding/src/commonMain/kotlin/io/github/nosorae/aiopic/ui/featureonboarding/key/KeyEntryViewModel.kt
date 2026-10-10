@@ -42,7 +42,7 @@ class KeyEntryViewModel(
             val result = saveKeyUseCase(provider, state.key)
             _uiState.update {
                 when (result) {
-                    is DomainResult.Success -> it.copy(checking = false, navigation = KeyEntryDestination.KeySaved)
+                    is DomainResult.Success -> it.copy(checking = false, saved = true, navigation = KeyEntryDestination.KeySaved)
                     is DomainResult.Failure -> it.copy(checking = false, error = result.error)
                 }
             }
