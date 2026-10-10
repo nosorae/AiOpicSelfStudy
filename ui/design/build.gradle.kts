@@ -8,12 +8,24 @@ compose.resources {
 }
 
 kotlin {
+    android {
+        // 움직임이 실제 기기 프레임 시계에서 60fps 를 지키는지, 앱이 뒤로 가면 멈추는지는 에뮬레이터에서 본다.
+        withDeviceTestBuilder {}.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
+    }
     sourceSets {
         // 움직임 부품을 테스트 시계로 멈춰 끝 장면과 동작 줄이기를 비교한다.
         getByName("androidHostTest").dependencies {
             implementation(libs.compose.uiTestJunit4)
             implementation(libs.compose.uiTestManifest)
             implementation(libs.roborazzi.core)
+        }
+        getByName("androidDeviceTest").dependencies {
+            implementation(libs.androidx.test.runner)
+            implementation(libs.androidx.testExt.junit)
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.compose.uiTestManifest)
         }
     }
 }

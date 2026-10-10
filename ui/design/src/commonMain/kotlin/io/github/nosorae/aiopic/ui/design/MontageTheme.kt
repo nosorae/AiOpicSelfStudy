@@ -5,7 +5,9 @@ package io.github.nosorae.aiopic.ui.design
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalContentColor
@@ -85,8 +87,8 @@ object MontageSpacing {
 }
 
 /**
- * 움직임 길이와 곡선(`ui-quality` 2절). 화면은 `tween`, `spring` 을 직접 부르지 않고 [spec] 을 쓴다.
- * 곡선은 빨리 출발해 천천히 멈추는 하나뿐이고 튕기는 반동은 두지 않는다.
+ * 움직임 길이와 곡선(`ui-quality` 2절). 화면은 `tween`, `spring` 을 직접 부르지 않고 [spec], [settle] 을 쓴다.
+ * 값이 바뀌는 것은 빨리 출발해 천천히 멈추는 곡선 하나, 정해진 위치로 가서 멈추는 것은 살짝 지나쳤다 돌아오는 스프링 하나다.
  */
 object MontageMotion {
     /** 선택 표시, 버튼 상태처럼 작은 표시. */
@@ -106,6 +108,10 @@ object MontageMotion {
     /** [durationMillis] 동안 움직이는 곡선. 동작 줄이기면 바로 끝 값이다. */
     @Composable @ReadOnlyComposable
     fun <T> spec(durationMillis: Int = MEDIUM_MILLIS): FiniteAnimationSpec<T> = if (reduceMotion) snap() else tween(durationMillis, easing = FastOutSlowInEasing)
+
+    /** 등급 구슬, 진행 점처럼 정해진 위치로 가서 멈추는 것. 한 번 살짝 지나쳤다 1초 안에 멈춘다. 동작 줄이기면 바로 끝 값이다. */
+    @Composable @ReadOnlyComposable
+    fun <T> settle(): FiniteAnimationSpec<T> = if (reduceMotion) snap() else spring(dampingRatio = 0.62f, stiffness = Spring.StiffnessLow)
 }
 
 /** Montage 모서리 반경 토큰. */
