@@ -100,6 +100,7 @@ kotlinSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", versio
 aiopicKmpLibrary = { id = "aiopic.kmp.library" }
 aiopicKmpLibraryExplicit = { id = "aiopic.kmp.library.explicit" }
 aiopicKmpCompose = { id = "aiopic.kmp.compose" }
+aiopicKmpComposeExplicit = { id = "aiopic.kmp.compose.explicit" }
 aiopicUiFeature = { id = "aiopic.ui.feature" }
 aiopicAndroidApplication = { id = "aiopic.android.application" }
 aiopicLayerCheck = { id = "aiopic.layer-check" }
