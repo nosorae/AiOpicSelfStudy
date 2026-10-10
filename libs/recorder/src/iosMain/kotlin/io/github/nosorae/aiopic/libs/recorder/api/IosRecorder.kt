@@ -1,6 +1,8 @@
 package io.github.nosorae.aiopic.libs.recorder.api
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.get
+import kotlinx.coroutines.flow.Flow
 import platform.AVFAudio.AVAudioFile
 import platform.AVFAudio.AVAudioFormat
 import platform.AVFAudio.AVAudioPCMBuffer
@@ -19,6 +21,7 @@ import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSNumber
 import platform.Foundation.NSURL
 import platform.darwin.NSObjectProtocol
+import kotlin.math.abs
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -37,6 +40,9 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
     private var file: AVAudioFile? = null
     private var framesInFile = 0.0
     private var segmentStart = false
+
+    /** 직전 [levels] 값 뒤로 녹음 중에 들어온 가장 큰 진폭(0~1). */
+    private var peak = 0f
 
     /** [start] 뒤로 처음 생긴 실패. 오디오 스레드에서 생겨도 [stop] 이 돌려준다. */
     private var failure: RecordingFailure? = null
@@ -65,10 +71,14 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
         interruptions = null
         val (stopped, failed) = locked {
             closeChunk()
+            peak = 0f
             (directory to failure).also { directory = null }
         }
         return StoppedRecording(chunks(checkNotNull(stopped) { "녹음 중이 아니다" }), failed)
     }
+
+    /** 오디오 스레드가 버퍼마다 [peak] 를 올리고, 여기서 읽을 때 0 으로 되돌린다. */
+    override val levels: Flow<Float> = levelFlow { locked { peak.also { peak = 0f } } }
 
     override suspend fun chunks(directory: String): List<String> = names(directory).map { "$directory/$it" }
 
@@ -101,6 +111,7 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
 
     private fun write(buffer: AVAudioPCMBuffer) = locked {
         val directory = directory ?: return@locked
+        peak = maxOf(peak, peakOf(buffer))
         val out = file ?: openChunk(directory, buffer.format)?.also { file = it } ?: return@locked fail(RecordingFailure.WriteFailed)
         if (!out.writeFromBuffer(buffer, error = null)) fail(RecordingFailure.WriteFailed)
         framesInFile += buffer.frameLength.toDouble()
@@ -140,6 +151,14 @@ public class IosRecorder internal constructor(private val mic: MicInput, private
                 error = null,
             )
         }.getOrNull()
+    }
+
+    /** 탭은 Float32 표본을 준다. 채널이 둘이어도 녹음은 첫 채널 소리로 충분히 가늠된다. */
+    private fun peakOf(buffer: AVAudioPCMBuffer): Float {
+        val samples = buffer.floatChannelData?.get(0) ?: return 0f
+        var max = 0f
+        for (i in 0 until buffer.frameLength.toInt()) max = maxOf(max, abs(samples[i]))
+        return max
     }
 
     private fun fail(reason: RecordingFailure) {

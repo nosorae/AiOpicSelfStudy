@@ -14,6 +14,7 @@ import android.media.MediaRecorder
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import kotlinx.coroutines.flow.Flow
 import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -40,6 +41,14 @@ public class AndroidRecorder(context: Context) : Recorder {
 
     /** [start] 뒤로 처음 생긴 실패. 조각 넘김과 포커스 콜백에서 생겨도 [stop] 이 돌려준다. */
     private var failure: RecordingFailure? = null
+
+    /**
+     * [MediaRecorder.getMaxAmplitude] 는 직전 호출 뒤 가장 큰 16비트 진폭을 준다. 녹음기가 없으면(멈춤, 끼어듦) 0 이다.
+     * 녹음기가 막 열리거나 닫히는 중이면 예외가 나서 그때도 0 으로 친다.
+     */
+    override val levels: Flow<Float> = levelFlow {
+        synchronized(this) { runCatching { recorder?.maxAmplitude }.getOrNull() ?: 0 } / MAX_AMPLITUDE
+    }
 
     // 오디오 포커스 콜백과 조각 넘김 콜백이 메인 스레드에서 같은 상태를 건드리므로 상태를 바꾸는 곳은 모두 this 로 잠근다.
     override suspend fun start(directory: String): RecordingFailure? = synchronized(this) {
@@ -216,5 +225,6 @@ public class AndroidRecorder(context: Context) : Recorder {
         const val BIT_RATE = 64_000
         const val CHUNK_BYTES = 5L * BIT_RATE / 8
         const val BUFFER_SIZE = 64 * 1024
+        const val MAX_AMPLITUDE = 32_767f
     }
 }

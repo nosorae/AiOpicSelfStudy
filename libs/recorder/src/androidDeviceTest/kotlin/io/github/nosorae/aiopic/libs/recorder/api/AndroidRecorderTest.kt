@@ -9,6 +9,9 @@ import android.media.AudioManager
 import android.media.MediaMetadataRetriever
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -19,6 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.time.Duration.Companion.seconds
 
 // 녹음은 실제 시간이 흘러야 조각이 생기므로 runTest 의 가상 시간 대신 runBlocking 과 Thread.sleep 을 쓴다.
@@ -106,6 +110,23 @@ class AndroidRecorderTest {
         val resumes = recorder.merge(chunks, File(dir, "merged.m4a").path)
         assertEquals(1, resumes.size, "조각 $chunks")
         assertTrue(resumes.single() in 1.seconds..3.seconds, "이어 녹음 위치 $resumes")
+    }
+
+    @Test
+    fun `녹음_중_음량을_80ms_마다_0과_1_사이로_내고_녹음_중이_아니면_0_이다`() = runBlocking {
+        val recorder = AndroidRecorder(context)
+        assertEquals(0f, recorder.levels.first())
+
+        assertNull(recorder.start(dir.path))
+        val started = System.nanoTime()
+        val levels = recorder.levels.take(13).toList()
+        val elapsed = (System.nanoTime() - started).nanoseconds
+        recorder.stop()
+
+        // 에뮬레이터 마이크는 무음일 수 있어 값의 크기는 보지 않는다.
+        assertTrue(levels.all { it in 0f..1f }, "음량 $levels")
+        assertTrue(elapsed in 900.milliseconds..1500.milliseconds, "걸린 시간 $elapsed")
+        assertEquals(0f, recorder.levels.first())
     }
 
     @Test
