@@ -37,7 +37,7 @@ class PracticeViewModelTest {
 
     private fun viewModel() = PracticeViewModel(
         answerId = "a1",
-        pickPracticeQuestionUseCase = PickPracticeQuestionUseCase(repository),
+        pickPracticeQuestionUseCase = PickPracticeQuestionUseCase(repository, typeNames = emptyMap()),
         playPracticeQuestionUseCase = PlayPracticeQuestionUseCase(repository, tts, recorder),
         submitPracticeAnswerUseCase = SubmitPracticeAnswerUseCase(repository, recorder),
         stopRecordingUseCase = StopRecordingUseCase(recorder),
@@ -94,6 +94,15 @@ class PracticeViewModelTest {
         runCurrent()
 
         assertTrue(viewModel.uiState.value.canPlay)
+    }
+
+    @Test
+    fun `F4_1 약한 유형에서 고르면 왜 이 질문인지 유형 점수를 보여 준다`() = practiceTest {
+        repository.answers += scored("old", question("q1", "routine"), 42)
+        val viewModel = viewModel()
+        runCurrent()
+
+        assertEquals(PracticeWeakness("routine", 42), viewModel.uiState.value.weakness)
     }
 
     @Test
@@ -264,6 +273,30 @@ class PracticeViewModelTest {
         assertNull(recorder.recording)
         assertTrue(repository.answers.isEmpty())
         assertEquals(PracticeDestination.Exit, viewModel.uiState.value.navigation)
+    }
+
+    @Test
+    fun `녹음 중 나가기를 누르면 저장하는 동안에도 답변 제출 중이 아니다`() = practiceTest {
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+
+        viewModel.onIntent(PracticeIntent.ExitPractice)
+
+        assertTrue(viewModel.uiState.value.saving)
+        assertFalse(viewModel.uiState.value.submitting)
+    }
+
+    @Test
+    fun `Next 를 누르면 저장하는 동안 답변 제출 중이다`() = practiceTest {
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(10.seconds)
+
+        viewModel.onIntent(PracticeIntent.SubmitAnswer)
+
+        assertTrue(viewModel.uiState.value.submitting)
+        runCurrent()
+        assertFalse(viewModel.uiState.value.submitting)
     }
 
     @Test

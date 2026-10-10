@@ -35,7 +35,13 @@ class ExamScreenshotTest {
 
     @Test fun questionReady() = shot(ExamSamples.questionReady)
 
-    @Test fun questionSpeaking() = shot(ExamSamples.questionSpeaking)
+    @Test fun questionReady_dark() = shot(ExamSamples.questionReady, dark = true)
+
+    @Test fun check_dark() = shot(ExamSamples.check, dark = true)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun check_fontScale200() = shot(ExamSamples.check)
 
     @Test fun surveySaving() = shot(ExamSamples.surveySaving)
 

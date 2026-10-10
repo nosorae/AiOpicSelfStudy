@@ -46,8 +46,8 @@ class PracticeViewModel(
 
     init {
         viewModelScope.launch {
-            val question = pickPracticeQuestionUseCase()
-            _uiState.update { it.copy(question = question, error = if (question == null) PracticeError.QuestionUnavailable else null) }
+            val pick = pickPracticeQuestionUseCase()
+            _uiState.update { it.copy(question = pick?.question, weakness = pick?.weakness, error = if (pick == null) PracticeError.QuestionUnavailable else null) }
         }
     }
 
@@ -100,7 +100,7 @@ class PracticeViewModel(
         val question = _uiState.value.question ?: return
         if (timer.elapsed() - startedAt < NextDelay) return
         recordingEnded()
-        save {
+        save(submitting = true) {
             when (val error = submitPracticeAnswerUseCase(question, answerId)) {
                 // ponytail: 다시 녹음은 남은 조각 뒤에 이어 쓴다. 앞 답변이 겹쳐 들리는 게 문제가 되면 녹음 폴더를 비우고 시작한다.
                 null -> _uiState.update { it.copy(navigation = PracticeDestination.Feedback(answerId)) }
@@ -129,13 +129,13 @@ class PracticeViewModel(
     }
 
     /** 사용자가 누른 저장을 하는 동안 [PracticeUiState.saving] 을 켜 둔다. */
-    private fun save(block: suspend () -> Unit) {
-        _uiState.update { it.copy(saving = true) }
+    private fun save(submitting: Boolean = false, block: suspend () -> Unit) {
+        _uiState.update { it.copy(saving = true, submitting = submitting) }
         viewModelScope.launch {
             try {
                 block()
             } finally {
-                _uiState.update { it.copy(saving = false) }
+                _uiState.update { it.copy(saving = false, submitting = false) }
             }
         }
     }

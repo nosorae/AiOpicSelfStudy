@@ -5,6 +5,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertTextEquals
@@ -32,6 +35,10 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class ExamScreenTest {
+    private companion object {
+        const val HINT = "질문이 끝나면 바로 녹음돼요. 다시 듣기는 5초 안에 한 번, Next 는 10초 뒤에 켜져요."
+    }
+
     @get:Rule val rule = createComposeRule()
 
     private val intents = mutableListOf<ExamIntent>()
@@ -214,6 +221,37 @@ class ExamScreenTest {
         show(ExamSamples.questionReplayable)
 
         rule.onNode(hasProgressBarRangeInfo(ProgressBarRangeInfo(2f, 0f..15f, 15))).assertExists()
+    }
+
+    @Test
+    fun `시험 문항은 피드백 없이 듣기와 답하기 단계만 보이고 녹음 중에는 답하기가 지금 단계다`() {
+        show(ExamSamples.questionReplayable)
+
+        rule.onNodeWithText("듣기").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "끝남"))
+        rule.onNodeWithText("답하기").assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "지금"))
+        rule.onNodeWithText("피드백").assertDoesNotExist()
+    }
+
+    @Test
+    fun `규칙은 장비 점검에서만 짧은 안내 한 줄로 보이고 문항에서는 그림이 대신한다`() {
+        show(ExamSamples.check)
+        rule.onNodeWithText(HINT).assertExists()
+        rule.onNodeWithText("다시 듣기는 녹음 시작 5초 안에 한 번만 됩니다. Next 는 녹음 10초 뒤에 켜집니다.").assertDoesNotExist()
+    }
+
+    @Test
+    fun `문항 화면에는 규칙 글이 없다`() {
+        show(ExamSamples.questionReady)
+
+        rule.onNodeWithText(HINT).assertDoesNotExist()
+        rule.onNodeWithText("다시 듣기는 녹음 시작 5초 안에 한 번만 됩니다. Next 는 녹음 10초 뒤에 켜집니다.").assertDoesNotExist()
+    }
+
+    @Test
+    fun `질문을 만드는 동안 진행 문구가 무엇을 만드는지 알린다`() {
+        show(ExamSamples.questionLoading)
+
+        rule.onNodeWithTag("exam-phase").assertTextEquals("고른 주제로 2~7번 질문을 만들고 있어요")
     }
 
     @Test

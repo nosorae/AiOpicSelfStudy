@@ -46,8 +46,8 @@ final class ExamResumeUITests: XCTestCase {
         app.tapTag("exam-play")
         app.waitRecording()
         attachScreenshot("이어 본 첫 문항 녹음 중")
-        // 끊긴 문항을 다시 들은 것으로 세어 다시 듣기가 꺼져 있다(F3.3).
-        XCTAssertFalse(app.tag("exam-replay").isEnabled, "이어 본 문항에서 다시 듣기가 켜져 있다")
+        // 끊긴 문항을 다시 들은 것으로 세어 다시 듣기 버튼이 없다(F3.3).
+        XCTAssertFalse(app.tag("exam-replay").exists, "이어 본 문항에서 다시 듣기가 보인다")
     }
 
     private func attachScreenshot(_ name: String) {

@@ -8,7 +8,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -37,6 +39,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,14 +52,18 @@ import io.github.nosorae.aiopic.engine.question.model.TopicGroup
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
 import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.ui.design.AnswerStep
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
+import io.github.nosorae.aiopic.ui.design.MontageAnswerSteps
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
 import io.github.nosorae.aiopic.ui.design.MontageListCell
 import io.github.nosorae.aiopic.ui.design.MontageMotion
+import io.github.nosorae.aiopic.ui.design.MontagePlayButton
 import io.github.nosorae.aiopic.ui.design.MontageRadius
+import io.github.nosorae.aiopic.ui.design.MontageRecordingButtons
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageStepTrail
@@ -64,13 +71,15 @@ import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
 import io.github.nosorae.aiopic.ui.design.MontageVoiceRibbon
 import io.github.nosorae.aiopic.ui.design.RecordHaptics
-import io.github.nosorae.aiopic.ui.design.rememberElapsedFraction
+import io.github.nosorae.aiopic.ui.design.icon_normal_play
+import io.github.nosorae.aiopic.ui.design.icon_normal_refresh
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import io.github.nosorae.aiopic.ui.design.Res as DesignRes
 
 /**
  * ViewModel 을 관측해 이동을 처리하는 바깥 겹. Play 를 누르면 마이크 권한부터 받는다.
@@ -164,6 +173,7 @@ private fun StepScaffold(
     title: String,
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     bottomBar: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
@@ -176,6 +186,7 @@ private fun StepScaffold(
     ) {
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = MontageSpacing.spacing16),
+            horizontalAlignment = horizontalAlignment,
             verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12),
         ) {
             content()
@@ -240,7 +251,11 @@ private fun ChoiceStep(
     }
 }
 
-/** 질문 글자는 보이지 않는다(F2.3). 남은 시간, 지금 하는 일, 문항 규칙만 보인다. */
+/**
+ * 질문 글자는 보이지 않는다(F2.3). 한 문항 연습과 같은 부품을 같은 순서로 쓴다. 위에서부터 시험에만 있는 문항 진행 점과 남은 시간,
+ * 단계 표시(듣기, 답하기. 시험 중에는 피드백을 보이지 않는다), 가운데 주인공(Play 또는 목소리 띠)과 지금 하는 일이다.
+ * 규칙은 첫 화면인 장비 점검에서 Play 전에 한 줄 안내로만 보이고, 그 뒤로는 단계 표시와 버튼 채움이 대신 보인다.
+ */
 @Composable
 private fun QuestionStep(
     title: String,
@@ -253,24 +268,25 @@ private fun QuestionStep(
     onExit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val recording = state.phase == QuestionPhase.Recording
+    val haptics = LocalHaptics.current
     StepScaffold(
         title = title,
         onExit = onExit,
         modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
         bottomBar = {
-            if (state.phase == QuestionPhase.Recording) {
-                RecordingButtons(state, onReplay = onReplay, onNext = onNext)
-            } else {
-                val haptics = LocalHaptics.current
-                // 질문을 다 읽어야 녹음이 시작돼서 그동안 Play 가 진행 표시를 보인다. 모델 질문을 기다리면 위에 불러오는 중 안내가 뜬다(F6.1).
-                MontageButton(
-                    text = stringResource(if (state.error in RetryErrors) Res.string.exam_retry else Res.string.exam_play),
-                    onClick = {
-                        haptics.play(HapticEffect.Tap)
-                        onPlay()
-                    },
-                    loading = state.phase == QuestionPhase.Speaking,
-                    modifier = Modifier.fillMaxWidth().testTag("exam-play"),
+            if (recording) {
+                MontageRecordingButtons(
+                    recorded = state.recorded,
+                    replayWindow = ReplayWindow,
+                    nextDelay = NextDelay,
+                    canReplay = state.canReplay,
+                    canNext = state.canNext,
+                    saving = state.saving,
+                    onReplay = onReplay,
+                    onNext = onNext,
+                    tagPrefix = "exam",
                 )
             }
         },
@@ -279,25 +295,38 @@ private fun QuestionStep(
             MontageStepTrail(total = state.questionCount, done = state.questionNumber - 1, modifier = Modifier.padding(horizontal = Gutter))
         }
         state.remaining?.let { RemainingTime(it, state.timeLimit) }
-        description?.let { Description(it) }
-        val notice = state.questionNotice
-        if (notice is QuestionNotice.Making) {
-            val making = if (notice.recalibrated) Res.string.exam_question_making_difficulty else Res.string.exam_question_making_topics
-            QuestionLoading(stringResource(making, notice.first, notice.last), modifier = Modifier.padding(horizontal = Gutter))
-        } else if (notice == QuestionNotice.Slow) {
-            QuestionLoading(stringResource(Res.string.exam_question_slow), modifier = Modifier.padding(horizontal = Gutter))
+        MontageAnswerSteps(
+            current = if (recording) AnswerStep.Answer else AnswerStep.Listen,
+            withFeedback = false,
+            modifier = Modifier.padding(horizontal = Gutter + MontageSpacing.spacing48),
+        )
+        description?.let { Description(it, TextAlign.Center) }
+        Spacer(Modifier.height(MontageSpacing.spacing16))
+        if (recording) {
+            MontageVoiceRibbon(state.voiceLevel, Modifier.testTag("exam-voice"))
         } else {
-            PhaseText(state)
+            // 질문을 다 읽어야 녹음이 시작돼서 그동안 Play 가 소리 물결로 바뀐다. 모델 질문을 기다리면 아래 문구가 무엇을 만드는지 알린다(F6.1).
+            val retry = state.error in RetryErrors
+            MontagePlayButton(
+                text = stringResource(if (retry) Res.string.exam_retry else Res.string.exam_play),
+                busy = state.phase == QuestionPhase.Speaking,
+                onClick = {
+                    haptics.play(HapticEffect.Tap)
+                    onPlay()
+                },
+                icon = if (retry) DesignRes.drawable.icon_normal_refresh else DesignRes.drawable.icon_normal_play,
+                modifier = Modifier.testTag("exam-play"),
+            )
         }
-        if (state.phase == QuestionPhase.Recording) {
-            MontageVoiceRibbon(state.voiceLevel, Modifier.padding(vertical = MontageSpacing.spacing16).testTag("exam-voice"))
-        }
-        if (state.questionNotice == QuestionNotice.BuiltIn) Description(stringResource(Res.string.exam_question_built_in))
+        PhaseText(state)
+        if (state.step is ExamStep.Check && state.phase == QuestionPhase.Ready && state.error == null) Description(stringResource(Res.string.exam_hint), TextAlign.Center)
+        if (state.questionNotice == QuestionNotice.BuiltIn) Description(stringResource(Res.string.exam_question_built_in), TextAlign.Center)
         state.error?.let {
             Text(
                 text = stringResource(it.message),
                 style = MontageTheme.typography.body2.medium,
                 color = MontageTheme.colors.foregroundNegativePrimary,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = Gutter).testTag("exam-error"),
             )
         }
@@ -308,43 +337,9 @@ private fun QuestionStep(
                 variant = MontageButtonVariant.Outlined,
                 type = MontageButtonType.Assistive,
                 size = MontageButtonSize.Medium,
-                modifier = Modifier.padding(horizontal = Gutter).testTag("exam-open-settings"),
+                modifier = Modifier.testTag("exam-open-settings"),
             )
         }
-        // 녹음 중에는 두 버튼의 채움이 같은 규칙을 보여서 문장을 뺀다.
-        if (state.phase != QuestionPhase.Recording) Description(stringResource(Res.string.exam_rules))
-    }
-}
-
-/**
- * 녹음 중 아래 버튼 둘. 다시 듣기는 쓸 수 있는 5초 동안 채움이 줄어들고, Next 는 켜지기까지 10초 동안 채움이 차오른다(F2.4).
- * 동작 줄이기면 Next 는 켜지기까지 남은 초를 글자로 보인다.
- */
-@Composable
-private fun RecordingButtons(state: ExamUiState, onReplay: () -> Unit, onNext: () -> Unit) {
-    val replayWindow = rememberElapsedFraction(state.recorded, ReplayWindow, running = state.canReplay)
-    val nextDelay = rememberElapsedFraction(state.recorded, NextDelay, running = !state.canNext)
-    Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
-        MontageButton(
-            text = stringResource(Res.string.exam_replay),
-            onClick = onReplay,
-            enabled = state.canReplay,
-            type = MontageButtonType.Assistive,
-            fill = if (state.canReplay) ({ 1f - replayWindow.value }) else null,
-            modifier = Modifier.weight(1f).testTag("exam-replay"),
-        )
-        MontageButton(
-            text = if (MontageMotion.reduceMotion && !state.canNext) {
-                stringResource(Res.string.exam_next_in, (NextDelay - state.recorded).inWholeSeconds)
-            } else {
-                stringResource(Res.string.exam_next)
-            },
-            onClick = onNext,
-            enabled = state.canNext,
-            loading = state.saving,
-            fill = if (state.canNext) null else ({ nextDelay.value }),
-            modifier = Modifier.weight(1f).testTag("exam-next"),
-        )
     }
 }
 
@@ -476,33 +471,43 @@ private fun DifficultyBars(filled: Int, total: Int, strong: Boolean) {
     }
 }
 
-/** 문항의 지금 진행(대기, 질문 듣기, 녹음). */
+/** 가운데 주인공 아래 지금 하는 일. 질문을 기다리면 무엇을 만드는지, 오래 걸리면 연결 상태를 보라고 쓴다. Play 전에는 없다. */
 @Composable
 private fun PhaseText(state: ExamUiState) {
+    val notice = state.questionNotice
+    val text = when {
+        notice is QuestionNotice.Making -> stringResource(
+            if (notice.recalibrated) Res.string.exam_question_making_difficulty else Res.string.exam_question_making_topics,
+            notice.first,
+            notice.last,
+        )
+
+        notice == QuestionNotice.Slow -> stringResource(Res.string.exam_question_slow)
+
+        state.phase == QuestionPhase.Speaking -> stringResource(Res.string.exam_speaking)
+
+        state.phase == QuestionPhase.Recording && state.answerTimer -> stringResource(Res.string.exam_recording_timer, state.recorded.clockText())
+
+        state.phase == QuestionPhase.Recording -> stringResource(Res.string.exam_recording)
+
+        else -> return
+    }
     Text(
-        text = when (state.phase) {
-            QuestionPhase.Ready -> stringResource(Res.string.exam_ready)
-
-            QuestionPhase.Speaking -> stringResource(Res.string.exam_speaking)
-
-            QuestionPhase.Recording -> if (state.answerTimer) {
-                stringResource(Res.string.exam_recording_timer, state.recorded.clockText())
-            } else {
-                stringResource(Res.string.exam_recording)
-            }
-        },
+        text = text,
         style = MontageTheme.typography.heading2.bold,
         color = if (state.phase == QuestionPhase.Recording) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralPrimary,
+        textAlign = TextAlign.Center,
         modifier = Modifier.padding(horizontal = Gutter).testTag("exam-phase"),
     )
 }
 
 @Composable
-private fun Description(text: String) {
+private fun Description(text: String, align: TextAlign = TextAlign.Start) {
     Text(
         text = text,
         style = MontageTheme.typography.body1.regular,
         color = MontageTheme.colors.foregroundNeutralSecondary,
+        textAlign = align,
         modifier = Modifier.padding(horizontal = Gutter),
     )
 }
