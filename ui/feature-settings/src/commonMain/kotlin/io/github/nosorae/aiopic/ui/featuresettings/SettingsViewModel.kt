@@ -108,7 +108,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             deleteKeyUseCase(provider)
             _uiState.update { state ->
-                state.copy(keys = state.keys.map { if (it.provider == provider) it.copy(saved = false) else it })
+                state.copy(keys = state.keys.map { if (it.provider == provider) it.copy(maskedKey = null) else it })
             }
         }
     }

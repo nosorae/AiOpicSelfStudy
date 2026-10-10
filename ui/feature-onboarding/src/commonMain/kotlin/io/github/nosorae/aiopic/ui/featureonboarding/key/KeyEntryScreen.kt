@@ -1,10 +1,16 @@
 package io.github.nosorae.aiopic.ui.featureonboarding.key
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -12,33 +18,49 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
+import io.github.nosorae.aiopic.ui.design.MontageIconButton
 import io.github.nosorae.aiopic.ui.design.MontageListCell
+import io.github.nosorae.aiopic.ui.design.MontageRadius
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTextField
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.design.icon_normal_circle_close_fill
+import io.github.nosorae.aiopic.ui.design.icon_normal_external_link
 import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
 import io.github.nosorae.aiopic.ui.featureonboarding.Res
-import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_checking
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_clear_key
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_error_invalid
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_error_retryable
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_free_tier_link
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_get_key
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_key
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_key_description
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_key_placeholder
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_provider
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_step_copy
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_step_create
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_step_paste
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_steps_title
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_submit
 import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_title
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_why_body
+import io.github.nosorae.aiopic.ui.featureonboarding.key_entry_why_title
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import io.github.nosorae.aiopic.ui.design.Res as DesignRes
 
 /**
  * ViewModel 을 관측해 이동을 처리하는 바깥 겹. 키 저장 뒤 어디로 갈지는 화면을 등록한 쪽이 [onDone] 으로 정한다.
@@ -72,14 +94,17 @@ fun KeyEntryScreen(
     modifier: Modifier = Modifier,
 ) {
     val gutter = MontageSpacing.spacing20
+    val uriHandler = LocalUriHandler.current
     MontageScreen(
         modifier = modifier,
         topBar = { MontageTopBar(title = stringResource(Res.string.key_entry_title)) },
         bottomBar = {
             MontageButton(
-                text = stringResource(if (state.checking) Res.string.key_entry_checking else Res.string.key_entry_submit),
+                text = stringResource(Res.string.key_entry_submit),
                 onClick = { onIntent(KeyEntryIntent.SubmitKey) },
-                enabled = state.canSubmit,
+                // 확인하는 동안 버튼은 진행 표시를 보이고, 다른 입력(제공사, 입력칸, 키 받기, 안내)은 모두 막는다.
+                enabled = state.canSubmit || state.checking,
+                loading = state.checking,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = gutter, vertical = MontageSpacing.spacing12),
             )
         },
@@ -88,12 +113,8 @@ fun KeyEntryScreen(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(vertical = MontageSpacing.spacing16),
             verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
         ) {
-            Text(
-                text = stringResource(Res.string.key_entry_provider),
-                style = MontageTheme.typography.label1.bold,
-                color = MontageTheme.colors.foregroundNeutralSecondary,
-                modifier = Modifier.padding(horizontal = gutter),
-            )
+            WhyKeyCard(Modifier.padding(horizontal = gutter))
+            SectionLabel(Res.string.key_entry_provider, Modifier.padding(start = gutter, end = gutter, top = MontageSpacing.spacing16))
             Column {
                 state.providers.forEach { provider ->
                     MontageListCell(
@@ -103,6 +124,23 @@ fun KeyEntryScreen(
                         onClick = { onIntent(KeyEntryIntent.SelectProvider(provider)) },
                     )
                 }
+            }
+            SectionLabel(Res.string.key_entry_steps_title, Modifier.padding(horizontal = gutter))
+            Column(
+                modifier = Modifier.padding(horizontal = gutter),
+                verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12),
+            ) {
+                Step(1, Res.string.key_entry_step_create)
+                Step(2, Res.string.key_entry_step_copy)
+                Step(3, Res.string.key_entry_step_paste)
+                MontageButton(
+                    text = stringResource(Res.string.key_entry_get_key, state.keyPageProvider.label),
+                    onClick = { uriHandler.openUri(state.keyPageProvider.keyPageUrl) },
+                    variant = MontageButtonVariant.Outlined,
+                    enabled = !state.checking,
+                    leadingIcon = DesignRes.drawable.icon_normal_external_link,
+                    modifier = Modifier.fillMaxWidth().padding(top = MontageSpacing.spacing4),
+                )
             }
             MontageTextField(
                 value = state.key,
@@ -118,19 +156,92 @@ fun KeyEntryScreen(
                 ),
                 error = state.error != null,
                 enabled = !state.checking,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
-                visualTransformation = PasswordVisualTransformation(),
-                modifier = Modifier.padding(horizontal = gutter),
+                // 키를 가리지 않는다. 40자 넘는 키를 붙여 넣은 뒤 다 들어갔는지 눈으로 보게 하려는 것이다.
+                // 자동 수정과 자동 대문자가 키 글자를 바꾸지 않게 끈다.
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Ascii,
+                    capitalization = KeyboardCapitalization.None,
+                    autoCorrectEnabled = false,
+                ),
+                fontFamily = FontFamily.Monospace,
+                trailing = if (state.key.isNotEmpty() && !state.checking) {
+                    {
+                        MontageIconButton(
+                            icon = DesignRes.drawable.icon_normal_circle_close_fill,
+                            contentDescription = stringResource(Res.string.key_entry_clear_key),
+                            onClick = { onIntent(KeyEntryIntent.ChangeKey("")) },
+                            tint = MontageTheme.colors.foregroundNeutralTertiary,
+                        )
+                    }
+                } else {
+                    null
+                },
+                modifier = Modifier.padding(start = gutter, end = gutter, top = MontageSpacing.spacing16),
             )
             MontageButton(
                 text = stringResource(Res.string.key_entry_free_tier_link),
                 onClick = onOpenFreeTierNotice,
                 variant = MontageButtonVariant.Text,
+                enabled = !state.checking,
                 size = MontageButtonSize.Medium,
                 // 글자 버튼의 안쪽 여백 7dp 에 12dp 를 더해 글자를 다른 줄의 20dp 에 거의 맞춘다.
                 modifier = Modifier.padding(horizontal = MontageSpacing.spacing12),
             )
         }
+    }
+}
+
+/** 서버 없이 사용자 키로 직접 보낸다는 것과 요금이 어디에 잡히는지를 먼저 알린다. */
+@Composable
+private fun WhyKeyCard(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MontageTheme.colors.surfaceBrandPrimaryOpacity8, RoundedCornerShape(MontageRadius.radius16))
+            .padding(MontageSpacing.spacing16),
+        verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4),
+    ) {
+        Text(
+            text = stringResource(Res.string.key_entry_why_title),
+            style = MontageTheme.typography.body1.bold,
+            color = MontageTheme.colors.foregroundNeutralPrimary,
+        )
+        Text(
+            text = stringResource(Res.string.key_entry_why_body),
+            style = MontageTheme.typography.label1Reading.regular,
+            color = MontageTheme.colors.foregroundNeutralSecondary,
+        )
+    }
+}
+
+@Composable
+private fun SectionLabel(text: StringResource, modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(text),
+        style = MontageTheme.typography.label1.bold,
+        color = MontageTheme.colors.foregroundNeutralSecondary,
+        modifier = modifier,
+    )
+}
+
+/** 번호 원과 한 줄 설명. 원은 글자 크기를 키우면 같이 커지도록 최소 크기만 정한다. */
+@Composable
+private fun Step(number: Int, text: StringResource) {
+    Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .sizeIn(minWidth = MontageSpacing.spacing24, minHeight = MontageSpacing.spacing24)
+                .background(MontageTheme.colors.surfaceBrandPrimary, CircleShape)
+                .padding(horizontal = MontageSpacing.spacing4),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(text = number.toString(), style = MontageTheme.typography.caption1.bold, color = MontageTheme.colors.onBrand)
+        }
+        Text(
+            text = stringResource(text),
+            style = MontageTheme.typography.body2.regular,
+            color = MontageTheme.colors.foregroundNeutralPrimary,
+        )
     }
 }
 

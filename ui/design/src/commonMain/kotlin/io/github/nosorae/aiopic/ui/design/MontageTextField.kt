@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,6 +29,9 @@ import androidx.compose.ui.unit.dp
 /**
  * Montage 한 줄 입력칸(Large, 높이 48dp). [title] 은 칸 위 이름, [description] 은 칸 아래 도움말이나 오류 문구다.
  * 초점이 있으면 테두리가 강조색이 되고, [error] 면 빨강이 된다.
+ * [trailing] 은 칸 오른쪽 끝의 48dp 아이콘 버튼 자리다(지우기 같은 것). 칸 높이는 그대로 48dp 다.
+ * [fontFamily] 는 입력 글자 서체다. API 키처럼 l, 1, I 를 가려 읽어야 하는 값은 고정폭을 넣는다.
+ * 도움말과 오류 문구는 줄 수를 막지 않는다. 글자를 키운 화면에서 잘리지 않게 하려는 것이다.
  */
 @Composable
 fun MontageTextField(
@@ -40,6 +45,8 @@ fun MontageTextField(
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    fontFamily: FontFamily? = null,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
@@ -64,6 +71,7 @@ fun MontageTextField(
             singleLine = true,
             textStyle = typography.body2.regular.copy(
                 color = if (enabled) colors.foregroundNeutralPrimary else colors.foregroundNeutralTertiary,
+                fontFamily = fontFamily ?: typography.body2.regular.fontFamily,
             ),
             cursorBrush = SolidColor(colors.foregroundBrandPrimary),
             keyboardOptions = keyboardOptions,
@@ -71,24 +79,27 @@ fun MontageTextField(
             interactionSource = interaction,
             modifier = Modifier.fillMaxWidth(),
             decorationBox = { inner ->
-                Box(
+                Row(
                     modifier = Modifier
                         .defaultMinSize(minHeight = 48.dp)
                         .background(if (enabled) colors.backgroundNeutralPrimary else colors.surfaceNeutralTertiary, shape)
                         .border(1.dp, border, shape)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.CenterStart,
+                        .padding(start = 12.dp, end = if (trailing == null) 12.dp else 0.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (value.isEmpty() && placeholder.isNotEmpty()) {
-                        Text(
-                            text = placeholder,
-                            style = typography.body2.regular,
-                            color = if (enabled) colors.foregroundNeutralTertiary else colors.foregroundDisablePrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    Box(Modifier.weight(1f).padding(vertical = 8.dp), contentAlignment = Alignment.CenterStart) {
+                        if (value.isEmpty() && placeholder.isNotEmpty()) {
+                            Text(
+                                text = placeholder,
+                                style = typography.body2.regular,
+                                color = if (enabled) colors.foregroundNeutralTertiary else colors.foregroundDisablePrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        inner()
                     }
-                    inner()
+                    trailing?.invoke()
                 }
             },
         )
@@ -97,8 +108,6 @@ fun MontageTextField(
                 text = description,
                 style = typography.caption1.regular,
                 color = if (enabled && error) colors.foregroundNegativePrimary else colors.foregroundNeutralTertiary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
         }
     }

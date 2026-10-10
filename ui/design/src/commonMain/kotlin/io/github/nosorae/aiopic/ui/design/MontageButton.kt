@@ -5,11 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -17,9 +19,13 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -45,6 +51,7 @@ enum class MontageButtonSize(
 
 /**
  * Montage 버튼. 모양은 Montage 값을 따르고, 눈에 보이는 높이가 48dp 보다 작아도 눌리는 영역은 48dp 로 넓힌다.
+ * [loading] 이면 글자 대신 진행 표시를 보이고 누를 수 없다. 글자는 투명하게 남겨 버튼 크기가 바뀌지 않게 한다.
  */
 @Composable
 fun MontageButton(
@@ -56,6 +63,7 @@ fun MontageButton(
     size: MontageButtonSize = MontageButtonSize.Large,
     enabled: Boolean = true,
     leadingIcon: DrawableResource? = null,
+    loading: Boolean = false,
 ) {
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
@@ -94,8 +102,11 @@ fun MontageButton(
                     Modifier
                 },
             )
+            // 화면 읽기 도구가 처리 중인 버튼을 "처리 중, 사용할 수 없음" 으로 읽게 버튼에 설명을 단다.
+            // ponytail: 앱이 한국어 하나라 문구를 여기 둔다. 언어를 더하면 리소스로 옮긴다.
+            .then(if (loading) Modifier.semantics { contentDescription = "처리 중" } else Modifier)
             .clickable(
-                enabled = enabled,
+                enabled = enabled && !loading,
                 role = Role.Button,
                 interactionSource = null,
                 indication = ripple(color = content),
@@ -106,10 +117,25 @@ fun MontageButton(
         horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (leadingIcon != null) {
-            Icon(painterResource(leadingIcon), contentDescription = null, tint = content, modifier = Modifier.size(size.iconSize))
+        Box(contentAlignment = Alignment.Center) {
+            Row(
+                modifier = if (loading) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier,
+                horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (leadingIcon != null) {
+                    Icon(painterResource(leadingIcon), contentDescription = null, tint = content, modifier = Modifier.size(size.iconSize))
+                }
+                Text(text = text, style = textStyle, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            if (loading) {
+                CircularProgressIndicator(
+                    color = content,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(size.iconSize).clearAndSetSemantics {},
+                )
+            }
         }
-        Text(text = text, style = textStyle, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
