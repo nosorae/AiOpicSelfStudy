@@ -11,6 +11,11 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
+            // installDebugTools 가 HttpClientConfig 를 받아서 api 로 둔다.
+            api(libs.ktor.client.core)
+        }
+        commonTest.dependencies {
+            implementation(libs.ktor.client.mock)
         }
         getByName("androidHostTest").dependencies {
             implementation(libs.robolectric)

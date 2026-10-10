@@ -14,3 +14,6 @@ internal fun redact(text: String, extra: List<Regex>): String {
     (listOf(googleApiKey, geminiKey) + extra).forEach { out = it.replace(out, "***") }
     return out
 }
+
+/** 값을 통째로 가리는 헤더 이름(소문자). 키와 세션이 들어가는 헤더다. */
+internal val DEFAULT_REDACT_HEADERS = setOf("x-goog-api-key", "authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key")
