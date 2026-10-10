@@ -4,31 +4,106 @@
 
 서버는 없다. 사용자가 자기 Gemini API 키를 넣고, 녹음은 기기에만 남는다. Compose Multiplatform 으로 두 플랫폼을 같은 코드로 만든다.
 
-## 모듈 구조
+| 키 넣기 | 문항 | 회차 리포트 | 답변 리포트 | 기록 |
+|---|---|---|---|---|
+| <img src="docs/images/screen-key.png" width="150"> | <img src="docs/images/screen-question.png" width="150"> | <img src="docs/images/screen-report-session.png" width="150"> | <img src="docs/images/screen-report-answer.png" width="150"> | <img src="docs/images/screen-history.png" width="150"> |
 
-다섯 층으로 나누고, 의존은 위에서 아래로만 간다. `./gradlew check` 가 층 규칙을 어긴 의존을 찾으면 실패한다.
+## 모의시험 한 회
+
+질문은 점검 단계에서 Gemini 에 회차 전체를 한 번에 받는다. 40분은 1번 문항에 닿을 때부터 시험 화면에 있는 동안만 흐른다. 답변 분석은 시험이 끝나길 기다리지 않고 Next 마다 뒤에서 보낸다.
 
 ```mermaid
 flowchart TD
-    apps["apps<br/>opic/shared, opic/androidApp, opic/iosApp"]
-    ui["ui<br/>design, navigation, feature-*"]
+    survey["서베이<br/>주제 12개 이상"] --> level["수준 선택<br/>1~6"]
+    level --> check["점검<br/>채점 안 하는<br/>연습 문항"]
+    gen[("회차 질문 받기<br/>Gemini 한 번<br/>실패하면<br/>내장 문항")] -. "점검 Play 때" .-> check
+    check --> timer
+    subgraph timer["40분 타이머"]
+        q1["1~7번"] --> recal["난이도 재조정"]
+        recal --> q8["8~15번<br/>수준 1~2 는<br/>8~12번"]
+    end
+    q8 --> report["리포트<br/>예상 등급 범위"]
+    q1 -. "Next 마다" .-> queue[["분석 대기열"]]
+    q8 -. "Next 마다" .-> queue
+    queue -. "다 분석되면<br/>회차 등급 한 번" .-> report
+```
+
+받은 질문은 회차 id 로 저장해서 이어 볼 때 같은 질문이 나온다. 시간이 다 되면 답한 문항만 채점하고 나머지는 "시간 부족"으로 표시한다.
+
+## 앱을 껐다 켜도 이어지는 이유
+
+화면은 상태를 들고 있지 않는다. 일이 생길 때마다 순수 함수가 다음 회차를 계산하고 Room 에 통째로 저장하므로, 앱이 갑자기 죽어도 마지막 저장에서 다시 시작한다.
+
+```mermaid
+sequenceDiagram
+    actor U as 사용자
+    participant V as 시험 화면
+    participant A as advance()<br/>순수 함수
+    participant R as Room
+    participant M as 녹음기
+
+    U->>V: 버튼 (서베이, 수준, Next 등)
+    V->>A: 지금 회차 + 일어난 일
+    A-->>V: 다음 회차
+    V->>R: 바뀌었으면 통째로 저장
+    loop 1초마다
+        V->>A: 흐른 시간
+        V->>R: 남은 시간 저장
+    end
+    M->>M: 몇 초마다 조각 파일로 쓴다
+    Note over U,M: 앱 강제 종료. 저장된 회차와 녹음 조각이 남고 40분은 멈춘다
+    U->>V: 다시 켜서 홈의 "이어 보기"
+    V->>R: 회차 읽기
+    R-->>V: 같은 단계, 남은 시간, 다시 듣기 여부
+    U->>V: Play
+    alt 이 문항에서 다시 듣기를 안 썼다
+        V->>U: 질문을 다시 읽는다 (다시 듣기를 쓴 것으로 센다)
+    end
+    V->>M: 같은 문항 폴더에 이어 녹음
+```
+
+진행 계산이 저장, 화면과 떨어져 있어서 "7번에서 껐다 켜면 재조정 화면부터" 같은 경우를 기기 없이 단위 테스트로 확인한다(ADR 0012, 0013).
+
+## 답변 하나가 분석되는 길
+
+Gemini 응답은 그대로 믿지 않는다. 교정의 원문 구절이 전문에 있는지, 값 범위가 맞는지 앱이 검사하고 통과 못한 항목은 버린다. 네트워크 실패는 대기열이 다시 보내고, 그 밖의 실패는 답변을 분석 전 상태로 남긴다.
+
+```mermaid
+flowchart TD
+    next["Next<br/>답변 저장<br/>(분석 전)"] --> queue[["분석 대기열<br/>하나씩 순서대로"]]
+    queue --> route{"모델이 음성을<br/>직접 듣나"}
+    route -- "예 (지금 경로)" --> one["Gemini<br/>한 번 호출<br/>녹음 + 프롬프트"]
+    route -- "아니오" --> two["받아쓰기 후<br/>글 분석<br/>나중 제공사용,<br/>지금은 테스트만"]
+    one --> check{"출력 검사"}
+    two --> check
+    check -- "통과" --> done["답변 저장<br/>(분석 끝)<br/>회차가 다 끝나면<br/>등급 요청"]
+    check -- "실패" --> again["한 번 다시 요청<br/>그래도 틀리면<br/>그 항목을 버린다"]
+    again --> done
+    one -. "429, 408, 5xx,<br/>오프라인" .-> retry["30초부터 두 배씩<br/>최대 3번 다시"]
+    retry -.-> queue
+```
+
+두 단계 경로는 음성을 못 듣는 제공사를 붙일 때 쓰려고 포트만 나눠 둔 것이다(ADR 0019).
+
+## 모듈 구조
+
+다섯 층으로 나누고 의존은 위에서 아래로만 간다. 위 층은 아래 층을 건너뛰어 써도 되지만 `ui` 와 `packs` 는 서로 모르고, `libs` 는 프로젝트 모듈을 하나도 쓰지 않는다. `./gradlew check` 가 이 규칙을 어긴 의존을 찾으면 실패한다.
+
+```mermaid
+flowchart TD
+    apps["apps<br/>opic/shared<br/>androidApp<br/>iosApp"]
+    ui["ui<br/>design<br/>navigation<br/>feature-*"]
     packs["packs<br/>opic-en"]
-    engine["engine<br/>session, answer, question"]
-    libs["libs<br/>recorder, llm-gemini, work-queue, keyvault, tts, timer"]
-    tools["tools<br/>eval"]
+    engine["engine<br/>session, answer<br/>question<br/>ai-gemini"]
+    libs["libs<br/>recorder<br/>tts, timer<br/>llm-gemini<br/>work-queue<br/>keyvault"]
+    tools["tools/eval"]
 
     apps --> ui
     apps --> packs
-    apps --> engine
-    apps --> libs
-    ui --> engine
-    ui --> libs
-    packs --> engine
-    packs --> libs
-    engine --> libs
     tools --> packs
-    tools --> engine
-    tools --> libs
+    ui --> engine
+    packs --> engine
+    engine --> libs
 ```
 
 | 층 | 하는 일 |
@@ -36,8 +111,8 @@ flowchart TD
 | apps | 조립만. DI 그래프, Android, iOS 진입점 |
 | ui | 화면. 시험 팩을 모르고 엔진의 타입으로 그린다 |
 | packs | 시험 하나의 내용. 서베이, 문항 순서, 체크리스트, 프롬프트, 등급 |
-| engine | 시험 진행 계산과 이어 보기, 답변 분석 흐름과 출력 검사, 출제 |
-| libs | 녹음, Gemini 호출, 대기열, 키 보관, 음성 합성, 타이머. 프로젝트 모듈 의존 0개 |
+| engine | 시험 진행 계산과 이어 보기, 답변 분석 흐름과 출력 검사, 출제, Gemini 어댑터 |
+| libs | 녹음, Gemini 호출, 대기열, 키 보관, 음성 합성, 타이머 |
 
 ## 실행
 
@@ -56,9 +131,9 @@ iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 
 | 문서 | 위치 |
 |---|---|
-| 제품 요구사항 (화면 목록, F1~F8 수락 기준) | `docs/specs/product.md` |
+| 제품 요구사항 (화면 목록, 수락 기준) | `docs/specs/product.md` |
 | 설계 | `docs/specs/design.md` |
-| 설계 결정 기록 (26개) | `docs/adr/` |
+| 설계 결정 기록 | `docs/adr/` |
 | AI 출력 오류 분석 | `docs/error-analysis.md` |
 | 라이브러리 모듈 사용법 | `libs/<모듈>/README.md` |
 | 꼭 지킬 것, 명령 | `CLAUDE.md` |
@@ -66,19 +141,34 @@ iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 
 ## AI 사용 범위
 
-이 앱의 코드와 문서는 AI 코딩 에이전트(Claude Code)가 이슈 단위로 구현한다.
+이 앱의 코드와 문서는 AI 코딩 에이전트(Claude Code)가 이슈 단위로 구현한다. 개발 그래프(`docs/graph/dev-graph.json`)의 노드 하나가 이슈 하나, 브랜치 하나, PR 하나다. 끝났다는 판정은 에이전트의 말이 아니라 명령의 종료 코드로 한다.
 
-**에이전트가 하는 일.** 개발 그래프의 노드 하나가 GitHub 이슈 하나다. 에이전트는 이슈 하나를 맡아 `node/<노드id>` 브랜치에서 테스트를 먼저 쓰고 구현한다. 노드의 완료 조건은 실행 명령이고 `scripts/graph/run_done.sh <노드id>` 와 `./gradlew check` 가 0 으로 끝나야 끝난 것으로 보고, 리뷰를 거쳐 PR 을 병합한다. done 명령이 실패하면 세 번까지, 리뷰가 반려하면 두 번까지 다시 구현하고, 넘으면 노드를 blocked 로 두고 이슈에 이유를 남긴다.
+```mermaid
+stateDiagram-v2
+    state "done 명령" as done
+    [*] --> 구현: 이슈, node 브랜치
+    구현 --> done: 테스트 먼저, 구현
+    done --> 구현: 실패 (3번까지)
+    done --> 리뷰: run_done.sh, check 가 0
+    리뷰 --> 구현: 반려 (2번까지)
+    리뷰 --> 병합: 승인, squash merge
+    done --> blocked: 3번 넘게 실패
+    리뷰 --> blocked: 2번 넘게 반려
+    blocked --> [*]: 이슈에 이유, 사람이 판단
+    병합 --> [*]
+```
+
+리뷰는 다른 컨텍스트의 리뷰 에이전트가 diff 만 보고 한다.
 
 **사람이 하는 일.**
 
 - 제품 요구사항, 설계, 개발 계획을 승인한다
 - 초기 프로젝트를 만들고 Android, iOS 실행을 확인한다
-- 에이전트가 깐 작업 환경(규칙 파일, 스킬, CI, 템플릿)을 한 번 확인한다
+- 에이전트가 깐 작업 환경(규칙 파일, 스킬, 템플릿)을 한 번 확인한다
 - 막힌 노드를 판단한다
 - 완성 뒤 실기기(Android, iPhone)로 모의시험 한 회를 끝까지 보고, 중간에 앱을 강제 종료해 이어 보기를 확인한다
 
-**AI 출력 검사.** 앱 안에서도 Gemini 응답을 그대로 믿지 않는다. 교정의 원문 구절이 전문에 있는지, 값 범위와 문항 수가 맞는지 앱 코드가 확인하고, 통과하지 못한 항목은 버린다. 사용자는 틀린 교정을 표시해 내보낼 수 있다. 모인 표시와 품질 확인 도구(`tools/eval`)의 보고서는 `docs/error-analysis.md` 에서 종류별로 세어 다음 프롬프트 버전에 반영한다.
+**AI 출력 검사.** 앱 안의 검사는 위 「답변 하나가 분석되는 길」에 있다. 사용자는 틀린 교정을 표시해 내보낼 수 있다. 모인 표시와 품질 확인 도구(`tools/eval`)의 보고서는 `docs/error-analysis.md` 에서 종류별로 세어 다음 프롬프트 버전에 반영한다.
 
 **규칙 파일과 스킬.**
 
