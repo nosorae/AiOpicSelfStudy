@@ -2,6 +2,8 @@ package io.github.nosorae.aiopic.apps.opic.androidapp
 
 import android.app.Application
 import android.content.Context
+import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnitRunner
 import io.github.nosorae.aiopic.libs.debug.network.installDebugTools
@@ -21,6 +23,26 @@ import kotlin.time.Duration.Companion.seconds
  * 계측 인자 `recordFail true` 를 주면 디버깅 스위치 "녹음 실패"를 켜서 녹음기가 멈출 때마다 조각 쓰기에 실패했다고 알린다([RecordingFailureTest]).
  */
 class E2eRunner : AndroidJUnitRunner() {
+    override fun onCreate(arguments: Bundle?) {
+        super.onCreate(arguments)
+        trustNetwork()
+    }
+
+    /**
+     * 답변 분석은 WorkManager 가 네트워크가 연결됐다고 볼 때만 돈다. 에뮬레이터는 인터넷이 되는데도 연결 확인 요청이 실패해
+     * 네트워크를 "확인되지 않음"으로 두고, 그러면 분석이 "Constraints not met" 으로 계속 미뤄진다. Gemini 는 가짜라 실제 연결이 필요 없다.
+     * 그래서 기기의 연결 확인을 끄고 비행기 모드를 한 번 켰다 꺼서 네트워크를 다시 확인하게 한다. 이미 꺼 뒀으면 아무 일도 하지 않는다.
+     */
+    // ponytail: 기기 설정을 테스트 뒤에도 그대로 둔다. 테스트 전용 에뮬레이터라서다. 실기기에서 돌리면 settings delete global captive_portal_mode 로 되돌린다.
+    private fun trustNetwork() {
+        if (shell("settings get global captive_portal_mode").trim() == "0") return
+        shell("settings put global captive_portal_mode 0")
+        shell("cmd connectivity airplane-mode enable")
+        shell("cmd connectivity airplane-mode disable")
+    }
+
+    private fun shell(command: String): String = ParcelFileDescriptor.AutoCloseInputStream(uiAutomation.executeShellCommand(command)).use { it.readBytes().decodeToString() }
+
     override fun newApplication(cl: ClassLoader?, className: String?, context: Context?): Application = super.newApplication(cl, E2eApplication::class.java.name, context)
 }
 
