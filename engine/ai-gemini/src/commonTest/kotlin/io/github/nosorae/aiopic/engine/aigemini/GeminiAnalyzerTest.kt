@@ -112,6 +112,37 @@ class GeminiAnalyzerTest {
         assertEquals(2, sent.size)
     }
 
+    /** 실제 답변 응답의 점수를 70 으로 바꾸고 전문에 있는 교정 하나에 [deducted] 를 붙인 글. */
+    private fun answerWithDeducted(deducted: Int) = Json.parseToJsonElement(realAnswerText).jsonObject.let { answer ->
+        buildJsonObject {
+            answer.forEach { (key, value) -> if (key != "corrections" && key != "score") put(key, value) }
+            put("score", 70)
+            putJsonArray("corrections") {
+                addJsonObject {
+                    put("original", "I usually work from home")
+                    put("corrected", "I usually work from home.")
+                    put("deducted", deducted)
+                }
+            }
+        }.toString()
+    }
+
+    @Test
+    fun `F8_2 교정마다 깎은 점수를 피드백에 담는다`() = runTest {
+        val result = analyzer(ok(envelope(answerWithDeducted(20)))).analyze(model, prompt, question, recording)
+
+        assertEquals(listOf(20), assertIs<AnalysisResult.Success<Feedback>>(result).value.corrections.map { it.deducted })
+        assertEquals(1, sent.size)
+    }
+
+    @Test
+    fun `F8_2 깎은 점수의 합이 100 - score 를 넘으면 다시 요청하고 그래도 넘으면 깎은 점수만 버린다`() = runTest {
+        val result = analyzer(ok(envelope(answerWithDeducted(31)))).analyze(model, prompt, question, recording)
+
+        assertEquals(listOf(null), assertIs<AnalysisResult.Success<Feedback>>(result).value.corrections.map { it.deducted })
+        assertEquals(2, sent.size)
+    }
+
     @Test
     fun `F5_4 다시 요청한 응답이 통과하면 그 응답을 쓴다`() = runTest {
         val result = analyzer(ok(envelope(answerWithMadeUpCorrection)), ok(GeminiFixtures.ANSWER)).analyze(model, prompt, question, recording)

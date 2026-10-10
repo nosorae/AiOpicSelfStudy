@@ -17,7 +17,8 @@ class WeaknessTest {
     private val description = QuestionType("description")
     private val roleplay = QuestionType("roleplay")
 
-    private fun answer(id: String, type: QuestionType, score: Int, corrections: Int = 0) = Answer(
+    /** [deducted] 는 교정마다 깎은 점수다. null 은 깎은 점수를 받기 전의 옛 답변이다. */
+    private fun answer(id: String, type: QuestionType, score: Int, corrections: Int = 0, deducted: List<Int?> = List(corrections) { null }) = Answer(
         id = id,
         question = Question(id = "q-$id", text = "Tell me.", type = type, topic = "home"),
         examSessionId = "s1",
@@ -26,7 +27,7 @@ class WeaknessTest {
             by,
             Feedback(
                 transcript = "I go to park.",
-                corrections = List(corrections) { Correction(original = "go to park", corrected = "I go to the park.") },
+                corrections = deducted.map { Correction(original = "go to park", corrected = "I go to the park.", deducted = it) },
                 upgrades = emptyList(),
                 tenseConsistent = true,
                 sentenceCount = 1,
@@ -66,7 +67,7 @@ class WeaknessTest {
     }
 
     @Test
-    fun `F8_2 틀림 표시가 붙은 답변은 평균에서 뺀다`() {
+    fun `F8_2 깎은 점수가 없는 옛 답변은 틀림 표시가 붙으면 평균에서 뺀다`() {
         val answers = listOf(
             answer("a1", description, 40, corrections = 3),
             answer("a2", description, 80, corrections = 1),
@@ -83,5 +84,35 @@ class WeaknessTest {
         val flagged = setOf(CorrectionFlag("a1", 5), CorrectionFlag("other", 0))
 
         assertEquals(listOf(TypeWeakness(description, score = 45)), weaknessScores(answers, flagged))
+    }
+
+    @Test
+    fun `F8_2 교정 둘 중 하나만 틀림 표시하면 그 교정이 깎은 점수만 되돌린다`() {
+        val answers = listOf(answer("a1", description, 60, deducted = listOf(15, 10)))
+
+        assertEquals(listOf(TypeWeakness(description, score = 75)), weaknessScores(answers, setOf(CorrectionFlag("a1", 0))))
+    }
+
+    @Test
+    fun `F8_2 교정 둘 다 틀림 표시하면 둘 다 되돌린다`() {
+        val answers = listOf(
+            answer("a1", description, 60, deducted = listOf(15, 10)),
+            answer("a2", description, 70),
+        )
+        val flagged = setOf(CorrectionFlag("a1", 0), CorrectionFlag("a1", 1))
+
+        assertEquals(listOf(TypeWeakness(description, score = 78)), weaknessScores(answers, flagged))
+    }
+
+    @Test
+    fun `F8_2 표시한 교정에 깎은 점수가 없으면 그 답변은 빼고 표시 안 한 교정의 빈 값은 상관없다`() {
+        val answers = listOf(
+            answer("a1", description, 60, deducted = listOf(15, null)),
+            answer("a2", description, 50, deducted = listOf(null, 20)),
+            answer("a3", description, 90),
+        )
+        val flagged = setOf(CorrectionFlag("a1", 1), CorrectionFlag("a2", 1))
+
+        assertEquals(listOf(TypeWeakness(description, score = 80)), weaknessScores(answers, flagged))
     }
 }

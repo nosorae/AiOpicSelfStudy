@@ -24,9 +24,13 @@ data class Feedback(
     val score: Int,
 )
 
-/** [original] 은 전문에 그대로 있는 구절이어야 한다. 앱 코드가 확인한다(F5.4). */
+/**
+ * [original] 은 전문에 그대로 있는 구절이어야 한다. 앱 코드가 확인한다(F5.4).
+ * [deducted] 는 이 교정 때문에 점수에서 깎은 몫이다(ADR 0027). 사용자가 틀림으로 표시하면 약점 계산이 이만큼 되돌린다(F8.2).
+ * 프롬프트가 이 값을 받기 전에 저장한 답변과 출력 검사를 통과 못한 값은 null 이다.
+ */
 @Serializable
-data class Correction(val original: String, val corrected: String)
+data class Correction(val original: String, val corrected: String, val deducted: Int? = null)
 
 @Serializable
 data class Upgrade(val original: String, val better: String)

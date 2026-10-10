@@ -69,6 +69,25 @@ class OutputCheckTest {
     }
 
     @Test
+    fun `F8_2 교정이 깎은 점수가 0 이상이고 합이 100 - score 이하면 그대로 둔다`() {
+        val scored = clean.copy(corrections = listOf(Correction("a apartment", "I live in an apartment.", deducted = 40)))
+
+        assertEquals(Checked(scored, emptyList()), checkFeedback(scored))
+    }
+
+    @Test
+    fun `F8_2 깎은 점수가 음수거나 합이 100 - score 를 넘으면 깎은 점수만 버리고 교정은 남긴다`() {
+        val corrections = listOf(Correction("a apartment", "x", deducted = 30), Correction("Last year", "y", deducted = 11))
+        val negative = clean.copy(corrections = listOf(Correction("a apartment", "x", deducted = -5)))
+
+        listOf(clean.copy(corrections = corrections), negative).forEach { bad ->
+            val checked = checkFeedback(bad)
+            assertEquals(bad.corrections.map { it.copy(deducted = null) }, checked.value?.corrections)
+            assertEquals(1, checked.problems.size)
+        }
+    }
+
+    @Test
     fun `F5_4 점수가 0 에서 100 사이를 벗어나면 버릴 수 없어서 값이 없다`() {
         assertNull(checkFeedback(clean.copy(score = 101)).value)
     }
