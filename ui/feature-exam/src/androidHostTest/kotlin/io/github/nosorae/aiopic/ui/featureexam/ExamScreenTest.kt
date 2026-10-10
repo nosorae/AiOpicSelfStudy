@@ -3,6 +3,7 @@ package io.github.nosorae.aiopic.ui.featureexam
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
@@ -99,11 +100,29 @@ class ExamScreenTest {
     }
 
     @Test
-    fun `F2_2 마지막 묶음의 전체 선택 수는 스크롤 밖에 있어 큰 글자에서도 아래로 밀리지 않는다`() {
+    fun `F2_2 첫 묶음 화면부터 전체 선택 수가 스크롤 밖 버튼 위에 있어 큰 글자에서도 아래로 밀리지 않는다`() {
+        show(ExamSamples.surveyGroup)
+
+        rule.onNodeWithTag("survey-total").assertIsDisplayed().assertTextEquals("3")
+        rule.onNode(hasTestTag("survey-total") and hasAnyAncestor(hasScrollAction())).assertDoesNotExist()
+    }
+
+    @Test
+    fun `F2_2 묶음 최소를 채우면 그 조건에만 체크가 붙고 전체 12개가 남았으면 전체에는 체크가 없다`() {
+        show(ExamSamples.surveyGroup)
+
+        rule.onNodeWithText("이 묶음 2개 이상").assertIsDisplayed()
+        rule.onNodeWithText("전체 12개 이상").assertIsDisplayed()
+        rule.onNodeWithTag("survey-group-met").assertIsDisplayed()
+        rule.onNodeWithTag("survey-total-met").assertDoesNotExist()
+    }
+
+    @Test
+    fun `F2_2 전체 12개에 닿으면 전체 조건에도 체크가 붙는다`() {
         show(ExamSamples.surveyReady)
 
-        rule.onNodeWithTag("survey-total").assertIsDisplayed()
-        rule.onNode(hasTestTag("survey-total") and hasAnyAncestor(hasScrollAction())).assertDoesNotExist()
+        rule.onNodeWithTag("survey-group-met").assertIsDisplayed()
+        rule.onNodeWithTag("survey-total-met").assertIsDisplayed()
     }
 
     @Test

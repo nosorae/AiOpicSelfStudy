@@ -5,12 +5,14 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -27,6 +29,7 @@ import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
+import io.github.nosorae.aiopic.ui.design.MontageCheckMark
 import io.github.nosorae.aiopic.ui.design.MontageChip
 import io.github.nosorae.aiopic.ui.design.MontageCountUp
 import io.github.nosorae.aiopic.ui.design.MontageListCell
@@ -38,7 +41,7 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * 서베이 한 화면. 맨 위 진행 막대 아래에 질문 하나 또는 주제 묶음 하나를 그리고, 화면이 바뀌면 옆으로 밀려난다.
- * 마지막 묶음 화면이면 모든 묶음에서 고른 수를 맨 아래에 고정해 보인다.
+ * 묶음 화면이면 그 묶음의 최소 개수와 전체 최소 개수를 맨 아래에 고정해 보인다.
  * 앞으로 가면 새 화면이 오른쪽에서, 뒤로 가면 왼쪽에서 들어온다. 모의시험의 서베이 단계와 설정의 서베이가 같이 쓴다.
  */
 @Composable
@@ -61,7 +64,7 @@ fun SurveyFlow(state: SurveyState, onChoose: (String) -> Unit, onToggle: (String
             shown.group?.let { GroupScreen(shown, it, onToggle, scrolling) }
         }
         // 큰 글자에서 칩이 길어져도 스크롤 아래로 밀리지 않게 스크롤 밖, 버튼 바로 위에 둔다.
-        if (state.isLast) Total(state)
+        state.group?.let { Needs(state, it) }
     }
 }
 
@@ -117,16 +120,9 @@ private fun QuestionScreen(question: SurveyQuestion, chosen: String?, onChoose: 
 @Composable
 private fun GroupScreen(state: SurveyState, group: TopicGroup, onToggle: (String) -> Unit, modifier: Modifier = Modifier) {
     val haptics = LocalHaptics.current
-    val count = state.selectedIn(group)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12)) {
         Title(group.title)
-        Help(stringResource(Res.string.survey_group_help, group.min))
-        Text(
-            text = stringResource(Res.string.survey_group_count, count),
-            style = MontageTheme.typography.label1.bold,
-            color = if (count >= group.min) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralSecondary,
-            modifier = Modifier.padding(horizontal = Gutter),
-        )
+        Help(stringResource(Res.string.survey_group_help))
         FlowRow(
             modifier = Modifier.padding(horizontal = Gutter),
             horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
@@ -147,27 +143,43 @@ private fun GroupScreen(state: SurveyState, group: TopicGroup, onToggle: (String
     }
 }
 
-/** 마지막 묶음 화면에서 모든 묶음에서 고른 수를 숫자로 보인다. 모자라면 앞 묶음으로 돌아가라고 알린다. */
+/**
+ * 묶음 화면 아래 두 조건. 이 묶음 최소 개수와 전체 최소 개수(12개)를 지금 고른 수와 함께 보이고, 채운 조건에만 체크와 강조색을 준다.
+ * 어느 묶음에서든 전체까지 몇 개 남았는지 보인다. 마지막 묶음에서 전체가 모자라면 앞 묶음으로 돌아가라고 알린다.
+ */
 @Composable
-private fun Total(state: SurveyState) {
-    val enough = state.topics.size >= state.survey.minTopics
-    val color = if (enough) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralPrimary
-    Column(Modifier.padding(vertical = MontageSpacing.spacing12), verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
-        Row(
-            modifier = Modifier.padding(horizontal = Gutter),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4),
-        ) {
-            MontageCountUp(state.topics.size, Modifier.testTag("survey-total"), style = MontageTheme.typography.title2.bold, color = color)
-            Text(
-                text = stringResource(Res.string.survey_total_suffix, state.survey.minTopics),
-                style = MontageTheme.typography.body2.medium,
-                color = MontageTheme.colors.foregroundNeutralSecondary,
-                // 큰 글자에서 숫자를 밀어내지 않고 줄을 바꾼다.
-                modifier = Modifier.weight(1f, fill = false).padding(bottom = MontageSpacing.spacing4),
-            )
+private fun Needs(state: SurveyState, group: TopicGroup) {
+    val inGroup = state.selectedIn(group)
+    val total = state.topics.size
+    val enough = total >= state.survey.minTopics
+    Column(Modifier.padding(vertical = MontageSpacing.spacing8)) {
+        Need(stringResource(Res.string.survey_need_group, group.min), inGroup, inGroup >= group.min, "survey-group")
+        Need(stringResource(Res.string.survey_need_total, state.survey.minTopics), total, enough, "survey-total")
+        if (state.isLast && !enough) Help(stringResource(Res.string.survey_total_short))
+    }
+}
+
+/** 조건 한 줄. 채우면 왼쪽에 체크가 그려지고 숫자가 강조색이 된다. 숫자에는 [tag] 를, 체크에는 `[tag]-met` 를 붙인다. */
+@Composable
+private fun Need(label: String, count: Int, met: Boolean, tag: String) {
+    val color = if (met) MontageTheme.colors.foregroundBrandPrimary else MontageTheme.colors.foregroundNeutralSecondary
+    Row(
+        modifier = Modifier.padding(horizontal = Gutter),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4),
+    ) {
+        Box(Modifier.size(MontageSpacing.spacing32)) { if (met) MontageCheckMark(Modifier.fillMaxSize().testTag("$tag-met")) }
+        Text(
+            text = label,
+            style = MontageTheme.typography.body2.medium,
+            color = MontageTheme.colors.foregroundNeutralPrimary,
+            modifier = Modifier.weight(1f),
+        )
+        Text(stringResource(Res.string.survey_need_now), style = MontageTheme.typography.body2.medium, color = color)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            MontageCountUp(count, Modifier.testTag(tag), style = MontageTheme.typography.headline2.bold, color = color)
+            Text(stringResource(Res.string.survey_need_unit), style = MontageTheme.typography.body2.medium, color = color)
         }
-        if (!enough) Help(stringResource(Res.string.survey_total_short))
     }
 }
 
