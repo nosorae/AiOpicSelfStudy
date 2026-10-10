@@ -2,7 +2,7 @@
 
 `scripts/graph/render.py` 가 `dev-graph.json` 에서 만든다. 손으로 고치지 않는다.
 
-노드 46개: todo 1, doing 0, done 45, blocked 0. 색은 회색 todo, 노랑 doing, 초록 done, 빨강 blocked 이다.
+노드 55개: todo 10, doing 0, done 45, blocked 0. 색은 회색 todo, 노랑 doing, 초록 done, 빨강 blocked 이다.
 
 ```mermaid
 flowchart TD
@@ -63,6 +63,17 @@ flowchart TD
     docs["docs #36<br/>ADR 25개, README AI 사용 범위, 모듈별 README, 오류 분석"]
     store["store #37<br/>스토어 준비: 개인정보처리방침, Data safety, 마이크 서비스 신고"]
     g4["g4 #38<br/>완료 보고"]
+  end
+  subgraph P6["P6 보완"]
+    n_json["n-json #118<br/>읽을 수 없는 JSON 응답을 한 번 다시 요청"]
+    n_grade["n-grade #119<br/>회차 등급: 마지막 답변 분석 뒤 등급 요청, 저장, 리포트와 기록 표시"]
+    n_flag2["n-flag2 #120<br/>틀림 표시를 교정 하나 단위로 약점 계산에서 뺀다"]
+    n_gen["n-gen #121<br/>AI 출제 연결, 실패하면 내장 문항으로"]
+    n_survey["n-survey #122<br/>서베이 Part 1~3 데이터를 시험 팩에 넣고 앱에서 넘긴다"]
+    t_resume["t-resume #123<br/>이어 본 시험에서 40분 타이머가 다시 흐르는지"]
+    e2e_ios["e2e-ios #124<br/>iOS XCUITest: 실제 터치로 모의시험 앞부분과 강제 종료 뒤 이어 보기"]
+    live["live #125<br/>실제 Gemini 확인: 앱 분석 경로와 품질 확인 첫 보고서"]
+    g5["g5 #126<br/>확인: 요구사항 번호마다 테스트가 있는지"]
   end
   h0 --> h1
   h1 --> h2
@@ -143,8 +154,32 @@ flowchart TD
   e2e --> g4
   docs --> g4
   store --> g4
+  g5 --> g4
+  e2e --> n_json
+  docs --> n_json
+  store --> n_json
+  e2e --> n_grade
+  docs --> n_grade
+  store --> n_grade
+  n_json --> n_flag2
+  n_grade --> n_gen
+  n_flag2 --> n_gen
+  n_gen --> n_survey
+  n_survey --> t_resume
+  t_resume --> e2e_ios
+  n_grade --> live
+  n_gen --> live
+  e2e_ios --> live
+  n_json --> g5
+  n_grade --> g5
+  n_flag2 --> g5
+  n_gen --> g5
+  n_survey --> g5
+  t_resume --> g5
+  e2e_ios --> g5
+  live --> g5
   classDef todo fill:#eeeeee,stroke:#999999,color:#000
-  class g4 todo
+  class g4,n_json,n_grade,n_flag2,n_gen,n_survey,t_resume,e2e_ios,live,g5 todo
   classDef doing fill:#fff3b0,stroke:#d4a017,color:#000
   classDef done fill:#c8f7c5,stroke:#2e7d32,color:#000
   class h0,h1,h2,h3,h4,g0,s1,s2,s3,s4,g1,c1,c2,c3,c5,c4,g2,n_state,n_db,n_gemini,n_route,n_key,n_tts,n_rec_a,n_rec_i,n_queue,n_quest,n_weak,n_eval,u_onb,u_shell,u_exam,u_single,u_report,u_flag,u_model,g3,n_data,n_di,u_copy,u_wire,u_settings2,e2e,docs,store done
