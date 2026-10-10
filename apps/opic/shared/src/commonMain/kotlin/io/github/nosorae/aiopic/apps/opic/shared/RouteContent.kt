@@ -12,6 +12,7 @@ import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
 import io.github.nosorae.aiopic.libs.haptics.api.Haptics
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.featureexam.ExamRoute
+import io.github.nosorae.aiopic.ui.featureexam.SurveyRoute
 import io.github.nosorae.aiopic.ui.featurehistory.HistoryRoute
 import io.github.nosorae.aiopic.ui.featurehome.HomeRoute
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.ConsentRoute
@@ -74,7 +75,10 @@ internal fun RouteContent(
             onOpenFlagExport = { onOpen(AppRoute.FlagExport) },
             onOpenAppInfo = { onOpen(AppRoute.AppInfo) },
             modifier = modifier,
+            onOpenSurvey = { onOpen(AppRoute.Survey) },
         )
+
+        AppRoute.Survey -> SurveyRoute(viewModel = viewModel { graph.surveyViewModel }, onDone = onBack, modifier = modifier)
 
         is AppRoute.ReportDetail -> SessionReportRoute(
             viewModel = viewModel(key = route.toString()) { graph.sessionReportViewModelFactory.create(route.sessionId) },

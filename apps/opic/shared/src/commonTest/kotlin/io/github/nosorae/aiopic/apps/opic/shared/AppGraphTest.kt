@@ -8,6 +8,9 @@ import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.github.nosorae.aiopic.libs.tts.api.Tts
+import io.github.nosorae.aiopic.packs.opicen.OpicEn
+import io.github.nosorae.aiopic.ui.featureexam.ExamIntent
+import io.github.nosorae.aiopic.ui.featureexam.ExamViewModel
 import io.github.nosorae.aiopic.ui.featureonboarding.DomainError
 import io.github.nosorae.aiopic.ui.featureonboarding.DomainResult
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.ConsentIntent
@@ -24,6 +27,16 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.time.Duration
+
+/** 서베이를 낼 수 있는 주제 12개. 묶음마다 최소(2, 1, 1, 1)를 넘게 앞에서부터 고른다. */
+val testSurveyTopics: List<String> = OpicEn.survey.groups.zip(listOf(5, 3, 3, 1)).flatMap { (group, count) -> group.topics.take(count).map { it.id } }
+
+/** Part 1~3 은 하위 질문이 가장 적은 길(일한 적 없음, 학생 아님, 수업 5년 넘음, 혼자)로 답하고 [topics] 를 고른 뒤 서베이를 낸다. */
+fun ExamViewModel.submitSurvey(topics: List<String> = testSurveyTopics) {
+    listOf("none", "no", "over-5-years", "alone").forEach { onIntent(ExamIntent.ChooseSurveyOption(it)) }
+    topics.filter { it !in uiState.value.survey?.topics.orEmpty() }.forEach { onIntent(ExamIntent.ToggleTopic(it)) }
+    onIntent(ExamIntent.SubmitSurvey)
+}
 
 /** 기기 대신 메모리에 두는 플랫폼 인자로 그래프를 만든다. 앱 틀 테스트도 이것을 쓴다. */
 fun testAppGraph(settings: AppSettings = AppSettings.inMemory(), keyVault: KeyVault = FakeKeyVault()): AppGraph = createAppGraph(

@@ -57,7 +57,8 @@ import io.github.nosorae.aiopic.packs.opicen.PromptFile
 import io.github.nosorae.aiopic.ui.featureexam.ExamContent
 import io.github.nosorae.aiopic.ui.featureexam.ExamRepository
 import io.github.nosorae.aiopic.ui.featureexam.ExamViewModel
-import io.github.nosorae.aiopic.ui.featureexam.SurveyPart
+import io.github.nosorae.aiopic.ui.featureexam.SurveyStore
+import io.github.nosorae.aiopic.ui.featureexam.SurveyViewModel
 import io.github.nosorae.aiopic.ui.featurehistory.HistoryStore
 import io.github.nosorae.aiopic.ui.featurehistory.HistoryViewModel
 import io.github.nosorae.aiopic.ui.featurehome.ExamSessionSource
@@ -115,6 +116,9 @@ interface AppGraph {
 
     val examViewModelFactory: ExamViewModel.Factory
 
+    /** 설정에서 여는 서베이. 모의시험 서베이와 같은 저장값을 바꾼다. */
+    val surveyViewModel: SurveyViewModel
+
     val practiceViewModelFactory: PracticeViewModel.Factory
 
     val sessionReportViewModelFactory: SessionReportViewModel.Factory
@@ -147,6 +151,8 @@ interface AppGraph {
     @Provides fun questionFileStore(settings: AppSettings): QuestionFileStore = settings
 
     @Provides fun hapticsStore(settings: AppSettings): HapticsStore = settings
+
+    @Provides fun surveyStore(settings: AppSettings): SurveyStore = settings
 
     // ponytail: 첫 버전은 제공사가 Gemini 하나라 목록도 하나다.
     @Provides fun modelCatalog(): ModelCatalog = GeminiModels
@@ -195,12 +201,7 @@ interface AppGraph {
 
     /** 시험 화면을 열 때마다 만들어서 설정의 답변 타이머(F2.7)를 그때 값으로 읽는다. */
     @Provides
-    fun examContent(spec: ExamSpec, settings: AppSettings): ExamContent = ExamContent(
-        spec,
-        OpicEn.surveyTopics,
-        surveyParts = OpicEn.surveyParts.map { (question, options) -> SurveyPart(question, options) },
-        answerTimer = settings.answerTimer,
-    )
+    fun examContent(spec: ExamSpec, settings: AppSettings): ExamContent = ExamContent(spec, OpicEn.survey, answerTimer = settings.answerTimer)
 
     /** 미리 보낸 출제 요청을 시험 화면을 다시 열어도 이어 받도록 앱에 하나만 둔다. 요청은 화면보다 오래 살아서 앱 범위에서 돈다. */
     @SingleIn(AppScope::class)
@@ -217,7 +218,7 @@ interface AppGraph {
     ): ExamRepository {
         val writer = GeminiQuestionWriter(client) { keyVault.get(GeminiModels.PROVIDER) }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope) { session, part, asked ->
+        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope, OpicEn.survey::nearTopics) { session, part, asked ->
             examQuestions(session, part, asked, store, settings, writer, pack.questionsPrompt)
         }
     }
@@ -294,7 +295,7 @@ private suspend fun examQuestions(
 }
 
 /**
- * 한 문항 연습의 풀. 시험 팩의 내장 문항에 사용자가 설정에서 불러온 문항(F6.3)을 더한다. 모의시험 출제에는 넣지 않는다.
+ * 한 문항 연습의 풀. 시험 팩의 내장 문항에 사용자가 설정에서 불러온 문항(F6.3)을 더하고, 저장한 서베이 주제의 질문을 먼저 낸다([preferTopics]). 모의시험 출제에는 넣지 않는다.
  * 시험 팩의 문항 파일을 못 읽으면 불러온 문항만 쓰고, 둘 다 없으면 연습 화면이 죽지 않고 "낼 질문이 없습니다" 오류 화면을 보인다.
  */
 internal suspend fun practicePool(settings: AppSettings, builtIn: suspend () -> List<Question> = OpicEn::questionPool): List<Question> {
@@ -304,8 +305,15 @@ internal suspend fun practicePool(settings: AppSettings, builtIn: suspend () -> 
         emptyList()
     }
     // 저장할 때 검사를 마친 파일이다.
-    return pack + settings.questionFile()?.let(::parseQuestions).orEmpty()
+    return preferTopics(pack + settings.questionFile()?.let(::parseQuestions).orEmpty(), settings.surveyAnswers()?.topics.orEmpty())
 }
+
+/**
+ * 한 문항 연습이 서베이에서 고른 주제의 질문을 먼저 내게 한다. 유형마다 고른 주제의 질문이 있으면 그것만 남기고,
+ * 없으면(자기소개, 롤플레이처럼 서베이와 상관없는 유형) 그 유형 질문을 모두 둔다. 그래서 약점 유형 고르기(F4.1)는 그대로다.
+ * 서베이를 한 번도 내지 않았으면 풀 그대로다.
+ */
+internal fun preferTopics(pool: List<Question>, topics: List<String>): List<Question> = pool.groupBy { it.type }.values.flatMap { sameType -> sameType.filter { it.topic in topics }.ifEmpty { sameType } }
 
 /**
  * 플랫폼 진입점이 Metro 컴파일러 플러그인 없이 그래프를 만들 수 있게 여기서 만든다. 인자는 [AppGraph.Factory] 와 같다.

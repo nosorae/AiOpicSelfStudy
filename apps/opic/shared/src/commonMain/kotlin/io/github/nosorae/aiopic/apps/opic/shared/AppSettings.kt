@@ -1,7 +1,9 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
 import io.github.nosorae.aiopic.engine.question.model.Question
+import io.github.nosorae.aiopic.engine.question.model.SurveyAnswers
 import io.github.nosorae.aiopic.libs.haptics.api.Haptics
+import io.github.nosorae.aiopic.ui.featureexam.SurveyStore
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.VoiceConsent
 import io.github.nosorae.aiopic.ui.featuresettings.haptics.HapticsStore
 import io.github.nosorae.aiopic.ui.featuresettings.model.ModelSelectionStore
@@ -15,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 
 /**
- * 설정 값(화면 모드, 고른 분석 모델, 음성 전송 동의, 답변 타이머, 불러온 문항 파일, 진동)을 플랫폼 설정 저장소에 둔다.
+ * 설정 값(화면 모드, 고른 분석 모델, 음성 전송 동의, 답변 타이머, 불러온 문항 파일, 진동, 서베이 답)을 플랫폼 설정 저장소에 둔다.
  * 플랫폼은 문자열 읽기와 쓰기 두 함수만 넘긴다(Android SharedPreferences, iOS NSUserDefaults). 키가 아니라서 암호화하지 않는다.
  */
 class AppSettings(private val read: (String) -> String?, private val write: (String, String) -> Unit) :
@@ -24,7 +26,8 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
     VoiceConsent,
     AnswerTimerStore,
     QuestionFileStore,
-    HapticsStore {
+    HapticsStore,
+    SurveyStore {
     private val mode = MutableStateFlow(ThemeMode.entries.firstOrNull { it.name == read(THEME_MODE) } ?: ThemeMode.System)
     override val themeMode: StateFlow<ThemeMode> = mode.asStateFlow()
 
@@ -76,6 +79,10 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
 
     fun saveExamQuestions(sessionId: String, questions: List<Question>) = write(EXAM_QUESTIONS + sessionId, Json.encodeToString(questions))
 
+    override suspend fun surveyAnswers(): SurveyAnswers? = read(SURVEY_ANSWERS)?.let { Json.decodeFromString<SurveyAnswers>(it) }
+
+    override suspend fun saveSurveyAnswers(answers: SurveyAnswers) = write(SURVEY_ANSWERS, Json.encodeToString(answers))
+
     companion object {
         private const val THEME_MODE = "theme_mode"
         private const val MODEL_ID = "model_id"
@@ -85,6 +92,7 @@ class AppSettings(private val read: (String) -> String?, private val write: (Str
         private const val QUESTION_FILE = "question_file"
         private const val HAPTICS = "haptics"
         private const val EXAM_QUESTIONS = "exam_questions_"
+        private const val SURVEY_ANSWERS = "survey_answers"
 
         /** 앱 틀 테스트처럼 기기에 남길 필요가 없을 때 쓴다. */
         fun inMemory(): AppSettings {

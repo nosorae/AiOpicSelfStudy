@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -42,7 +43,7 @@ import org.jetbrains.compose.resources.stringResource
 import io.github.nosorae.aiopic.ui.design.Res as DesignRes
 
 /**
- * ViewModel 을 관측하는 바깥 겹. 키 입력, 무료 등급 안내(동의 화면), 내보내기, 앱 정보는 단순 이동이라 화면을 등록한 쪽이 람다로 연다.
+ * ViewModel 을 관측하는 바깥 겹. 키 입력, 무료 등급 안내(동의 화면), 서베이, 내보내기, 앱 정보는 단순 이동이라 화면을 등록한 쪽이 람다로 연다.
  * 키 입력이나 동의 화면에서 돌아오면 화면이 다시 보일 때마다 키 저장 여부와 동의 상태를 새로 읽는다.
  * 문항 파일 고르기는 플랫폼 창이라 여기서 열고 고른 내용만 ViewModel 에 넘긴다.
  */
@@ -54,6 +55,7 @@ fun SettingsRoute(
     onOpenFlagExport: () -> Unit,
     onOpenAppInfo: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSurvey: () -> Unit = {},
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onIntent(SettingsIntent.Reload) }
@@ -67,6 +69,7 @@ fun SettingsRoute(
         onOpenAppInfo = onOpenAppInfo,
         onPickQuestionFile = pickQuestionFile,
         modifier = modifier,
+        onOpenSurvey = onOpenSurvey,
     )
 }
 
@@ -81,6 +84,7 @@ fun SettingsScreen(
     onOpenAppInfo: () -> Unit,
     onPickQuestionFile: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenSurvey: () -> Unit = {},
 ) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.settings_title)) }) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = MontageSpacing.spacing16)) {
@@ -131,6 +135,13 @@ fun SettingsScreen(
             )
 
             SectionLabel(Res.string.settings_practice_section)
+            MontageListCell(
+                title = stringResource(Res.string.settings_survey),
+                caption = stringResource(Res.string.settings_survey_caption),
+                chevron = true,
+                onClick = onOpenSurvey,
+                modifier = Modifier.testTag("settings-survey"),
+            )
             MontageListCell(
                 title = stringResource(Res.string.settings_answer_timer),
                 caption = stringResource(Res.string.settings_answer_timer_caption),

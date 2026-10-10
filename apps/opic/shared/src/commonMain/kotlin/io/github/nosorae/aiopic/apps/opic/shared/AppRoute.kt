@@ -42,6 +42,9 @@ sealed class AppRoute {
     /** 설정의 무료 등급 안내. 음성 전송 동의 화면을 그대로 연다(F1.3). */
     @Serializable data object FreeTierNotice : AppRoute()
 
+    /** 설정의 서베이. 모의시험 서베이와 같은 흐름으로 저장한 답을 보고 바꾼다. */
+    @Serializable data object Survey : AppRoute()
+
     /** 설정의 틀림 표시 내보내기(F8.3). */
     @Serializable data object FlagExport : AppRoute()
 
@@ -57,7 +60,7 @@ sealed class AppRoute {
     private val chrome: Chrome
         get() = when (this) {
             Home, History, Settings -> Chrome.TopLevel
-            is ReportDetail, is AnswerReport, is KeyEntry, FreeTierNotice, FlagExport, AppInfo -> Chrome.Sub
+            is ReportDetail, is AnswerReport, is KeyEntry, FreeTierNotice, Survey, FlagExport, AppInfo -> Chrome.Sub
             is Exam, is Practice -> Chrome.FullScreen
             StartKeyEntry, StartConsent -> Chrome.Start
         }
@@ -73,6 +76,7 @@ sealed class AppRoute {
             is Practice -> "한 문항 연습"
             is KeyEntry, StartKeyEntry -> "API 키 넣기"
             FreeTierNotice, StartConsent -> "음성 전송 동의"
+            Survey -> "서베이"
             FlagExport -> "틀림 표시 내보내기"
             AppInfo -> "앱 정보와 라이선스"
         }
