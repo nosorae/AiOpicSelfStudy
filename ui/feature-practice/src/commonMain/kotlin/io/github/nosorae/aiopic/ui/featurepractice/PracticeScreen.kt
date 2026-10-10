@@ -19,14 +19,20 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.libs.haptics.api.HapticEffect
+import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonSize
 import io.github.nosorae.aiopic.ui.design.MontageButtonType
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
+import io.github.nosorae.aiopic.ui.design.MontageMotion
 import io.github.nosorae.aiopic.ui.design.MontageScreen
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.MontageTopBar
+import io.github.nosorae.aiopic.ui.design.MontageVoiceRibbon
+import io.github.nosorae.aiopic.ui.design.RecordHaptics
+import io.github.nosorae.aiopic.ui.design.rememberElapsedFraction
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -70,6 +76,8 @@ fun PracticeRoute(viewModel: PracticeViewModel, onExit: () -> Unit, onFeedback: 
 /** 상태만 받아 그리는 안쪽 겹. 질문 글자는 보이지 않는다. 미리보기와 스크린샷 테스트가 이 함수를 쓴다. */
 @Composable
 fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, modifier: Modifier = Modifier, onOpenSettings: () -> Unit = {}) {
+    val haptics = LocalHaptics.current
+    RecordHaptics(state.phase == PracticePhase.Recording)
     MontageScreen(
         modifier = modifier,
         topBar = {
@@ -86,26 +94,14 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
         bottomBar = {
             Row(Modifier.padding(horizontal = Gutter, vertical = MontageSpacing.spacing12)) {
                 if (state.phase == PracticePhase.Recording) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
-                        MontageButton(
-                            text = stringResource(Res.string.practice_replay),
-                            onClick = { onIntent(PracticeIntent.ReplayQuestion) },
-                            enabled = state.canReplay,
-                            type = MontageButtonType.Assistive,
-                            modifier = Modifier.weight(1f),
-                        )
-                        MontageButton(
-                            text = stringResource(Res.string.practice_next),
-                            onClick = { onIntent(PracticeIntent.SubmitAnswer) },
-                            enabled = state.canNext,
-                            loading = state.saving,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
+                    RecordingButtons(state, onReplay = { onIntent(PracticeIntent.ReplayQuestion) }, onNext = { onIntent(PracticeIntent.SubmitAnswer) })
                 } else {
                     MontageButton(
                         text = stringResource(if (state.error in RetryErrors) Res.string.practice_retry else Res.string.practice_play),
-                        onClick = { onIntent(PracticeIntent.PlayQuestion) },
+                        onClick = {
+                            haptics.play(HapticEffect.Tap)
+                            onIntent(PracticeIntent.PlayQuestion)
+                        },
                         // 질문을 고르는 동안과 질문을 읽는 동안 진행 표시를 보인다. 녹음은 다 읽은 뒤에 시작된다.
                         enabled = state.canPlay || state.preparing,
                         loading = state.preparing,
@@ -134,6 +130,9 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                     modifier = Modifier.padding(horizontal = Gutter),
                 )
             }
+            if (state.phase == PracticePhase.Recording) {
+                MontageVoiceRibbon(state.voiceLevel, Modifier.padding(vertical = MontageSpacing.spacing16))
+            }
             state.error?.let {
                 Text(
                     text = stringResource(it.message),
@@ -152,8 +151,41 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
                     modifier = Modifier.padding(horizontal = Gutter),
                 )
             }
-            Description(stringResource(Res.string.practice_rules))
+            // 녹음 중에는 두 버튼의 채움이 같은 규칙을 보여서 문장을 뺀다.
+            if (state.phase != PracticePhase.Recording) Description(stringResource(Res.string.practice_rules))
         }
+    }
+}
+
+/**
+ * 녹음 중 아래 버튼 둘. 다시 듣기는 쓸 수 있는 5초 동안 채움이 줄어들고, Next 는 켜지기까지 10초 동안 채움이 차오른다.
+ * 동작 줄이기면 Next 는 켜지기까지 남은 초를 글자로 보인다.
+ */
+@Composable
+private fun RecordingButtons(state: PracticeUiState, onReplay: () -> Unit, onNext: () -> Unit) {
+    val replayWindow = rememberElapsedFraction(state.recorded, ReplayWindow, running = state.canReplay)
+    val nextDelay = rememberElapsedFraction(state.recorded, NextDelay, running = !state.canNext)
+    Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
+        MontageButton(
+            text = stringResource(Res.string.practice_replay),
+            onClick = onReplay,
+            enabled = state.canReplay,
+            type = MontageButtonType.Assistive,
+            fill = if (state.canReplay) ({ 1f - replayWindow.value }) else null,
+            modifier = Modifier.weight(1f),
+        )
+        MontageButton(
+            text = if (MontageMotion.reduceMotion && !state.canNext) {
+                stringResource(Res.string.practice_next_in, (NextDelay - state.recorded).inWholeSeconds)
+            } else {
+                stringResource(Res.string.practice_next)
+            },
+            onClick = onNext,
+            enabled = state.canNext,
+            loading = state.saving,
+            fill = if (state.canNext) null else ({ nextDelay.value }),
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -194,8 +226,8 @@ internal object PracticeSamples {
     val loading = PracticeUiState()
     val ready = PracticeUiState(question = question)
     val speaking = ready.copy(phase = PracticePhase.Speaking)
-    val replayable = ready.copy(phase = PracticePhase.Recording, recorded = 3.seconds)
-    val nextable = ready.copy(phase = PracticePhase.Recording, recorded = 12.seconds, replayUsed = true)
+    val replayable = ready.copy(phase = PracticePhase.Recording, recorded = 3.seconds, voiceLevel = 0.6f)
+    val nextable = ready.copy(phase = PracticePhase.Recording, recorded = 12.seconds, replayUsed = true, voiceLevel = 0.3f)
     val saving = nextable.copy(saving = true)
     val micError = ready.copy(error = PracticeError.MicDenied)
     val recordingError = ready.copy(error = PracticeError.RecordingFailed)

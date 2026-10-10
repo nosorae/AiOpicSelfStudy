@@ -32,6 +32,7 @@
     <string name="exam_play">Play</string>
     <string name="exam_replay">다시 듣기</string>
     <string name="exam_next">Next</string>
+    <string name="exam_next_in">Next (%1$d초)</string>
     <string name="exam_recalibrate_title">난이도 재조정</string>
     <string name="exam_recalibrate_description">남은 문항의 난이도를 고르세요.</string>
     <string name="exam_recalibrate_easier">쉬운 질문</string>

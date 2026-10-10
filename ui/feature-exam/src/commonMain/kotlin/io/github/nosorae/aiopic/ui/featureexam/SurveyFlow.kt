@@ -102,6 +102,7 @@ fun SurveyButtons(
 
 @Composable
 private fun QuestionScreen(question: SurveyQuestion, chosen: String?, onChoose: (String) -> Unit, modifier: Modifier = Modifier) {
+    val haptics = LocalHaptics.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12)) {
         Title(question.text)
         Column {
@@ -109,7 +110,10 @@ private fun QuestionScreen(question: SurveyQuestion, chosen: String?, onChoose: 
                 MontageListCell(
                     title = option.label,
                     selected = option.id == chosen,
-                    onClick = { onChoose(option.id) },
+                    onClick = {
+                        haptics.play(HapticEffect.Selection)
+                        onChoose(option.id)
+                    },
                     modifier = Modifier.testTag("survey-option-${question.id}-$index"),
                 )
             }

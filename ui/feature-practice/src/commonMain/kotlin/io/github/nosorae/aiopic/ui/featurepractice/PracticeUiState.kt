@@ -17,6 +17,8 @@ data class PracticeUiState(
     val phase: PracticePhase = PracticePhase.Ready,
     /** 지금 녹음이 시작된 뒤 흐른 시간. */
     val recorded: Duration = Duration.ZERO,
+    /** 녹음 중 마이크 음량(0~1). 녹음 중이 아니면 0 이다. */
+    val voiceLevel: Float = 0f,
     val replayUsed: Boolean = false,
     val error: PracticeError? = null,
     /** 누른 버튼(Next, 나가기)의 저장이 도는 중이다. 끝날 때까지 그 버튼은 진행 표시를 보이고 다른 입력은 받지 않는다. */

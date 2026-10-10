@@ -17,6 +17,7 @@ import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.github.nosorae.aiopic.libs.tts.api.Tts
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -104,10 +105,15 @@ class FakeTts(private val readTime: Duration = 3.seconds, var canSpeak: Boolean 
     override fun stop() = Unit
 }
 
-/** 파일을 쓰지 않는다. 시작할 때마다 조각 경로 하나를 더한다. [writeFails] 면 멈출 때 조각 쓰기에 실패했다고 알린다. */
+/**
+ * 파일을 쓰지 않는다. 시작할 때마다 조각 경로 하나를 더한다. [writeFails] 면 멈출 때 조각 쓰기에 실패했다고 알린다.
+ * 음량은 테스트가 [level] 에 넣은 값을 그대로 낸다.
+ */
 class FakeRecorder(var micAvailable: Boolean = true, var writeFails: Boolean = false) : Recorder {
     private val folders = mutableMapOf<String, MutableList<String>>()
     var recording: String? = null
+    val level = MutableStateFlow(0f)
+    override val levels = level
 
     override suspend fun start(directory: String): RecordingFailure? {
         if (!micAvailable) return RecordingFailure.MicUnavailable

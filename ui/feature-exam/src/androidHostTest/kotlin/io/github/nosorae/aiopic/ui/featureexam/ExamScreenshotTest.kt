@@ -9,7 +9,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * 화면마다 라이트 한 장, 문항 화면은 진행마다 한 장. 녹음 중 화면과 서베이는 다크와 글자 200% 도 찍는다. 입력은 [ExamSamples] 다.
+ * 화면마다 라이트 한 장, 문항 화면은 진행마다 한 장. 서베이, 수준 선택, 재조정은 다크와 글자 200% 도 찍는다.
+ * 녹음 중 화면은 목소리 띠가 계속 움직여 [ExamRecordingScreenshotTest] 가 찍는다. 입력은 [ExamSamples] 다.
  * 서베이는 한 화면에 질문 하나라 질문 화면, 묶음 화면, 마지막 묶음(모자람, 채움)을 한 장씩 찍는다.
  */
 @RunWith(AndroidJUnit4::class)
@@ -36,18 +37,7 @@ class ExamScreenshotTest {
 
     @Test fun questionSpeaking() = shot(ExamSamples.questionSpeaking)
 
-    @Test fun questionBuiltIn() = shot(ExamSamples.questionBuiltIn)
-
-    @Test fun questionReplayable() = shot(ExamSamples.questionReplayable)
-
-    @Test fun questionNextable() = shot(ExamSamples.questionNextable)
-
-    @Test fun questionSaving() = shot(ExamSamples.questionSaving)
-
     @Test fun surveySaving() = shot(ExamSamples.surveySaving)
-
-    /** 설정에서 답변 타이머를 켰을 때(F2.7). 꺼져 있으면 "녹음 중"만 보인다. */
-    @Test fun questionTimer() = shot(ExamSamples.questionTimer)
 
     @Test fun recalibrate() = shot(ExamSamples.recalibrate)
 
@@ -57,7 +47,9 @@ class ExamScreenshotTest {
 
     @Test fun surveyReady_dark() = shot(ExamSamples.surveyReady, dark = true)
 
-    @Test fun questionReplayable_dark() = shot(ExamSamples.questionReplayable, dark = true)
+    @Test fun level_dark() = shot(ExamSamples.level, dark = true)
+
+    @Test fun recalibrate_dark() = shot(ExamSamples.recalibrate, dark = true)
 
     @Config(fontScale = 2f)
     @Test
@@ -73,7 +65,11 @@ class ExamScreenshotTest {
 
     @Config(fontScale = 2f)
     @Test
-    fun questionReplayable_fontScale200() = shot(ExamSamples.questionReplayable)
+    fun level_fontScale200() = shot(ExamSamples.level)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun recalibrate_fontScale200() = shot(ExamSamples.recalibrate)
 
     private fun shot(state: ExamUiState, dark: Boolean = false) = captureRoboImage {
         MontageTheme(darkTheme = dark) { ExamScreen(state = state, onIntent = {}) }

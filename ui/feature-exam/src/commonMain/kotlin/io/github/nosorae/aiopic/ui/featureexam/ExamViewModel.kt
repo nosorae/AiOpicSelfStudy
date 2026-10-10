@@ -37,6 +37,7 @@ class ExamViewModel(
     private val playQuestionUseCase: PlayQuestionUseCase,
     private val submitAnswerUseCase: SubmitAnswerUseCase,
     private val stopRecordingUseCase: StopRecordingUseCase,
+    private val observeVoiceLevelUseCase: ObserveVoiceLevelUseCase,
     private val submitSurveyUseCase: SubmitSurveyUseCase,
     private val timer: MonotonicTimer,
 ) : ViewModel() {
@@ -52,6 +53,9 @@ class ExamViewModel(
     private var clock: Job? = null
     private var playing: Job? = null
 
+    /** 녹음하는 동안만 마이크 음량을 모은다. */
+    private var listening: Job? = null
+
     /** 시계와 버튼이 같은 회차에서 각자 다음 회차를 계산해 한쪽 저장을 덮어쓰지 않게 한 번에 하나씩 바꾼다. */
     private val sessionLock = Mutex()
 
@@ -63,6 +67,7 @@ class ExamViewModel(
                 it.copy(
                     survey = loaded.survey,
                     levelCount = content.spec.levelCount,
+                    timeLimit = content.spec.timeLimit,
                     answerTimer = content.answerTimer,
                 )
             }
@@ -135,7 +140,7 @@ class ExamViewModel(
     private fun replay() {
         val startedAt = recordingStartedAt ?: return
         if (session.replayUsed || timer.elapsed() - startedAt >= ReplayWindow) return
-        recordingStartedAt = null
+        recordingEnded()
         _uiState.update { it.copy(phase = QuestionPhase.Speaking) }
         playing = viewModelScope.launch {
             val failed = stopRecordingUseCase()
@@ -163,6 +168,7 @@ class ExamViewModel(
                 if (result.resumed) commit { if (it.replayUsed) it else applyExamEventUseCase(it, ExamEvent.Replay) }
                 recordingStartedAt = timer.elapsed()
                 _uiState.update { it.copy(phase = QuestionPhase.Recording, recorded = Duration.ZERO) }
+                listening = viewModelScope.launch { observeVoiceLevelUseCase().collect { level -> _uiState.update { it.copy(voiceLevel = level) } } }
                 // 시계를 녹음 시작에 맞춰 다시 돌려 5초, 10초 경계에서 버튼이 바로 바뀌게 한다.
                 startClock(restart = true)
             }
@@ -173,7 +179,7 @@ class ExamViewModel(
     private fun submit() {
         val startedAt = recordingStartedAt ?: return
         if (timer.elapsed() - startedAt < NextDelay) return
-        recordingStartedAt = null
+        recordingEnded()
         val scored = _uiState.value.step is ExamStep.Ask
         save {
             sessionLock.withLock {
@@ -196,10 +202,17 @@ class ExamViewModel(
     private suspend fun stopAll() {
         playing?.cancel()
         if (recordingStartedAt != null) {
-            recordingStartedAt = null
+            recordingEnded()
             stopRecordingUseCase()
         }
         clock?.cancel()
+    }
+
+    /** 녹음 시작 시각과 음량 모으기를 지운다. 목소리 띠는 다음 녹음까지 가라앉는다. */
+    private fun recordingEnded() {
+        recordingStartedAt = null
+        listening?.cancel()
+        _uiState.update { it.copy(voiceLevel = 0f) }
     }
 
     private suspend fun commit(change: suspend (ExamSession) -> ExamSession) = sessionLock.withLock { changed(change(session)) }

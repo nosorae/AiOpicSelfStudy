@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -52,6 +53,7 @@ enum class MontageButtonSize(
 /**
  * Montage 버튼. 모양은 Montage 값을 따르고, 눈에 보이는 높이가 48dp 보다 작아도 눌리는 영역은 48dp 로 넓힌다.
  * [loading] 이면 글자 대신 진행 표시를 보이고 누를 수 없다. 글자는 투명하게 남겨 버튼 크기가 바뀌지 않게 한다.
+ * [fill] 을 주면 배경 위에 왼쪽부터 그 비율(0~1)만큼 옅은 강조색을 채운다. 버튼이 켜지기까지 남은 시간을 보일 때 쓰고, 그리는 단계에서만 읽는다.
  */
 @Composable
 fun MontageButton(
@@ -64,6 +66,7 @@ fun MontageButton(
     enabled: Boolean = true,
     leadingIcon: DrawableResource? = null,
     loading: Boolean = false,
+    fill: (() -> Float)? = null,
 ) {
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
@@ -95,6 +98,14 @@ fun MontageButton(
             .minimumInteractiveComponentSize()
             .clip(shape)
             .background(background)
+            .then(
+                if (fill != null) {
+                    val color = colors.surfaceBrandPrimaryOpacity12
+                    Modifier.drawBehind { drawRect(color, size = this.size.copy(width = this.size.width * fill().coerceIn(0f, 1f))) }
+                } else {
+                    Modifier
+                },
+            )
             .then(
                 if (variant == MontageButtonVariant.Outlined) {
                     Modifier.border(BorderStroke(1.dp, colors.lineNeutralSecondary), shape)

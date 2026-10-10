@@ -25,10 +25,14 @@ data class ExamUiState(
     val questionCount: Int = 0,
     /** 남은 시험 시간. 1번 문항 전에는 null 이다. */
     val remaining: Duration? = null,
+    /** 시험 전체 시간(40분). 남은 시간을 원으로 그릴 때 기준이다. 회차를 읽기 전에는 null 이다. */
+    val timeLimit: Duration? = null,
     val replayUsed: Boolean = false,
     val phase: QuestionPhase = QuestionPhase.Ready,
     /** 지금 녹음이 시작된 뒤 흐른 시간. */
     val recorded: Duration = Duration.ZERO,
+    /** 녹음 중 마이크 음량(0~1). 녹음 중이 아니면 0 이다. */
+    val voiceLevel: Float = 0f,
     /** 문항 화면에 [recorded] 를 보일지(F2.7). 기본은 꺼짐이고 설정에서 켠다. */
     val answerTimer: Boolean = false,
     val error: ExamError? = null,

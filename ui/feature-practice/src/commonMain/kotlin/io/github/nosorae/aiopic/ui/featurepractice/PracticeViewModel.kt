@@ -30,6 +30,7 @@ class PracticeViewModel(
     private val playPracticeQuestionUseCase: PlayPracticeQuestionUseCase,
     private val submitPracticeAnswerUseCase: SubmitPracticeAnswerUseCase,
     private val stopRecordingUseCase: StopRecordingUseCase,
+    private val observeVoiceLevelUseCase: ObserveVoiceLevelUseCase,
     private val timer: MonotonicTimer,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(PracticeUiState())
@@ -39,6 +40,9 @@ class PracticeViewModel(
     private var recordingStartedAt: Duration? = null
     private var playing: Job? = null
     private var clock: Job? = null
+
+    /** 녹음하는 동안만 마이크 음량을 모은다. */
+    private var listening: Job? = null
 
     init {
         viewModelScope.launch {
@@ -61,8 +65,7 @@ class PracticeViewModel(
 
     private fun play(stopFirst: Boolean) {
         val question = _uiState.value.question ?: return
-        recordingStartedAt = null
-        clock?.cancel()
+        recordingEnded()
         _uiState.update { it.copy(phase = PracticePhase.Speaking, error = null) }
         playing = viewModelScope.launch {
             val error = (if (stopFirst) stopRecordingUseCase() else null) ?: playPracticeQuestionUseCase(question, answerId)
@@ -73,6 +76,7 @@ class PracticeViewModel(
             val startedAt = timer.elapsed()
             recordingStartedAt = startedAt
             _uiState.update { it.copy(phase = PracticePhase.Recording, recorded = Duration.ZERO) }
+            listening = launch { observeVoiceLevelUseCase().collect { level -> _uiState.update { it.copy(voiceLevel = level) } } }
             clock = launch {
                 while (true) {
                     delay(TICK)
@@ -95,8 +99,7 @@ class PracticeViewModel(
         val startedAt = recordingStartedAt ?: return
         val question = _uiState.value.question ?: return
         if (timer.elapsed() - startedAt < NextDelay) return
-        recordingStartedAt = null
-        clock?.cancel()
+        recordingEnded()
         save {
             when (val error = submitPracticeAnswerUseCase(question, answerId)) {
                 // ponytail: 다시 녹음은 남은 조각 뒤에 이어 쓴다. 앞 답변이 겹쳐 들리는 게 문제가 되면 녹음 폴더를 비우고 시작한다.
@@ -109,13 +112,20 @@ class PracticeViewModel(
 
     private fun exit() {
         playing?.cancel()
-        clock?.cancel()
         val recording = recordingStartedAt != null
-        recordingStartedAt = null
+        recordingEnded()
         save {
             if (recording) stopRecordingUseCase()
             _uiState.update { it.copy(navigation = PracticeDestination.Exit) }
         }
+    }
+
+    /** 녹음 시각, 시계, 음량 모으기를 멈춘다. 목소리 띠는 다음 녹음까지 가라앉는다. */
+    private fun recordingEnded() {
+        recordingStartedAt = null
+        clock?.cancel()
+        listening?.cancel()
+        _uiState.update { it.copy(voiceLevel = 0f) }
     }
 
     /** 사용자가 누른 저장을 하는 동안 [PracticeUiState.saving] 을 켜 둔다. */
