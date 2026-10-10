@@ -3,6 +3,7 @@ package io.github.nosorae.aiopic.apps.opic.shared
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.libs.debug.DebugLevel
 import io.github.nosorae.aiopic.libs.debug.DebugTools
+import io.github.nosorae.aiopic.libs.debug.network.fakeHttpEngine
 import io.github.nosorae.aiopic.libs.debug.network.installDebugTools
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.recorder.api.Recorder
@@ -10,12 +11,8 @@ import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.api.createClientPlugin
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.headersOf
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlin.time.Duration
@@ -33,11 +30,12 @@ internal object DebugSwitches {
 
 /**
  * 요청과 응답을 디버깅 화면에 남기는 Gemini 클라이언트. [slow] 가 켜져 있으면 요청마다 [slowDelay] 기다린 뒤 보낸다.
- * [fake] 면 보내지 않고 늘 "OK" 를 돌려준다. 가짜 키가 키 확인을 넘고(F1.1), 출제와 분석은 응답을 못 읽어 내장 문항과 분석 실패로 간다.
+ * [fakeEngine] 이 있으면 보내지 않고 그 엔진의 응답("OK")을 돌려준다. 가짜 키가 키 확인을 넘고(F1.1), 출제와 분석은 응답을 못 읽어 내장 문항과 분석 실패로 간다.
+ * 가짜 엔진은 실제 디버깅 모듈만 주고 릴리스의 빈 모듈은 null 이라, 릴리스 빌드에는 가짜 응답 코드가 실리지 않는다.
  */
 // ponytail: 가짜 여부는 클라이언트를 만들 때 한 번 읽는다. 스위치를 바꾸면 앱을 다시 시작해야 한다. 요청마다 바꿔야 하면 엔진을 감싼다.
 fun debugGeminiClient(
-    fake: Boolean = DebugSwitches.fakeGemini.enabled,
+    fakeEngine: HttpClientEngine? = if (DebugSwitches.fakeGemini.enabled) fakeHttpEngine(OK_RESPONSE) else null,
     slow: () -> Boolean = { DebugSwitches.slowResponse.enabled },
     slowDelay: Duration = 3.seconds,
 ): GeminiClient {
@@ -45,11 +43,10 @@ fun debugGeminiClient(
         installDebugTools()
         install(createClientPlugin("SlowResponse") { onRequest { _, _ -> if (slow()) delay(slowDelay) } })
     }
-    val okEngine = MockEngine { respond(OK_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
-    return GeminiClient(if (fake) HttpClient(okEngine, config) else HttpClient(config))
+    return GeminiClient(if (fakeEngine != null) HttpClient(fakeEngine, config) else HttpClient(config))
 }
 
-private const val OK_RESPONSE = """{"candidates":[{"content":{"parts":[{"text":"OK"}]}}]}"""
+internal const val OK_RESPONSE = """{"candidates":[{"content":{"parts":[{"text":"OK"}]}}]}"""
 
 /** 녹음 시작과 끝을 디버깅 로그에 남긴다. [fail] 이 켜져 있으면 녹음은 그대로 하고 멈출 때 조각 쓰기에 실패했다고 알린다. */
 fun Recorder.withDebugTools(fail: () -> Boolean = { DebugSwitches.recordFail.enabled }): Recorder {

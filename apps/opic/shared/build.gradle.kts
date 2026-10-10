@@ -38,8 +38,6 @@ kotlin {
         implementation(libs.kotlinx.serialization.json)
         // 컴파일은 빈 모듈로 하고 디버그 실행 파일에서만 실제 모듈로 바꿔 끼운다(아래 iOS, androidApp 의 바꿔치기).
         implementation(project(":libs:debug-noop"))
-        // 디버깅 스위치의 가짜 Gemini 가 보내지 않고 OK 를 돌려준다.
-        implementation(libs.ktor.client.mock)
     }
     // Android 앱 틀의 하단 탭은 Material 3, 뒤로가기는 Navigation 3 와 Activity 의 뒤로가기 처리를 쓴다. iOS 는 SwiftUI 가 그린다.
     sourceSets.androidMain.dependencies {

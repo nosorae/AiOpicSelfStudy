@@ -7,9 +7,15 @@ import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
+import io.github.nosorae.aiopic.libs.debug.network.fakeHttpEngine
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmRequest
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmResult
 import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -23,15 +29,18 @@ import kotlin.time.measureTime
 class DebugWiringTest {
     private val request = LlmRequest(apiKey = "test-key", model = "m", prompt = "Reply with OK.")
 
+    // 테스트는 빈 모듈(debug-noop)로 돌아서 fakeHttpEngine 이 null 이다. 실제 모듈의 엔진과 같은 응답을 주는 엔진을 넣는다.
+    private fun fakeEngine() = MockEngine { respond(OK_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
+
     @Test
     fun `가짜 Gemini 는 보내지 않고 OK 를 돌려준다`() = runTest {
-        assertEquals(LlmResult.Success("OK"), debugGeminiClient(fake = true, slow = { false }).generate(request))
+        assertEquals(LlmResult.Success("OK"), debugGeminiClient(fakeEngine = fakeEngine(), slow = { false }).generate(request))
     }
 
     @Test
     fun `느린 응답 스위치가 켜져 있으면 요청마다 기다린 뒤 보낸다`() = runTest {
         var slow = false
-        val client = debugGeminiClient(fake = true, slow = { slow }, slowDelay = 300.milliseconds)
+        val client = debugGeminiClient(fakeEngine = fakeEngine(), slow = { slow }, slowDelay = 300.milliseconds)
 
         // runTest 의 가상 시계는 delay 를 건너뛰어서 실제 시계로 잰다.
         val (fast, slowed) = withContext(Dispatchers.Default) {
@@ -85,5 +94,10 @@ class DebugWiringTest {
             ),
             dbRows(store),
         )
+    }
+
+    @Test
+    fun `빈 모듈에서는 가짜 Gemini 스위치를 켜도 가짜 엔진이 없다`() {
+        assertNull(fakeHttpEngine(OK_RESPONSE))
     }
 }

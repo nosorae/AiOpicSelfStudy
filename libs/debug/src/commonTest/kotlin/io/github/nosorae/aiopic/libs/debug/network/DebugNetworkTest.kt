@@ -114,4 +114,13 @@ class DebugNetworkTest {
         assertContains(report, "# Network\n## 2026-10-10T01:00:00Z GET https://x.dev/ping 200 0s\n")
         assertContains(report, "< pong\n")
     }
+
+    @Test
+    fun fakeEngineAnswersWithoutSending() = runTest {
+        val response = HttpClient(fakeHttpEngine("""{"a":1}""")!!).get("https://x.dev/ping")
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals("""{"a":1}""", response.bodyAsText())
+        assertEquals("application/json", response.headers["Content-Type"])
+    }
 }
