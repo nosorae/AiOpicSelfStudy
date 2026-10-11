@@ -55,7 +55,7 @@ fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerI
  * 등급이 없다는 문구만 보인다(#223).
  * 이 화면의 움직임은 하나다. 등급이 나왔으면 등급 눈금의 구슬, 분석을 기다리는 중이면 분석한 답변 수만큼 차는 진행 점,
  * 분석은 다 끝나고 등급만 기다리면 모이는 점이다. 분석이나 등급이 실패하면 기다림 문구 대신 실패 문구와 다시 분석하기를 보인다(#203). 등급 구슬은 회차와 등급마다 한 번만 움직인다.
- * 보는 중에 등급이 나오면 구슬이 멈춘 뒤 큰 축하가 한 번 터진다.
+ * 보는 중에 등급이 나오거나 바로 앞 회차보다 오른 등급을 처음 보면 구슬이 멈춘 뒤 큰 축하가 한 번 터진다(#198).
  */
 @Composable
 fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, onIntent: (SessionReportIntent) -> Unit, modifier: Modifier = Modifier) {
@@ -64,16 +64,16 @@ fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: St
         when {
             state.loading -> Unit
             report == null -> Paragraph(stringResource(Res.string.session_not_found), secondary = true)
-            else -> SessionReportContent(report, onOpenAnswer) { onIntent(SessionReportIntent.RetryAnalysis) }
+            else -> SessionReportContent(report, state.gradeUp, onOpenAnswer) { onIntent(SessionReportIntent.RetryAnalysis) }
         }
     }
 }
 
 @Composable
-private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -> Unit, onRetryClick: () -> Unit) {
+private fun SessionReportContent(report: SessionReport, gradeUp: Boolean, onOpenAnswer: (String) -> Unit, onRetryClick: () -> Unit) {
     val grade = report.session.grade
     LazyColumn(Modifier.fillMaxWidth()) {
-        item { GradeHeader(report) }
+        item { GradeHeader(report, gradeUp) }
         if (report.canRetry) item { RetryButton(onRetryClick, tag = "session-retry") }
         // 답한 문항 없이 끝난 미완료 회차는 보일 줄이 없다. 머리의 문구가 그 사실을 전한다.
         if (report.answers.isEmpty() && report.unansweredCount == 0) return@LazyColumn
@@ -96,12 +96,12 @@ private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -
 }
 
 @Composable
-private fun GradeHeader(report: SessionReport) {
+private fun GradeHeader(report: SessionReport, gradeUp: Boolean) {
     val grade = report.session.grade
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
     val scale = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8)
-    // 이 화면을 보는 동안 등급이 나왔을 때만 축하한다. 이미 등급이 나온 회차를 다시 여는 것은 상태가 바뀐 게 아니다.
+    // 이 화면을 보는 동안 등급이 나왔거나 앞 회차보다 오른 등급을 처음 볼 때만 축하한다. 이미 본 등급을 다시 여는 것은 상태가 바뀐 게 아니다.
     val waited = rememberSaveable { grade == null }
     Column {
         SectionTitle(stringResource(Res.string.session_grade))
@@ -116,7 +116,7 @@ private fun GradeHeader(report: SessionReport) {
                     modifier = scale,
                     playOnceKey = "session-grade:${report.session.id}:${grade.range}",
                 )
-                if (waited) {
+                if (waited || gradeUp) {
                     MontageCelebration(
                         MontageCelebrationSize.Large,
                         Modifier.matchParentSize().wrapContentSize(unbounded = true).requiredSize(CELEBRATION_SIZE),

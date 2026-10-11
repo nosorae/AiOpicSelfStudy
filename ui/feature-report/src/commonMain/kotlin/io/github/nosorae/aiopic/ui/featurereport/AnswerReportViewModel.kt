@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 /**
  * [wrongCorrections] 는 "틀림"을 누른 교정의 `Feedback.corrections` 안 순서다(F8.1). [job] 은 답변의 분석 작업이다(#205).
  * [scriptPlayback] 과 [scriptCopied] 는 최종 스크립트 듣기와 복사다(#217).
+ * [celebrateAnalysis] 는 보는 중에 끝난 분석이 앱에서 처음 끝난 답변 분석이라 작은 축하를 하는 중이다(#198).
  */
 data class AnswerReportUiState(
     val loading: Boolean = true,
@@ -29,6 +30,7 @@ data class AnswerReportUiState(
     val job: AnalysisJob? = null,
     val scriptPlayback: ScriptPlayback = ScriptPlayback.Idle,
     val scriptCopied: Boolean = false,
+    val celebrateAnalysis: Boolean = false,
 )
 
 sealed interface AnswerReportIntent {
@@ -45,7 +47,7 @@ sealed interface AnswerReportIntent {
     data object ScriptCopied : AnswerReportIntent
 }
 
-/** 답변 리포트 화면(S11). 분석 대기 중에 열어도 분석이 끝나면 바로 피드백으로 바뀐다. */
+/** 답변 리포트 화면(S11). 분석 대기 중에 열어도 분석이 끝나면 바로 피드백으로 바뀐다. 그 분석이 앱에서 처음 끝난 분석이면 작은 축하를 한다(#198). */
 @AssistedInject
 class AnswerReportViewModel(
     @Assisted private val answerId: String,
@@ -53,14 +55,23 @@ class AnswerReportViewModel(
     private val markCorrectionWrongUseCase: MarkCorrectionWrongUseCase,
     private val retryAnswerAnalysisUseCase: RetryAnswerAnalysisUseCase,
     private val listenScriptUseCase: ListenScriptUseCase,
+    private val celebrateOnceUseCase: CelebrateOnceUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AnswerReportUiState())
     val uiState: StateFlow<AnswerReportUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
+            // 열었을 때 분석을 기다리던 답변만 축하 후보다. 이미 분석된 답변을 여는 것은 상태가 바뀐 게 아니다.
+            var waited: Boolean? = null
             observeAnswerReportUseCase(answerId).collect { report ->
                 _uiState.update { it.copy(loading = false, answer = report.answer, wrongCorrections = report.wrongCorrections, names = report.names, job = report.job) }
+                val analysis = report.answer?.analysis ?: return@collect
+                if (waited == null) waited = analysis == AnswerAnalysis.Pending
+                if (waited == true && analysis is AnswerAnalysis.Done) {
+                    waited = false
+                    if (celebrateOnceUseCase(FIRST_ANALYSIS)) _uiState.update { it.copy(celebrateAnalysis = true) }
+                }
             }
         }
     }
@@ -101,3 +112,6 @@ class AnswerReportViewModel(
         fun create(answerId: String): AnswerReportViewModel
     }
 }
+
+/** 첫 답변 분석 축하의 본 표시 키. 답변마다가 아니라 앱에서 한 번이다. */
+private const val FIRST_ANALYSIS = "first-analysis"

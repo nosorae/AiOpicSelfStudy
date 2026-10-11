@@ -60,5 +60,10 @@ class OpicStore(db: OpicDatabase) {
 
     suspend fun saveResponse(kind: JobKind, targetId: String, stage: String, text: String) = dao.saveResponse(kind.name, targetId, stage, text)
 
+    /** 이미 본 것(#198). 키마다 본 값이 있다. */
+    fun seen(): Flow<Map<String, Int>> = dao.seen().map { rows -> rows.associate { it.key to it.value } }
+
+    suspend fun markSeen(key: String, value: Int) = dao.markSeen(key, value)
+
     private fun decodeAnswers(rows: List<AnswerRow>) = rows.map { json.decodeFromString<Answer>(it.json) }
 }

@@ -46,7 +46,63 @@ class AnswerReportViewModelTest {
         MarkCorrectionWrongUseCase(flagStore),
         RetryAnswerAnalysisUseCase(store),
         ListenScriptUseCase(voice, tts),
+        CelebrateOnceUseCase(store),
     )
+
+    private fun pending(count: Int = 2) = answers("s1", count).map { it.copy(analysis = AnswerAnalysis.Pending) }
+
+    @Test
+    fun `198 보는 중에 첫 답변 분석이 끝나면 작은 축하를 하고 다음 답변부터는 하지 않는다`() = runTest(dispatcher) {
+        val store = FakeReportStore(answers = pending())
+        val first = viewModel("a0", store)
+        val second = viewModel("a1", store)
+        advanceUntilIdle()
+        assertFalse(first.uiState.value.celebrateAnalysis)
+
+        store.answers.value = answers("s1", 2)
+        advanceUntilIdle()
+
+        assertEquals(listOf(true, false), listOf(first, second).map { it.uiState.value.celebrateAnalysis })
+    }
+
+    @Test
+    fun `198 첫 분석 축하를 본 답변을 다시 열면 축하하지 않는다`() = runTest(dispatcher) {
+        val store = FakeReportStore(answers = pending(1))
+        viewModel("a0", store)
+        advanceUntilIdle()
+        store.answers.value = answers("s1", 1)
+        advanceUntilIdle()
+
+        val again = viewModel("a0", store)
+        advanceUntilIdle()
+
+        assertFalse(again.uiState.value.celebrateAnalysis)
+    }
+
+    @Test
+    fun `198 첫 분석 축하는 앱을 다시 켜도 다시 터지지 않는다`() = runTest(dispatcher) {
+        val before = FakeReportStore(answers = pending())
+        viewModel("a0", before)
+        advanceUntilIdle()
+        before.answers.value = answers("s1", 2)
+        advanceUntilIdle()
+
+        val restarted = FakeReportStore(answers = pending(), seen = before.seen.toMutableMap())
+        val viewModel = viewModel("a1", restarted)
+        advanceUntilIdle()
+        restarted.answers.value = answers("s1", 2)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.celebrateAnalysis)
+    }
+
+    @Test
+    fun `198 이미 분석된 답변을 처음 열면 축하하지 않는다`() = runTest(dispatcher) {
+        val viewModel = viewModel("a0", FakeReportStore(answers = answers("s1", 1)))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.celebrateAnalysis)
+    }
 
     private fun scripted() = answers("s1", 1).map { answer ->
         val analysis = done()

@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -60,7 +59,7 @@ fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Mod
  * 받아쓴 글만 분석한 경로면 발음 칸에 "평가 안 함"을 쓴다(F5.9). 교정마다 "틀림"을 누를 수 있다(F8.1).
  * 기다리는 동안 분석 작업이 무엇을 기다리는지(차례, 보내는 중, 연결, 다시 보낼 때까지 남은 초) 쓰고(#205), 분석하지 못했으면 이유와 다시 분석하기를 보인다(#203).
  * 이 화면의 움직임은 하나다. 분석을 기다리는 동안은 모이는 점, 분석이 끝났으면 굴러 올라가는 점수다(답변마다 한 번만).
- * 보는 중에 분석이 끝나면 점수 둘레에 작은 축하가 한 번 터진다.
+ * 보는 중에 끝난 분석이 앱에서 처음 끝난 답변 분석이면 점수 둘레에 작은 축하가 한 번 터진다(#198).
  * 표현 교정 아래에 내용 교정을, 맨 끝에 최종 스크립트를 둔다(#217). 프롬프트 v3 전에 분석한 답변은 최종 스크립트가 없어 두 칸을 모두 숨긴다.
  */
 @Composable
@@ -73,8 +72,6 @@ fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent
             answer == null -> Paragraph(stringResource(Res.string.answer_not_found), secondary = true)
 
             else -> {
-                // 이 화면을 보는 동안 분석이 끝났을 때만 축하한다. 이미 분석된 답변을 다시 여는 것은 상태가 바뀐 게 아니다.
-                val waited = rememberSaveable(answer.id) { answer.analysis == AnswerAnalysis.Pending }
                 LazyColumn(Modifier.fillMaxWidth()) {
                     answerContent(
                         answer,
@@ -83,7 +80,7 @@ fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent
                         state.job,
                         state.scriptPlayback,
                         state.scriptCopied,
-                        waited,
+                        state.celebrateAnalysis,
                         onWrongClick = { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) },
                         onRetryClick = { onIntent(AnswerReportIntent.RetryAnalysis) },
                         onCopyClick = { onIntent(AnswerReportIntent.ScriptCopied) },

@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.Flow
  * 답변 분석이 끝나면 저장소가 새 값을 흘려서 리포트가 바로 바뀐다.
  */
 interface ReportStore {
-    fun session(id: String): Flow<ExamSession?>
+    /** 저장한 순서의 모든 회차. 리포트는 그중 한 회차와 바로 앞 회차 등급을 본다(#198). */
+    fun sessions(): Flow<List<ExamSession>>
 
     fun answers(examSessionId: String): Flow<List<Answer>>
 
@@ -24,4 +25,9 @@ interface ReportStore {
 
     /** 회차에서 분석하지 못한 답변과 등급을 다시 보낸다(#203). */
     suspend fun retrySession(sessionId: String)
+
+    /** 이미 본 것(#198). 축하를 한 번만 하려고 앱을 다시 켜도 남게 둔다. */
+    fun seen(): Flow<Map<String, Int>>
+
+    suspend fun markSeen(key: String, value: Int)
 }

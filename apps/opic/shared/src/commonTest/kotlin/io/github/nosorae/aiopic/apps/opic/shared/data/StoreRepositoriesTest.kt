@@ -165,10 +165,16 @@ class StoreRepositoriesTest {
         listOf(s1, s2).forEach { store.save(it) }
         listOf(a1, p1).forEach { store.save(it) }
 
-        assertEquals(s1, reads.session("s1").first())
         assertEquals(listOf(a1), reads.answers("s1").first())
         assertEquals(listOf(a1, p1), reads.answers().first())
         assertEquals(listOf(s1, s2), reads.sessions().first())
+    }
+
+    @Test
+    fun `198 리포트와 기록이 남긴 본 표시를 같은 저장소에서 읽는다`() = runTest {
+        reads.markSeen("first-analysis", 1)
+
+        assertEquals(mapOf("first-analysis" to 1), reads.seen().first())
     }
 
     @Test

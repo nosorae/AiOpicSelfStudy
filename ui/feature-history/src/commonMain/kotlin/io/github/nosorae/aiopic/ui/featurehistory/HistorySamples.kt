@@ -5,6 +5,7 @@ import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
+import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
@@ -34,9 +35,9 @@ internal object HistorySamples {
             HistorySession(session("s1", "IM1", "IM2"), listOf(FLASH), number = 1),
         ),
         weaknesses = listOf(
-            HistoryWeakness("롤플레이 문제 해결", 48),
-            HistoryWeakness("과거 경험", 61),
-            HistoryWeakness("습관", 77),
+            HistoryWeakness(QuestionType("roleplay"), "롤플레이 문제 해결", 48),
+            HistoryWeakness(QuestionType("past"), "과거 경험", 61),
+            HistoryWeakness(QuestionType("routine"), "습관", 77),
         ),
         grades = listOf("NL", "NM", "NH", "IL", "IM1", "IM2", "IM3", "IH", "AL"),
     )
@@ -53,4 +54,10 @@ internal object HistorySamples {
     )
 
     val empty = HistoryUiState(loading = false)
+
+    /** 지난번에 본 것보다 "과거 경험" 점수가 오른 약점 목록(#198). 축하가 화면 안에서 보이게 기록 줄은 비운다. */
+    val weaknessRose = HistoryUiState(
+        loading = false,
+        weaknesses = listOf(HistoryWeakness(QuestionType("roleplay"), "롤플레이 문제 해결", 48), HistoryWeakness(QuestionType("past"), "과거 경험", 61, rose = true), HistoryWeakness(QuestionType("routine"), "습관", 77)),
+    )
 }

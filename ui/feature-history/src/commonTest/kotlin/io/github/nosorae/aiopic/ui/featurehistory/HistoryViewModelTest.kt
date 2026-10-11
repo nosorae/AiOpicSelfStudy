@@ -20,6 +20,7 @@ import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -51,7 +52,7 @@ class HistoryViewModelTest {
 
     private fun useCase(store: FakeHistoryStore) = ObserveHistoryUseCase(store, typeNames, catalog, GradeScale(listOf("NL", "IM", "AL")))
 
-    private fun TestScope.subscribed(store: FakeHistoryStore) = HistoryViewModel(useCase(store)).also { viewModel ->
+    private fun TestScope.subscribed(store: FakeHistoryStore) = HistoryViewModel(useCase(store), MarkWeaknessSeenUseCase(store)).also { viewModel ->
         backgroundScope.launch { viewModel.uiState.collect {} }
     }
 
@@ -108,7 +109,7 @@ class HistoryViewModelTest {
         val viewModel = subscribed(store)
         advanceUntilIdle()
 
-        assertEquals(listOf(HistoryWeakness("롤플레이", 40), HistoryWeakness("습관", 80)), viewModel.uiState.value.weaknesses)
+        assertEquals(listOf("롤플레이" to 40, "습관" to 80), viewModel.uiState.value.weaknesses.map { it.typeName to it.score })
     }
 
     @Test
@@ -196,12 +197,96 @@ class HistoryViewModelTest {
         store.flags.value = setOf(CorrectionFlag("a1", 0))
         advanceUntilIdle()
 
-        assertEquals(listOf(HistoryWeakness("t", 80)), viewModel.uiState.value.weaknesses)
+        assertEquals(listOf("t" to 80), viewModel.uiState.value.weaknesses.map { it.typeName to it.score })
+    }
+
+    /** 기록을 한 번 열어 지금 약점 점수를 보고 떠난 저장소. */
+    private suspend fun seenOnce(vararg answers: Answer): FakeHistoryStore = FakeHistoryStore(answers = answers.toList()).also { useCase(it)().first() }
+
+    @Test
+    fun `198 처음 보는 약점 점수는 축하하지 않는다`() = runTest(dispatcher) {
+        val viewModel = subscribed(FakeHistoryStore(answers = listOf(answer("a1", "s1", score = 40))))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.weaknesses.single().rose)
+    }
+
+    /** 화면이 오른 약점 줄을 그려 축하를 시작한 경우. */
+    private fun HistoryViewModel.celebrate() = uiState.value.weaknesses.filter { it.rose }.forEach { onIntent(HistoryIntent.MarkWeaknessSeen(it)) }
+
+    @Test
+    fun `198 지난번에 본 것보다 오른 약점 유형만 작은 축하를 하고 축하한 뒤 다시 열면 하지 않는다`() = runTest(dispatcher) {
+        val store = seenOnce(answer("a1", "s1", score = 40), answer("b1", "s1", score = 60, type = "routine"))
+        store.answers.value += listOf(answer("a2", "s2", score = 80), answer("b2", "s2", score = 40, type = "routine"))
+
+        val opened = subscribed(store)
+        advanceUntilIdle()
+        assertEquals(listOf("습관" to false, "t" to true), opened.uiState.value.weaknesses.map { it.typeName to it.rose })
+
+        opened.celebrate()
+        advanceUntilIdle()
+        val again = subscribed(store)
+        advanceUntilIdle()
+
+        assertEquals(listOf(false, false), again.uiState.value.weaknesses.map { it.rose })
+    }
+
+    @Test
+    fun `198 기록을 열기만 하고 약점 줄의 축하를 보지 않았으면 다음에 열 때 다시 축하한다`() = runTest(dispatcher) {
+        val store = seenOnce(answer("a1", "s1", score = 40))
+        store.answers.value += answer("a2", "s2", score = 80)
+
+        subscribed(store)
+        advanceUntilIdle()
+        val again = subscribed(store)
+        advanceUntilIdle()
+
+        assertEquals(40, store.seen.value["weakness:t"])
+        assertTrue(again.uiState.value.weaknesses.single().rose)
+    }
+
+    @Test
+    fun `198 축하를 시작해 본 표시를 남겨도 보는 동안은 축하가 사라지지 않는다`() = runTest(dispatcher) {
+        val store = seenOnce(answer("a1", "s1", score = 40))
+        store.answers.value += answer("a2", "s2", score = 80)
+        val viewModel = subscribed(store)
+        advanceUntilIdle()
+
+        viewModel.celebrate()
+        advanceUntilIdle()
+
+        assertEquals(60, store.seen.value["weakness:t"])
+        assertTrue(viewModel.uiState.value.weaknesses.single().rose)
+    }
+
+    @Test
+    fun `198 보는 중에 점수가 오르면 그때 축하한다`() = runTest(dispatcher) {
+        val store = FakeHistoryStore(answers = listOf(answer("a1", "s1", score = 40)))
+        val viewModel = subscribed(store)
+        advanceUntilIdle()
+
+        store.answers.value += answer("a2", "s2", score = 80)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.weaknesses.single().rose)
+    }
+
+    @Test
+    fun `198 오른 약점 축하는 앱을 다시 켜도 다시 터지지 않는다`() = runTest(dispatcher) {
+        val before = seenOnce(answer("a1", "s1", score = 40))
+        before.answers.value += answer("a2", "s2", score = 80)
+        subscribed(before).also { advanceUntilIdle() }.celebrate()
+        advanceUntilIdle()
+
+        val restarted = subscribed(FakeHistoryStore(answers = before.answers.value, seen = before.seen.value))
+        advanceUntilIdle()
+
+        assertFalse(restarted.uiState.value.weaknesses.single().rose)
     }
 
     @Test
     fun `불러오기 전에는 빈 기록 대신 불러오는 중이다`() = runTest(dispatcher) {
-        val viewModel = HistoryViewModel(useCase(FakeHistoryStore()))
+        val viewModel = FakeHistoryStore().let { HistoryViewModel(useCase(it), MarkWeaknessSeenUseCase(it)) }
 
         assertTrue(viewModel.uiState.value.loading)
     }

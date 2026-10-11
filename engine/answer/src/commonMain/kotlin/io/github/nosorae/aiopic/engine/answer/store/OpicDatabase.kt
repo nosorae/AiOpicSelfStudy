@@ -15,14 +15,14 @@ import androidx.sqlite.execSQL
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 회차 진행 상태, 답변, 틀림 표시를 기기에 저장하는 DB. 앱이 플랫폼 빌더(파일 경로, BundledSQLiteDriver)로 만들어 [OpicStore] 에 넘긴다.
+ * 회차 진행 상태, 답변, 틀림 표시, 본 표시를 기기에 저장하는 DB. 앱이 플랫폼 빌더(파일 경로, BundledSQLiteDriver)로 만들어 [OpicStore] 에 넘긴다.
  *
  * 행에는 찾을 때 쓰는 열만 두고 모델은 JSON 한 칸에 통째로 넣는다. 모델은 이미 직렬화 왕복이 테스트돼 있고(F3.1 통째 저장),
  * 필드가 늘어도 표를 고치지 않는다.
  */
 // ponytail: exportSchema 를 끈다. 이전은 표를 더하는 것뿐이라 손으로 쓴 SQL 하나([OPIC_MIGRATIONS])와 iOS 이전 테스트로 확인한다.
 // 표를 고치는 이전이 생기면 room3 Gradle 플러그인으로 스키마를 내보낸다.
-@Database(entities = [SessionRow::class, AnswerRow::class, FlagRow::class, JobRow::class, ResponseRow::class], version = 2, exportSchema = false)
+@Database(entities = [SessionRow::class, AnswerRow::class, FlagRow::class, JobRow::class, ResponseRow::class, SeenRow::class], version = 3, exportSchema = false)
 @ConstructedBy(OpicDatabaseConstructor::class)
 abstract class OpicDatabase : RoomDatabase() {
     internal abstract fun dao(): OpicDao
@@ -60,7 +60,13 @@ internal data class JobRow(
 internal data class ResponseRow(val kind: String, val targetId: String, val stage: String, val text: String)
 
 /**
- * 앱 DB 빌더가 넣는 이전. version 2 는 분석 작업 표와 응답 원문 표를 더한다(#205).
+ * 사용자가 이미 본 것 하나(#198). 축하를 한 번만 하려고 앱을 다시 켜도 남게 둔다. [value] 는 본 값(약점 점수)이고 값이 없는 표시는 1 이다.
+ */
+@Entity(tableName = "seen_mark")
+internal data class SeenRow(@PrimaryKey val key: String, val value: Int)
+
+/**
+ * 앱 DB 빌더가 넣는 이전. version 2 는 분석 작업 표와 응답 원문 표를 더한다(#205). version 3 은 본 표시 표를 더한다(#198).
  * 기다리던 답변을 작업 표로 옮기는 일은 앱을 켤 때마다 도는 `AnalysisJobs.recover` 가 한다. 이전 뒤 첫 실행도 그 길을 탄다.
  */
 val OPIC_MIGRATIONS: Array<Migration> = arrayOf(
@@ -74,6 +80,11 @@ val OPIC_MIGRATIONS: Array<Migration> = arrayOf(
                 "CREATE TABLE IF NOT EXISTS `analysis_response` (`kind` TEXT NOT NULL, `targetId` TEXT NOT NULL, `stage` TEXT NOT NULL, `text` TEXT NOT NULL, " +
                     "PRIMARY KEY(`kind`, `targetId`, `stage`))",
             )
+        }
+    },
+    object : Migration(2, 3) {
+        override suspend fun migrate(connection: SQLiteConnection) {
+            connection.execSQL("CREATE TABLE IF NOT EXISTS `seen_mark` (`key` TEXT NOT NULL, `value` INTEGER NOT NULL, PRIMARY KEY(`key`))")
         }
     },
 )
@@ -124,6 +135,12 @@ internal interface OpicDao {
 
     @Query("INSERT INTO analysis_response (kind, targetId, stage, text) VALUES (:kind, :targetId, :stage, :text) ON CONFLICT(kind, targetId, stage) DO UPDATE SET text = excluded.text")
     suspend fun saveResponse(kind: String, targetId: String, stage: String, text: String)
+
+    @Query("INSERT INTO seen_mark (`key`, value) VALUES (:key, :value) ON CONFLICT(`key`) DO UPDATE SET value = excluded.value")
+    suspend fun markSeen(key: String, value: Int)
+
+    @Query("SELECT * FROM seen_mark")
+    fun seen(): Flow<List<SeenRow>>
 
     @Query("SELECT text FROM analysis_response WHERE kind = :kind AND targetId = :targetId AND stage = :stage")
     suspend fun response(kind: String, targetId: String, stage: String): String?
