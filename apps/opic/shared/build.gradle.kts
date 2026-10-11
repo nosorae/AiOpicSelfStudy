@@ -33,6 +33,8 @@ kotlin {
         // 플랫폼 진동에 설정의 켜기/끄기를 씌워 화면에 넘긴다.
         implementation(project(":libs:haptics"))
         implementation(project(":libs:llm-gemini"))
+        // 분석 작업을 넣으면 플랫폼 대기열을 깨우고, 대기열은 분석 작업 표를 비운다(#205).
+        implementation(project(":libs:work-queue"))
         implementation(project(":packs:opic-en"))
         implementation(libs.androidx.lifecycle.viewmodelCompose)
         implementation(libs.kotlinx.serialization.json)

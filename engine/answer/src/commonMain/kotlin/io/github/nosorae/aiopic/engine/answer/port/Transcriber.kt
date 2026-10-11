@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.engine.answer.port
 
+import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
 /**
@@ -10,7 +11,10 @@ interface Transcriber {
     suspend fun transcribe(recording: Recording): AnalysisResult<Transcript>
 }
 
+/** 두 단계 경로가 첫 단계 결과로 DB 에 남긴다(#205). 둘째 단계가 실패해 다시 보내도 받아쓰기를 다시 부르지 않는다. */
+@Serializable
 data class Transcript(val text: String, val words: List<TimedWord>)
 
 /** 녹음 시작부터 잰 단어 하나의 시작과 끝. 두 단계 경로에서 멈춤과 말 속도를 앱이 계산하는 데 쓴다. */
+@Serializable
 data class TimedWord(val text: String, val start: Duration, val end: Duration)

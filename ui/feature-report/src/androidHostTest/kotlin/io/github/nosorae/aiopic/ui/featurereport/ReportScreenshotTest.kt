@@ -5,10 +5,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -17,6 +20,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * 회차 리포트와 답변 리포트의 상태마다 한 장. 등급 범위와 모델 섞임, 시간 부족, 평가 불가, 발음 평가 안 함은
@@ -109,6 +114,43 @@ class ReportScreenshotTest {
         show { SessionReport(ReportSamples.gradeFailed) }
         rule.onNodeWithText("예상 등급을 내지 못했습니다. Gemini 키가 맞지 않습니다", substring = true).assertExists()
         rule.onNodeWithText("다시 분석하기").assertExists()
+    }
+
+    @Test fun answer_waitingNetwork() = answer(ReportSamples.answerWaitingNetwork, settleMillis = 0)
+
+    @Test fun answer_waitingNetwork_dark() = answer(ReportSamples.answerWaitingNetwork, dark = true, settleMillis = 0)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun answer_waitingNetwork_fontScale200() = answer(ReportSamples.answerWaitingNetwork, settleMillis = 0)
+
+    @Test fun session_waiting() = shot(dark = false, settleMillis = 0) { SessionReport(ReportSamples.sessionWaiting) }
+
+    @Test fun session_waiting_dark() = shot(dark = true, settleMillis = 0) { SessionReport(ReportSamples.sessionWaiting) }
+
+    @Config(fontScale = 2f)
+    @Test
+    fun session_waiting_fontScale200() = shot(dark = false, settleMillis = 0) { SessionReport(ReportSamples.sessionWaiting) }
+
+    @Test
+    fun `205 기다리는 답변마다 보내는 중인지 연결을 기다리는지 보인다`() {
+        show { SessionReport(ReportSamples.sessionWaiting) }
+        rule.onNodeWithText("분석하고 있습니다", substring = true).assertExists()
+        rule.onNodeWithText("인터넷 연결을 기다립니다", substring = true).assertExists()
+    }
+
+    @Test
+    fun `205 등급 작업이 연결을 기다리면 등급을 내는 중 대신 연결을 기다린다고 쓴다`() {
+        show { SessionReport(ReportSamples.gradeWaitingNetwork) }
+        rule.onAllNodesWithText("인터넷 연결을 기다립니다", substring = true).onFirst().assertExists()
+        rule.onNodeWithText("예상 등급을 내고 있습니다", substring = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `205 다시 보낼 예정이면 남은 초를 보인다`() {
+        val at = Clock.System.now() + 90.seconds
+        show { AnswerReport(ReportSamples.answerWaitingNetwork.copy(job = ReportSamples.answerWaitingNetwork.job!!.copy(state = JobState.RetryScheduled, nextAttemptAt = at))) }
+        rule.onNodeWithText("초 뒤 다시 보냅니다", substring = true).assertExists()
     }
 
     @Test

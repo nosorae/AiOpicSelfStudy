@@ -93,6 +93,7 @@ class DebugWiringTest {
                 "exam_session" to "2 rows, last s2 (step 4)",
                 "answer" to "1 rows, last a1 (Pending)",
                 "correction_flag" to "1 rows",
+                "analysis_job" to "0 rows",
             ),
             dbRows(store),
         )

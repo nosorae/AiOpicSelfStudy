@@ -4,11 +4,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
@@ -17,8 +21,12 @@ import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTheme
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /** 리포트 두 화면이 같은 모양으로 쓰는 절 제목. 화면 읽기 프로그램이 절 단위로 건너뛸 수 있게 제목으로 표시한다. */
 @Composable
@@ -65,6 +73,8 @@ internal val UnscorableReason.text: StringResource
 internal val AnalysisError.text: StringResource
     get() = when (this) {
         AnalysisError.Retryable -> Res.string.failed_retryable
+        AnalysisError.Offline -> Res.string.failed_offline
+        AnalysisError.NoConsent -> Res.string.failed_no_consent
         AnalysisError.InvalidKey -> Res.string.failed_invalid_key
         AnalysisError.ModelUnavailable -> Res.string.failed_model_unavailable
         AnalysisError.Rejected -> Res.string.failed_rejected
@@ -80,3 +90,29 @@ internal fun RetryButton(onClick: () -> Unit, tag: String) {
         modifier = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8).testTag(tag),
     )
 }
+
+/**
+ * 기다리는 답변이나 등급이 지금 무엇을 기다리는지(#205). 작업 표를 구독해서 상태가 바뀌면 바로 바뀐다.
+ * 다시 보낼 때까지 남은 초는 1초마다 줄인다. 작업이 없거나 차례를 기다리면 "분석 대기 중"이다.
+ */
+@Composable
+internal fun jobStatus(job: AnalysisJob?): String = when (job?.state) {
+    JobState.Running -> stringResource(Res.string.status_running)
+
+    JobState.WaitingNetwork -> stringResource(Res.string.status_waiting_network)
+
+    JobState.RetryScheduled -> {
+        val at = job.nextAttemptAt
+        val left by produceState(secondsUntil(at), at) {
+            while (value > 0) {
+                delay(1.seconds)
+                value = secondsUntil(at)
+            }
+        }
+        stringResource(Res.string.status_retry_in, left)
+    }
+
+    else -> stringResource(Res.string.status_pending)
+}
+
+private fun secondsUntil(at: Instant?): Int = at?.let { (it - Clock.System.now()).inWholeSeconds.toInt().coerceAtLeast(0) } ?: 0

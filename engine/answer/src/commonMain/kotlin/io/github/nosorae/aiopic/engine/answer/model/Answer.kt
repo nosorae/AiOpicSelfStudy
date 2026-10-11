@@ -23,7 +23,7 @@ data class Answer(
 /** 답변 분석 결과. 분석이 끝나지 않은 답변도 녹음은 남는다(F5.6). */
 @Serializable
 sealed interface AnswerAnalysis {
-    /** 대기열에 있거나 보내는 중이다. 대기열에 없는 기다림은 앱을 켤 때 다시 넣는다(`requeuePending`). */
+    /** 분석 작업 표(#205)에서 기다리거나 보내는 중이다. 무엇을 기다리는지는 작업 표가 안다. 작업이 없는 기다림은 앱을 켤 때 다시 넣는다(`AnalysisJobs.recover`). */
     @Serializable
     @SerialName("pending")
     data object Pending : AnswerAnalysis
@@ -33,8 +33,8 @@ sealed interface AnswerAnalysis {
     data class Done(val analyzedBy: AnalyzedBy, val feedback: Feedback) : AnswerAnalysis
 
     /**
-     * 보냈지만 결과를 받지 못했다(#203). 화면은 기다림을 끝내고 [error] 에 맞는 이유와 다시 분석하기를 보인다.
-     * [AnalysisError.Retryable] 이면 대기열이 뒤에서 몇 번 더 보내고, 그 사이 결과가 오면 [Done] 으로 바뀐다.
+     * 보냈지만 결과를 받지 못하고 분석 작업이 끝났다(#203, #205). 화면은 기다림을 끝내고 [error] 에 맞는 이유와 다시 분석하기를 보인다.
+     * 다시 보낼 실패는 작업이 횟수를 다 쓴 뒤에야 여기로 온다.
      */
     @Serializable
     @SerialName("failed")

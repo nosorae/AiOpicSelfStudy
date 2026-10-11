@@ -11,9 +11,13 @@ import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording
+import io.github.nosorae.aiopic.engine.answer.port.SavedResponses
 import io.github.nosorae.aiopic.engine.answer.port.TimedWord
 import io.github.nosorae.aiopic.engine.answer.port.Transcriber
+import io.github.nosorae.aiopic.engine.answer.port.Transcript
 import io.github.nosorae.aiopic.engine.answer.port.TranscriptAnalyzer
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.serialization.json.Json
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.DurationUnit
@@ -22,6 +26,7 @@ import kotlin.time.DurationUnit
  * 분석 경로 고르기(F5.9, ADR 0019). 고른 모델이 음성을 직접 들으면 한 번 호출로 끝내고, 못 들으면 받아쓴 전문을 글 분석에 보낸다.
  * 두 단계 경로는 발음을 "평가 안 함"으로 두고 멈춤과 말 속도를 단어 시각으로 계산한다.
  * 어느 경로든 결과에 제공사, 모델 id, promptVersion 을 붙여 답변에 넣는다(F5.7). 실패하면 답변을 바꾸지 않고 실패를 돌려준다.
+ * 두 단계 경로는 받아쓴 결과를 [SavedResponses] 에 남겨, 둘째 단계가 실패해 다시 보내도 받아쓰기를 다시 부르지 않는다(#205).
  */
 class AnswerRouter(
     private val audioAnalyzer: AudioAnswerAnalyzer,
@@ -43,8 +48,9 @@ class AnswerRouter(
     }
 
     private suspend fun analyzeInTwoSteps(answer: Answer, model: ModelInfo, prompt: Prompt, recording: Recording): AnalysisResult<Feedback> {
-        val transcript = when (val result = transcriber.transcribe(recording)) {
-            is AnalysisResult.Success -> result.value
+        val saved = currentCoroutineContext()[SavedResponses]
+        val transcript = saved?.take(TRANSCRIPT)?.let { Json.decodeFromString<Transcript>(it) } ?: when (val result = transcriber.transcribe(recording)) {
+            is AnalysisResult.Success -> result.value.also { saved?.save(TRANSCRIPT, Json.encodeToString(it)) }
             is AnalysisResult.Unscorable -> return result
             is AnalysisResult.Failed -> return result
         }
@@ -69,6 +75,8 @@ class AnswerRouter(
         )
     }
 }
+
+private const val TRANSCRIPT = "transcript"
 
 /** 단어 사이가 이만큼 비면 멈춤으로 센다. 미리 확인 노드 s1 에서 실제 멈춤을 무음 0.8초 이상으로 잡고 단어 시각과 맞춰 본 값이다. */
 private val PAUSE_GAP = 800.milliseconds

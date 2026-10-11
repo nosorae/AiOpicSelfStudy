@@ -21,7 +21,7 @@ class ConsentRevokeTest {
     private val dispatcher = StandardTestDispatcher()
     private val store = FakeSettingsStore()
     private val vault = FakeKeyVault(KeyProvider.Gemini.id to "test-key")
-    private val queue = FakeWorkQueue("a1", "a2")
+    private val queue = FakePendingAnalysis("a1", "a2")
 
     @BeforeTest fun setUp() = Dispatchers.setMain(dispatcher)
 

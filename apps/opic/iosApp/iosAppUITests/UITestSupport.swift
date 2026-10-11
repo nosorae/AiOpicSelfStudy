@@ -15,8 +15,10 @@ enum UITestLaunch {
     static let recordFail = ["-debug_tools.record_fail", "YES"]
     /** 가짜 Gemini 가 첫 분석 요청만 연결 오류로 끊고 그 뒤로는 분석 결과를 준다. 연결이 잠깐 끊겼다 돌아온 경우다. */
     static let dropOnce = ["-debug_tools.drop_once", "YES"]
-    /** 가짜 Gemini 가 분석 요청을 모두 연결 오류로 끊는다. 다시 보내기를 다 써도 연결되지 않은 경우다. */
+    /** 가짜 Gemini 가 분석 요청을 모두 연결 오류로 끊는다. 연결이 돌아오지 않는 경우다. */
     static let offline = ["-debug_tools.offline", "YES"]
+    /** 녹음을 실은 요청(분석, 등급)이 분석 작업의 시간 제한(2분)보다 오래 멈춘다. */
+    static let stall = ["-debug_tools.stall", "YES"]
 }
 
 extension XCUIApplication {

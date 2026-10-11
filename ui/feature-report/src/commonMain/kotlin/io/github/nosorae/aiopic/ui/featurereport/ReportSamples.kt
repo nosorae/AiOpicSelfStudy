@@ -1,10 +1,13 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
+import io.github.nosorae.aiopic.engine.answer.model.JobKind
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pause
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
@@ -18,6 +21,7 @@ import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /** 미리보기와 스크린샷 테스트가 같이 쓰는 고정 상태. */
 internal object ReportSamples {
@@ -76,6 +80,7 @@ internal object ReportSamples {
         status: ExamStatus = ExamStatus.Finished,
         grade: SessionGrade? = this.grade,
         gradeError: AnalysisError? = null,
+        jobs: List<AnalysisJob> = emptyList(),
     ) = SessionReportUiState(
         loading = false,
         report = SessionReport(
@@ -83,6 +88,7 @@ internal object ReportSamples {
             answers = answers,
             questionCount = 7,
             names = names,
+            jobs = jobs,
         ),
     )
 
@@ -138,4 +144,19 @@ internal object ReportSamples {
 
     /** 답변은 다 분석했지만 키가 틀려 등급을 받지 못했다(#203). */
     val gradeFailed = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null, gradeError = AnalysisError.InvalidKey)
+
+    private fun job(state: JobState, id: String, kind: JobKind = JobKind.Answer) = AnalysisJob(kind, id, state, updatedAt = Instant.fromEpochMilliseconds(0))
+
+    /** 연결이 없어 분석 작업이 연결을 기다린다(#205). */
+    val answerWaitingNetwork = answerPending.copy(job = job(JobState.WaitingNetwork, "a3"))
+
+    /** 답변 다섯 개 중 하나는 보내는 중, 하나는 연결을 기다린다(#205). */
+    val sessionWaiting = report(
+        List(5) { answer(it, if (it < 3) AnswerAnalysis.Done(flash, feedback) else AnswerAnalysis.Pending) },
+        grade = null,
+        jobs = listOf(job(JobState.Running, "a3"), job(JobState.WaitingNetwork, "a4")),
+    )
+
+    /** 답변은 다 분석했고 등급 작업이 연결을 기다린다(#205). */
+    val gradeWaitingNetwork = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null, jobs = listOf(job(JobState.WaitingNetwork, "s1", JobKind.Grade)))
 }

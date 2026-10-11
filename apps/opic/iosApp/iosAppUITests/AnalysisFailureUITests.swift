@@ -25,40 +25,53 @@ final class AnalysisFailureUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["답변 리포트"].waitForExistence(timeout: 10), "Next 뒤 답변 리포트가 보이지 않는다")
     }
 
-    // 사용자가 겪은 경우다. 분석 요청이 연결 오류로 한 번 끊기면 이유와 다시 분석하기가 보이고,
-    // 대기열이 30초 뒤 다시 보내 결과를 받으면 누르지 않아도 분석 결과로 바뀐다.
-    func testConnectionDropShowsReasonThenResult() {
+    // 사용자가 겪은 경우다. 분석 요청이 연결 오류로 한 번 끊기면 실패가 아니라 연결을 기다린다고 보이고(#205),
+    // 연결을 다시 보는 30초 뒤 다시 보내 결과를 받으면 누르지 않아도 분석 결과로 바뀐다.
+    func testConnectionDropWaitsForNetworkThenShowsResult() {
         launch(UITestLaunch.dropOnce)
         answerOneQuestion()
 
-        XCTAssertTrue(app.tag("answer-retry").waitForExistence(timeout: 30), "연결이 끊겼는데 다시 분석하기가 보이지 않는다")
-        XCTAssertTrue(label(containing: "연결이 끊겼거나").exists, "연결 오류 이유가 보이지 않는다")
-        attach("연결 끊김 뒤 실패 화면")
+        XCTAssertTrue(label(containing: "인터넷 연결을 기다립니다").waitForExistence(timeout: 30), "연결이 끊겼는데 연결 기다림이 보이지 않는다")
+        XCTAssertFalse(app.tag("answer-retry").exists, "연결만 끊겼는데 실패로 끝났다")
+        attach("연결 끊김 뒤 연결 기다림")
 
         let transcript = label(containing: "I live in Seoul.")
         XCTAssertTrue(transcript.waitForExistence(timeout: 90), "다시 보낸 분석 결과로 바뀌지 않았다")
-        XCTAssertFalse(app.tag("answer-retry").exists, "결과가 나왔는데 다시 분석하기가 남아 있다")
         attach("다시 보낸 뒤 분석 결과")
     }
 
-    // 연결이 끝내 돌아오지 않으면 대기열이 세 번 더 보내고(30, 60, 120초 뒤) 멈춘다. 그 뒤에도 기다림이 아니라
-    // 연결 오류 이유와 다시 분석하기가 남아야 한다. 다시 누르면 기다림으로 돌아갔다가 다시 실패로 온다.
-    func testConnectionNeverBackShowsReasonAndRetry() {
+    // 연결이 끝내 돌아오지 않으면 다시 보내기 횟수를 쓰지 않고 연결을 계속 기다린다(#205). 다시 보내기 세 번(30, 60, 120초)이
+    // 지날 만한 시간에도 실패로 끝나지 않고 연결 기다림이 남아야 한다.
+    func testOfflineKeepsWaitingForNetwork() {
         launch(UITestLaunch.offline)
         answerOneQuestion()
 
-        let retry = app.tag("answer-retry")
-        XCTAssertTrue(retry.waitForExistence(timeout: 30), "연결이 끊겼는데 다시 분석하기가 보이지 않는다")
-        XCTAssertTrue(label(containing: "연결이 끊겼거나").exists, "연결 오류 이유가 보이지 않는다")
+        let waiting = label(containing: "인터넷 연결을 기다립니다")
+        XCTAssertTrue(waiting.waitForExistence(timeout: 30), "연결이 없는데 연결 기다림이 보이지 않는다")
+        XCTAssertFalse(waitUntil(100) { self.app.tag("answer-retry").exists }, "연결이 없을 뿐인데 실패로 끝났다")
+        XCTAssertTrue(waiting.exists, "연결 기다림이 사라졌다")
+        attach("연결 없음이 이어질 때")
+    }
 
-        // 다시 보내기 세 번(모두 210초)이 끝날 때까지 실패 화면이 그대로인지 본다.
-        XCTAssertFalse(waitUntil(225) { !retry.exists }, "다시 보내는 동안 실패 화면이 사라졌다")
-        XCTAssertTrue(label(containing: "연결이 끊겼거나").exists, "다시 보내기를 다 쓴 뒤 연결 오류 이유가 보이지 않는다")
-        attach("다시 보내기를 다 쓴 뒤")
+    // 답이 늦으면 보내는 중이라고 보이다가, 가짜 Gemini 의 답(읽을 수 없는 "OK")을 받으면 이유와 다시 분석하기로 끝난다.
+    func testSlowResponseShowsRunningThenFailure() {
+        launch(UITestLaunch.slowGemini)
+        answerOneQuestion()
 
-        app.tapTag("answer-retry")
-        XCTAssertTrue(retry.waitForExistence(timeout: 30), "다시 분석한 뒤 실패 화면으로 돌아오지 않았다")
-        XCTAssertTrue(label(containing: "연결이 끊겼거나").exists, "다시 분석한 뒤 연결 오류 이유가 보이지 않는다")
+        XCTAssertTrue(label(containing: "분석하고 있습니다").waitForExistence(timeout: 30), "보내는 중이 보이지 않는다")
+        attach("보내는 중")
+        XCTAssertTrue(app.tag("answer-retry").waitForExistence(timeout: 60), "답을 받은 뒤 실패로 끝나지 않았다")
+        XCTAssertTrue(label(containing: "모델의 답을 읽지 못했습니다").exists, "실패 이유가 보이지 않는다")
+    }
+
+    // Gemini 가 시간 제한(2분)을 넘겨도 답하지 않으면 보내는 중에 머물지 않고 다시 보낼 때까지 남은 초를 보인다(#205).
+    func testStalledRequestTimesOutAndSchedulesRetry() {
+        launch(UITestLaunch.stall)
+        answerOneQuestion()
+
+        XCTAssertTrue(label(containing: "분석하고 있습니다").waitForExistence(timeout: 30), "보내는 중이 보이지 않는다")
+        XCTAssertTrue(label(containing: "초 뒤 다시 보냅니다").waitForExistence(timeout: 150), "시간 제한이 지나도 다시 보낼 예정으로 바뀌지 않았다")
+        attach("시간 제한 뒤 다시 보낼 예정")
     }
 
     func testPracticeAnalysisFailureShowsRetry() {

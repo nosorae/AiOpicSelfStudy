@@ -4,8 +4,8 @@ import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.engine.answer.port.ModelCatalog
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
-import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.VoiceConsent
+import io.github.nosorae.aiopic.ui.featuresettings.consent.PendingAnalysis
 import io.github.nosorae.aiopic.ui.featuresettings.consent.RevokeVoiceConsentUseCase
 import io.github.nosorae.aiopic.ui.featuresettings.haptics.HapticsStore
 import io.github.nosorae.aiopic.ui.featuresettings.haptics.SetHapticsUseCase
@@ -97,19 +97,15 @@ class FakeSettingsStore(var modelId: String? = null) :
     }
 }
 
-/** 넣은 작업 id 를 들고 있다가 [cancelAll] 에 비운다. */
-class FakeWorkQueue(vararg pending: String) : WorkQueue {
+/** 남은 분석 작업 id 를 들고 있다가 [cancelAll] 에 비운다. */
+class FakePendingAnalysis(vararg pending: String) : PendingAnalysis {
     val pending = mutableListOf(*pending)
-
-    override suspend fun enqueue(id: String, payload: String) {
-        pending += id
-    }
 
     override suspend fun cancelAll() = pending.clear()
 }
 
 /** 설정 화면 테스트마다 같은 가짜로 ViewModel 을 만든다. */
-fun settingsViewModel(store: FakeSettingsStore, vault: FakeKeyVault, queue: FakeWorkQueue = FakeWorkQueue()) = SettingsViewModel(
+fun settingsViewModel(store: FakeSettingsStore, vault: FakeKeyVault, queue: FakePendingAnalysis = FakePendingAnalysis()) = SettingsViewModel(
     loadSettingsUseCase = LoadSettingsUseCase(FakeCatalog, store, store, vault, store, store, store, store, store),
     selectModelUseCase = SelectModelUseCase(store),
     deleteKeyUseCase = DeleteKeyUseCase(vault),

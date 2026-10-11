@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.ui.featurereport.flag.MarkCorrectionWrongUseCase
 import io.github.nosorae.aiopic.ui.featurereport.flag.ObserveAnswerReportUseCase
@@ -14,12 +15,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** [wrongCorrections] 는 "틀림"을 누른 교정의 `Feedback.corrections` 안 순서다(F8.1). */
+/** [wrongCorrections] 는 "틀림"을 누른 교정의 `Feedback.corrections` 안 순서다(F8.1). [job] 은 답변의 분석 작업이다(#205). */
 data class AnswerReportUiState(
     val loading: Boolean = true,
     val answer: Answer? = null,
     val wrongCorrections: Set<Int> = emptySet(),
     val names: ReportNames = ReportNames(),
+    val job: AnalysisJob? = null,
 )
 
 sealed interface AnswerReportIntent {
@@ -44,7 +46,7 @@ class AnswerReportViewModel(
     init {
         viewModelScope.launch {
             observeAnswerReportUseCase(answerId).collect { report ->
-                _uiState.update { it.copy(loading = false, answer = report.answer, wrongCorrections = report.wrongCorrections, names = report.names) }
+                _uiState.update { it.copy(loading = false, answer = report.answer, wrongCorrections = report.wrongCorrections, names = report.names, job = report.job) }
             }
         }
     }

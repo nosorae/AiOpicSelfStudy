@@ -2,6 +2,7 @@ package io.github.nosorae.aiopic.apps.opic.shared.data
 
 import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import io.github.nosorae.aiopic.engine.answer.store.OPIC_MIGRATIONS
 import io.github.nosorae.aiopic.engine.answer.store.OpicDatabase
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSApplicationSupportDirectory
@@ -13,6 +14,7 @@ import platform.Foundation.NSUserDomainMask
 /** 앱 지원 폴더의 `opic.db`. iCloud 백업에 실린다(기록은 기기를 바꿔도 남긴다). */
 fun opicDatabase(): OpicDatabase = Room.databaseBuilder<OpicDatabase>(name = "${applicationSupport()}/opic.db")
     .setDriver(BundledSQLiteDriver())
+    .addMigrations(*OPIC_MIGRATIONS)
     .build()
 
 /**

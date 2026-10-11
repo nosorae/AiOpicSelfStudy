@@ -9,7 +9,6 @@ import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
 import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
 import io.github.nosorae.aiopic.apps.opic.shared.debugGeminiClient
 import io.github.nosorae.aiopic.apps.opic.shared.registerDebugPanels
-import io.github.nosorae.aiopic.apps.opic.shared.requeuePendingAnalysis
 import io.github.nosorae.aiopic.apps.opic.shared.withDebugTools
 import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.github.nosorae.aiopic.libs.debug.install
@@ -34,8 +33,8 @@ open class OpicApplication : Application() {
         // 그래프가 스위치를 읽고 클라이언트를 만들기 전에 설치한다. 릴리스 APK 는 빈 모듈이라 아무 일도 안 한다.
         DebugTools.install(this)
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
-        // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다.
-        val workQueue = WorkManagerWorkQueue(this) { graph.analysisHandler.handle(it) }
+        // 대기열이 그래프보다 먼저 만들어지므로 비우기는 부를 때 그래프에서 찾는다. 대기열은 DB 의 분석 작업 표를 비우기만 한다(#205).
+        val workQueue = WorkManagerWorkQueue(this) { graph.analysisJobs.drain() }
         graph = createAppGraph(
             settings = AppSettings(read = { prefs.getString(it, null) }, write = { key, value -> prefs.edit().putString(key, value).apply() }),
             keyVault = KeystoreKeyVault(this),
@@ -46,8 +45,9 @@ open class OpicApplication : Application() {
             workQueue = workQueue,
             gemini = gemini(),
         )
-        graph.registerDebugPanels(queue = workQueue::pending, audio = ::audioRows)
-        MainScope().launch { graph.requeuePendingAnalysis(workQueue) }
+        graph.registerDebugPanels(audio = ::audioRows)
+        // 앱이 보내는 중에 죽었으면 진행 중으로 남은 작업을 대기로 돌리고 대기열을 깨운다.
+        MainScope().launch { graph.analysisJobs.recover() }
     }
 
     /** 시나리오 테스트가 저장해 둔 응답을 돌려주는 클라이언트로 바꾼다. */

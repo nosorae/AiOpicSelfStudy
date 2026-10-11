@@ -1,6 +1,9 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobKind
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
@@ -21,6 +24,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 class SessionReportViewModelTest {
     private val dispatcher = StandardTestDispatcher()
@@ -163,6 +167,26 @@ class SessionReportViewModelTest {
         advanceUntilIdle()
 
         assertEquals(2, viewModel.uiState.value.report!!.analyzedCount)
+    }
+
+    @Test
+    fun `205 회차 리포트는 이 회차 답변과 등급의 분석 작업만 구독한다`() = runTest(dispatcher) {
+        val store = FakeReportStore(listOf(session(level = 3, answers = 2)), answers("s1", 2).map { it.copy(analysis = AnswerAnalysis.Pending) })
+        val viewModel = viewModel(store)
+        val at = Instant.fromEpochMilliseconds(0)
+        store.jobs.value = listOf(
+            AnalysisJob(JobKind.Answer, "a0", JobState.WaitingNetwork, updatedAt = at),
+            AnalysisJob(JobKind.Answer, "elsewhere", JobState.Running, updatedAt = at),
+            AnalysisJob(JobKind.Grade, "s1", JobState.Queued, updatedAt = at),
+            AnalysisJob(JobKind.Grade, "s2", JobState.Running, updatedAt = at),
+        )
+        advanceUntilIdle()
+
+        val report = viewModel.uiState.value.report!!
+        assertEquals(JobState.WaitingNetwork, report.job("a0")?.state)
+        assertNull(report.job("a1"))
+        assertEquals(JobState.Queued, report.gradeJob?.state)
+        assertEquals(2, report.jobs.size)
     }
 
     @Test

@@ -2,7 +2,7 @@ package io.github.nosorae.aiopic.apps.opic.shared.live
 
 import io.github.nosorae.aiopic.apps.opic.shared.AppSettings
 import io.github.nosorae.aiopic.apps.opic.shared.FakeKeyVault
-import io.github.nosorae.aiopic.apps.opic.shared.analysisQueueHandler
+import io.github.nosorae.aiopic.apps.opic.shared.analysisJobs
 import io.github.nosorae.aiopic.apps.opic.shared.data.FakeWorkQueue
 import io.github.nosorae.aiopic.apps.opic.shared.data.inMemoryDatabase
 import io.github.nosorae.aiopic.engine.aigemini.GeminiModels
@@ -10,6 +10,7 @@ import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
 import io.github.nosorae.aiopic.engine.answer.analysis.GradeRequest
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
@@ -18,7 +19,6 @@ import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
-import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.packs.opicen.OpicPrompt
 import io.github.nosorae.aiopic.packs.opicen.PromptFile
@@ -52,7 +52,7 @@ class LiveGeminiTest {
         val keyVault = FakeKeyVault().apply { put(GeminiModels.PROVIDER, key) }
         val queue = FakeWorkQueue()
         val store = OpicStore(db)
-        val handler = analysisQueueHandler(
+        val jobs = analysisJobs(
             store = store,
             queue = queue,
             client = GeminiClient(),
@@ -71,16 +71,12 @@ class LiveGeminiTest {
         )
         store.save(ExamSession("s1", answerIds = listOf("a1"), status = ExamStatus.Finished))
         store.save(Answer("a1", Question("q1", "Tell me about your home. What does it look like?", QuestionType("description"), "home"), "s1", chunkPaths = emptyList()))
-        queue.enqueue("a1", "a1")
+        jobs.enqueueAnswer("a1")
 
-        var next = 0
-        while (next < queue.ids.size) {
-            val id = queue.ids[next++]
-            // 429, 503 은 Retry 로 온다. 앱은 나중에 다시 보내지만 이 테스트는 호출 수를 지키려고 다시 보내지 않는다.
-            assertEquals(WorkResult.Success, handler.handle(id), "$id 처리 결과")
-        }
+        // 한 번만 비운다. 429, 503 은 다시 보낼 예정으로 남는다. 앱은 나중에 다시 보내지만 이 테스트는 호출 수를 지키려고 다시 보내지 않는다.
+        jobs.drain()
 
-        assertEquals(listOf("a1", "grade:s1"), queue.ids)
+        assertEquals(listOf(JobState.Succeeded, JobState.Succeeded), store.jobs().first().map { it.state })
         val analysis = assertIs<AnswerAnalysis.Done>(store.answers("s1").first().single().analysis)
         assertTrue(analysis.feedback.transcript.isNotBlank())
         val grade = assertNotNull(store.session("s1").first()?.grade)

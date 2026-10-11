@@ -1,7 +1,7 @@
 package io.github.nosorae.aiopic.apps.opic.shared.data
 
 import io.github.nosorae.aiopic.apps.opic.shared.AppSettings
-import io.github.nosorae.aiopic.engine.answer.analysis.requestGradeIfReady
+import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisJobs
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.engine.question.model.Question
@@ -12,7 +12,6 @@ import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.Recalibration
-import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
 import io.github.nosorae.aiopic.ui.featureexam.ExamQuestion
 import io.github.nosorae.aiopic.ui.featureexam.ExamRepository
 import kotlinx.coroutines.CoroutineScope
@@ -38,7 +37,7 @@ import kotlin.random.Random
 // ponytail: 미리 받는 요청은 이 객체의 메모리에만 있어서 앱이 꺼지면 사라진다. 이어 볼 때는 그 몫을 Play 에서 다시 요청하고 기다린다.
 class StoreExamRepository(
     private val store: OpicStore,
-    private val queue: WorkQueue,
+    private val jobs: AnalysisJobs,
     private val spec: ExamSpec,
     private val pool: suspend () -> List<Question>,
     private val recordingsRoot: String,
@@ -66,7 +65,7 @@ class StoreExamRepository(
     override suspend fun save(session: ExamSession) {
         store.save(session)
         if (session.status == ExamStatus.InProgress) return
-        requestGradeIfReady(store, queue, session.id)
+        jobs.requestGradeIfReady(session.id)
         val running = store.sessions().first().filter { it.status == ExamStatus.InProgress }
         cleanVoices(running.flatMap { settings.examQuestions(it.id).orEmpty() }.map { it.text })
     }
@@ -143,7 +142,7 @@ class StoreExamRepository(
 
     override suspend fun save(answer: Answer) {
         store.save(answer)
-        queue.enqueue(answer.id, answer.id)
+        jobs.enqueueAnswer(answer.id)
     }
 }
 
