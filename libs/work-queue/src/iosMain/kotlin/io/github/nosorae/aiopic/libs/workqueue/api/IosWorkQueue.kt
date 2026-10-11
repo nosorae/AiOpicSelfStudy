@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.libs.workqueue.api
 
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -95,6 +96,7 @@ public class IosWorkQueue(
         }
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     private fun submit(identifier: String, delay: Duration) {
         val request = BGProcessingTaskRequest(identifier)
         request.requiresNetworkConnectivity = true

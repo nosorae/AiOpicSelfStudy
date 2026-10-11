@@ -23,6 +23,7 @@ import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -38,6 +39,7 @@ import kotlin.time.Instant
  * 작업 표가 없던 DB(version 1)를 연 사용자 기기에서 기다리던 답변이 작업 표로 옮겨져 다시 분석되는지 본다(#205).
  * version 1 의 표는 그때 Room 이 만든 SQL 그대로 쓴다.
  */
+@OptIn(ExperimentalForeignApi::class)
 class MigrationTest {
     private val path = NSTemporaryDirectory() + "migration-test.db"
 
