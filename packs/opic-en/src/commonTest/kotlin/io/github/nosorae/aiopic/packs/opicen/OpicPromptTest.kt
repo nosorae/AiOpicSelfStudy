@@ -27,7 +27,7 @@ class OpicPromptTest {
     @Test
     fun `F5_5 평가할 수 없는 답변은 이유 코드와 빈 값으로 읽힌다`() {
         val response = Json.decodeFromString<AnswerResponse>(
-            """{"transcript":"","corrections":[],"upgrades":[],"tenseConsistent":false,"sentenceCount":0,"wordsPerMinute":0,"pauses":[],"pronunciation":"","score":0,"unscorableReason":"too_short"}""",
+            """{"transcript":"","corrections":[],"upgrades":[],"tenseConsistent":false,"sentenceCount":0,"wordsPerMinute":0,"pauses":[],"pronunciation":"","score":0,"contentFixes":[],"finalScript":"","unscorableReason":"too_short"}""",
         )
 
         assertEquals(UnscorableReason.TooShort, response.unscorableReason)
@@ -58,7 +58,7 @@ class OpicPromptTest {
         val optional = setOf("roleplayQuestionCount", "unscorableReason")
 
         assertEquals(
-            setOf("transcript", "corrections", "upgrades", "tenseConsistent", "sentenceCount", "wordsPerMinute", "pauses", "pronunciation", "score") + optional,
+            setOf("transcript", "corrections", "upgrades", "tenseConsistent", "sentenceCount", "wordsPerMinute", "pauses", "pronunciation", "score", "contentFixes", "finalScript") + optional,
             schema.obj("properties").keys,
         )
         assertEquals(schema.obj("properties").keys - optional, schema.strings("required"))
@@ -70,6 +70,20 @@ class OpicPromptTest {
 
         assertEquals("integer", correction.obj("properties", "deducted").getValue("type").jsonPrimitive.content)
         assertEquals(setOf("original", "corrected", "deducted"), correction.strings("required"))
+    }
+
+    @Test
+    fun `217 답변 분석 스키마는 내용 교정마다 원문과 어색한 점과 고친 문장을 꼭 받는다`() {
+        val fix = OpicPrompt.Answer.responseSchema.obj("properties", "contentFixes", "items")
+
+        assertEquals(setOf("original", "problem", "corrected"), fix.strings("required"))
+    }
+
+    @Test
+    fun `217 답변 분석 응답 예시의 내용 교정과 최종 스크립트를 읽는다`() {
+        val response = Json.decodeFromString<AnswerResponse>(ANSWER_FIXTURE)
+
+        assertEquals("Last year I move to Seoul." to true, response.contentFixes.single().original to response.finalScript.startsWith("I live in"))
     }
 
     @Test
@@ -116,7 +130,9 @@ class OpicPromptTest {
               "wordsPerMinute": 112.5,
               "pauses": [{"startSeconds": 4.2, "lengthSeconds": 1.8}],
               "pronunciation": "Final consonants are often dropped.",
-              "score": 55
+              "score": 55,
+              "contentFixes": [{"original": "Last year I move to Seoul.", "problem": "집을 묘사하라는 질문에 이사 이야기로 넘어갔다.", "corrected": "I moved into this apartment last year when I came to Seoul."}],
+              "finalScript": "I live in an apartment in Seoul. I moved into this place last year when I came here for work."
             }
         """
 

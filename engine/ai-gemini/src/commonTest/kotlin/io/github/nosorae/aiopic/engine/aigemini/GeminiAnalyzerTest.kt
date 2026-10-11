@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.engine.aigemini
 
+import io.github.nosorae.aiopic.engine.answer.model.ContentFix
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
@@ -92,6 +93,33 @@ class GeminiAnalyzerTest {
         )
         assertTrue(feedback.transcript.startsWith("Hi, my name is Alex"))
         assertIs<Pronunciation.Evaluated>(feedback.pronunciation)
+    }
+
+    @Test
+    fun `217 내용 교정과 최종 스크립트를 피드백에 담는다`() = runTest {
+        val text = Json.parseToJsonElement(realAnswerText).jsonObject.let { answer ->
+            buildJsonObject {
+                answer.forEach { (key, value) -> put(key, value) }
+                putJsonArray("contentFixes") {
+                    addJsonObject {
+                        put("original", "I usually work from home")
+                        put("problem", "왜 집에서 일하는지 이유가 없다.")
+                        put("corrected", "I usually work from home because my team is spread across cities.")
+                    }
+                }
+                put("finalScript", "Hi, my name is Alex.")
+            }.toString()
+        }
+
+        val feedback = assertIs<AnalysisResult.Success<Feedback>>(analyzer(ok(envelope(text))).analyze(model, prompt, question, recording)).value
+        assertEquals(listOf("I usually work from home") to "Hi, my name is Alex.", feedback.contentFixes.map { it.original } to feedback.finalScript)
+    }
+
+    @Test
+    fun `217 두 항목이 없는 옛 응답은 빈 목록과 null 로 읽는다`() = runTest {
+        val feedback = assertIs<AnalysisResult.Success<Feedback>>(analyzer(ok(GeminiFixtures.ANSWER)).analyze(model, prompt, question, recording)).value
+
+        assertEquals(emptyList<ContentFix>() to null, feedback.contentFixes to feedback.finalScript)
     }
 
     @Test

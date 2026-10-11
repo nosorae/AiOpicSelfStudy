@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.packs.opicen
 
+import io.github.nosorae.aiopic.engine.answer.model.ContentFix
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.answer.model.Upgrade
 import kotlinx.serialization.Serializable
@@ -21,6 +22,10 @@ data class AnswerResponse(
     val roleplayQuestionCount: Int? = null,
     val pronunciation: String,
     val score: Int,
+    /** 내용 교정(#217). */
+    val contentFixes: List<ContentFix>,
+    /** 표현과 내용을 고친 최종 영어 답변(#217). */
+    val finalScript: String,
     /** 평가할 수 없을 때만 온다(F5.5). */
     val unscorableReason: UnscorableReason? = null,
 )
