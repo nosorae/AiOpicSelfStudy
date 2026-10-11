@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -76,6 +77,7 @@ fun HistoryScreen(
     onIntent: (HistoryIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val currentOnIntent by rememberUpdatedState(onIntent)
     // ponytail: 필터는 이 화면 안의 보기 상태라 ViewModel 대신 rememberSaveable 에 둔다. 다른 화면이 필터를 알아야 하면 UiState 로 옮긴다.
     var filter by rememberSaveable { mutableStateOf(HistoryFilter.All) }
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.history_title)) }) {
@@ -129,7 +131,7 @@ fun HistoryScreen(
                             )
                             // 지난번에 본 것보다 오른 점수를 처음 볼 때 점수 둘레에 작은 축하를 한다(#198). 줄이 화면에 들어올 때 터지고, 그때 본 표시를 남긴다.
                             if (weakness.rose) {
-                                LaunchedEffect(weakness.score) { onIntent(HistoryIntent.MarkWeaknessSeen(weakness)) }
+                                LaunchedEffect(weakness.score) { currentOnIntent(HistoryIntent.MarkWeaknessSeen(weakness)) }
                                 MontageCelebration(
                                     MontageCelebrationSize.Small,
                                     Modifier.matchParentSize().wrapContentSize(unbounded = true).requiredSize(MontageSpacing.spacing48 * 2),
