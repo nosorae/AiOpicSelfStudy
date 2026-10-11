@@ -16,6 +16,7 @@ import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
 import io.github.nosorae.aiopic.engine.answer.analysis.AnswerAnalysisHandler
 import io.github.nosorae.aiopic.engine.answer.analysis.GradeRequest
 import io.github.nosorae.aiopic.engine.answer.analysis.SessionGradeHandler
+import io.github.nosorae.aiopic.engine.answer.analysis.requeuePending
 import io.github.nosorae.aiopic.engine.answer.check.choose
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
@@ -200,7 +201,7 @@ interface AppGraph {
 
     @SingleIn(AppScope::class)
     @Provides
-    fun storeReads(store: OpicStore): StoreReads = StoreReads(store)
+    fun storeReads(store: OpicStore, queue: WorkQueue): StoreReads = StoreReads(store, queue)
 
     @Provides fun examSessionSource(reads: StoreReads): ExamSessionSource = reads
 
@@ -504,3 +505,9 @@ private object NoTwoStepPath : Transcriber, TranscriptAnalyzer {
 
     override suspend fun analyze(model: ModelInfo, prompt: Prompt, question: Question, transcript: Transcript): AnalysisResult<TextAnalysis> = AnalysisResult.Failed(AnalysisError.Rejected)
 }
+
+/**
+ * 앱을 켤 때 앱 틀이 한 번 부른다. 기다림인데 대기열에 없는 답변과 등급 요청을 다시 넣어(#203) 리포트가 끝없이 기다리지 않게 한다.
+ * 대기열이 그래프보다 먼저 만들어져 그래프에 없어서 앱 틀이 넘긴다.
+ */
+suspend fun AppGraph.requeuePendingAnalysis(queue: WorkQueue) = requeuePending(opicStore, queue)

@@ -58,7 +58,10 @@ class IosShell {
         // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다. 앱이 떠 있는 동안만 보낸다(F5.1).
         workQueue = workQueue,
         gemini = debugGeminiClient(),
-    ).apply { registerDebugPanels(queue = workQueue::pending, audio = ::audioSessionRows) }
+    ).apply {
+        registerDebugPanels(queue = workQueue::pending, audio = ::audioSessionRows)
+        MainScope().launch { requeuePendingAnalysis(workQueue) }
+    }
 
     private val haptics = graph.settings.haptics(iosHaptics())
 

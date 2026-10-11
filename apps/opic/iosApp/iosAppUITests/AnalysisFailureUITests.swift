@@ -22,7 +22,7 @@ final class AnalysisFailureUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["답변 리포트"].waitForExistence(timeout: 10), "Next 뒤 답변 리포트가 보이지 않는다")
         let retry = app.tag("answer-retry")
         XCTAssertTrue(retry.waitForExistence(timeout: 30), "분석이 실패했는데 다시 분석하기 버튼이 보이지 않는다")
-        XCTAssertTrue(label(containing: "분석하지 못했어요").exists, "실패 이유가 보이지 않는다")
+        XCTAssertTrue(label(containing: "분석하지 못했습니다").exists, "실패 이유가 보이지 않는다")
         attach("답변 분석 실패")
 
         // 다시 보내도 가짜 응답이라 또 실패하지만, 다시 보냈다가 실패로 돌아오는지 본다.
@@ -52,7 +52,7 @@ final class AnalysisFailureUITests: XCTestCase {
         }
         XCTAssertTrue(app.staticTexts["회차 리포트"].waitForExistence(timeout: 15), "회차 리포트로 넘어가지 않았다")
         XCTAssertTrue(app.tag("session-retry").waitForExistence(timeout: 60), "답변 분석이 실패했는데 다시 분석하기 버튼이 보이지 않는다")
-        XCTAssertTrue(label(containing: "분석하지 못했어요").exists, "실패한 답변 수가 보이지 않는다")
+        XCTAssertTrue(label(containing: "분석하지 못했습니다").exists, "실패한 답변 수가 보이지 않는다")
         attach("회차 리포트 분석 실패")
     }
 

@@ -26,16 +26,22 @@ data class SessionReport(val session: ExamSession, val answers: List<Answer>, va
     val mixedModels: Boolean get() = models.size > 1
 
     /** 분석이 끝난 답변 수(평가 불가 포함). 회차 등급은 모든 답변이 끝나야 나와서, 기다리는 동안 이 수만큼 진행을 보인다. */
-    val analyzedCount: Int get() = answers.count { it.analysis != AnswerAnalysis.Pending }
+    val analyzedCount: Int get() = answers.count { it.analysis is AnswerAnalysis.Done || it.analysis is AnswerAnalysis.Unscorable }
+
+    /** 보냈지만 결과를 받지 못한 답변 수(#203). 하나라도 있으면 등급을 요청하지 않는다. */
+    val failedCount: Int get() = answers.count { it.analysis is AnswerAnalysis.Failed }
 
     /** 답변 분석은 다 끝났고 회차 등급만 기다리는 중. 등급은 모든 답변이 분석된 뒤에야 요청해서, 대기열에 있거나 모델이 내는 동안 이 상태다. */
-    val grading: Boolean get() = session.grade == null && answers.isNotEmpty() && analyzedCount == answers.size
+    val grading: Boolean get() = session.grade == null && !session.gradeFailed && answers.isNotEmpty() && analyzedCount == answers.size
+
+    /** 기다려도 더 나올 것이 없어 다시 분석하기를 보일 때(#203). */
+    val canRetry: Boolean get() = session.grade == null && (failedCount > 0 || session.gradeFailed)
 }
 
-/** 분석 대기 중이면 null 이다. */
+/** 분석 대기 중이거나 실패했으면 null 이다. */
 val AnswerAnalysis.analyzedBy: AnalyzedBy?
     get() = when (this) {
-        AnswerAnalysis.Pending -> null
+        AnswerAnalysis.Pending, is AnswerAnalysis.Failed -> null
         is AnswerAnalysis.Done -> analyzedBy
         is AnswerAnalysis.Unscorable -> analyzedBy
     }

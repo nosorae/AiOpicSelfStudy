@@ -82,6 +82,26 @@ class ReportScreenshotTest {
 
     @Test fun answer_pending() = answer(ReportSamples.answerPending, settleMillis = 0)
 
+    @Test fun answer_failed() = answer(ReportSamples.answerFailed)
+
+    @Test fun answer_failed_dark() = answer(ReportSamples.answerFailed, dark = true)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun answer_failed_fontScale200() = answer(ReportSamples.answerFailed)
+
+    @Config(qualifiers = "w360dp-h1000dp-xhdpi")
+    @Test
+    fun session_analysisFailed() = session(ReportSamples.analysisFailed)
+
+    @Test
+    fun `분석하지 못한 답변이 있으면 기다림 대신 실패 수와 다시 분석하기를 보인다`() {
+        show { SessionReport(ReportSamples.analysisFailed) }
+        rule.onNodeWithText("답변 1개를 분석하지 못했습니다", substring = true).assertExists()
+        rule.onNodeWithText("다시 분석하기").assertExists()
+        rule.onNodeWithText("예상 등급을 내고 있습니다", substring = true).assertDoesNotExist()
+    }
+
     @Test
     fun `등급 구슬이 눈금 위로 미끄러져 멈춘다`() = assertMoves { SessionReport(ReportSamples.mixedModels) }
 
@@ -98,7 +118,7 @@ class ReportScreenshotTest {
     fun `동작 줄이기면 분석 대기 점이 모인 채 멈춘다`() = assertStill { AnswerReport(ReportSamples.answerPending) }
 
     @Composable
-    private fun SessionReport(state: SessionReportUiState) = SessionReportScreen(state = state, onOpenAnswer = {})
+    private fun SessionReport(state: SessionReportUiState) = SessionReportScreen(state = state, onOpenAnswer = {}, onRetryClick = {})
 
     @Composable
     private fun AnswerReport(state: AnswerReportUiState) = AnswerReportScreen(state = state, onIntent = {})

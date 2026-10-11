@@ -11,6 +11,7 @@ import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.answer.model.Upgrade
+import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -120,4 +121,13 @@ internal object ReportSamples {
     val answerUnscorable = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(flash, UnscorableReason.WrongLanguage)), names = names)
 
     val answerPending = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Pending), names = names)
+
+    /** 연결이 끊겨 결과를 받지 못했다(#203). */
+    val answerFailed = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Failed(AnalysisError.Retryable)), names = names)
+
+    /** 답변 7개 중 하나를 분석하지 못해 등급을 요청하지 않았다(#203). */
+    val analysisFailed = report(
+        List(7) { answer(it, if (it == 6) AnswerAnalysis.Failed(AnalysisError.Rejected) else AnswerAnalysis.Done(flash, feedback)) },
+        grade = null,
+    )
 }

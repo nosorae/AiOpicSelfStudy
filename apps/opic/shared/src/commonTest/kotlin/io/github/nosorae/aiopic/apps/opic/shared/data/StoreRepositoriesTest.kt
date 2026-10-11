@@ -62,7 +62,7 @@ class StoreRepositoriesTest {
     private val db = inMemoryDatabase()
     private val store = OpicStore(db)
     private val queue = FakeWorkQueue()
-    private val reads = StoreReads(store)
+    private val reads = StoreReads(store, queue)
 
     private val settings = AppSettings.inMemory()
 
