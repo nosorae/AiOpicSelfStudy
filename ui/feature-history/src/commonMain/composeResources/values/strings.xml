@@ -9,7 +9,10 @@
     <string name="history_filter_practice">연습</string>
     <string name="history_practice">%1$s 연습</string>
     <string name="history_practice_pending">분석 중</string>
-    <string name="history_practice_pending_caption">점수와 교정을 분석하고 있습니다</string>
+    <string name="history_practice_queued">차례가 되면 점수와 교정을 분석합니다</string>
+    <string name="history_practice_running">점수와 교정을 분석하고 있습니다</string>
+    <string name="history_practice_waiting_network">인터넷이 연결되면 바로 분석합니다</string>
+    <string name="history_practice_retry">결과를 받지 못해 곧 다시 보냅니다</string>
     <string name="history_practice_failed">분석 실패</string>
     <string name="history_practice_failed_caption">눌러서 이유를 보고 다시 분석할 수 있습니다</string>
     <string name="history_practice_unscorable">평가할 수 없음</string>

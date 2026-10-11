@@ -24,6 +24,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import io.github.nosorae.aiopic.ui.design.MontageChip
 import io.github.nosorae.aiopic.ui.design.MontageChipVariant
@@ -179,15 +180,27 @@ private fun SessionRow(row: HistorySession, onClick: () -> Unit, modifier: Modif
     }
 }
 
-/** 연습 한 줄. 제목에 "연습"을 붙여 회차 줄과 구분하고, 오른쪽에 점수를 둔다. 기다리는 동안은 작은 물결과 무엇이 나오는지를 보인다. */
+/**
+ * 연습 한 줄. 제목에 "연습"을 붙여 회차 줄과 구분하고, 오른쪽에 점수를 둔다.
+ * 기다리는 동안은 작은 물결과 함께 분석 작업 표(#205)가 말하는 지금 일(차례, 분석 중, 연결 기다림, 다시 보냄)과 무엇이 나오는지를 보인다.
+ */
 @Composable
 private fun PracticeRow(row: HistoryPractice, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val analysis = row.analysis
     MontageListCell(
         title = stringResource(Res.string.history_practice, row.typeName),
         caption = when (analysis) {
-            AnswerAnalysis.Pending -> stringResource(Res.string.history_practice_pending_caption)
+            AnswerAnalysis.Pending -> stringResource(
+                when (row.job) {
+                    JobState.Running -> Res.string.history_practice_running
+                    JobState.WaitingNetwork -> Res.string.history_practice_waiting_network
+                    JobState.RetryScheduled -> Res.string.history_practice_retry
+                    else -> Res.string.history_practice_queued
+                },
+            )
+
             is AnswerAnalysis.Failed -> stringResource(Res.string.history_practice_failed_caption)
+
             is AnswerAnalysis.Done, is AnswerAnalysis.Unscorable -> stringResource(Res.string.history_models, row.model.orEmpty())
         },
         chevron = true,

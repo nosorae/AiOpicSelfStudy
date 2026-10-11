@@ -3,6 +3,7 @@ package io.github.nosorae.aiopic.ui.featurehistory
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -24,7 +25,7 @@ internal object HistorySamples {
     val filled = HistoryUiState(
         loading = false,
         entries = listOf(
-            HistoryPractice("p3", "롤플레이 문제 해결", null, AnswerAnalysis.Pending),
+            HistoryPractice("p3", "롤플레이 문제 해결", null, AnswerAnalysis.Pending, JobState.Running),
             HistorySession(ExamSession(id = "s4", status = ExamStatus.Finished), listOf(FLASH), answered = 7, analyzed = 4, number = 4),
             HistoryPractice("p2", "과거 경험", FLASH, scored(72)),
             HistorySession(session("s3", "IH", "IH"), listOf(FLASH), number = 3),

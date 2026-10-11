@@ -13,6 +13,8 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureRoboImage
+import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
@@ -80,6 +82,13 @@ class HistoryScreenshotTest {
         rule.onNodeWithTag("history-filter-exam").performClick()
         rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
         rule.onAllNodesWithTag("history-practice").assertCountEquals(0)
+    }
+
+    @Test
+    fun `F7_4 연결을 기다리는 연습은 연결되면 분석한다고 보인다`() {
+        val row = HistoryPractice("p", "습관", null, AnswerAnalysis.Pending, JobState.WaitingNetwork)
+        show(HistoryUiState(loading = false, entries = listOf(row)))
+        rule.onNodeWithText("인터넷이 연결되면 바로 분석합니다").assertExists()
     }
 
     @Test

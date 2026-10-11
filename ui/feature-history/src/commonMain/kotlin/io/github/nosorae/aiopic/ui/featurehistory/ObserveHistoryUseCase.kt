@@ -3,6 +3,8 @@ package io.github.nosorae.aiopic.ui.featurehistory
 import dev.zacsweers.metro.Inject
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobKind
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.port.ModelCatalog
 import io.github.nosorae.aiopic.engine.answer.weakness.weaknessScores
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
@@ -31,9 +33,9 @@ data class HistorySession(
 
 /**
  * 한 문항 연습 답변 한 줄(F7.4). 연습은 한 문항이 한 단위라 답변 하나가 한 줄이다. [analysis] 로 점수, 분석 중, 실패를 가른다.
- * [model] 은 분석한 모델의 표시 이름이고 분석이 끝나기 전에는 null 이다.
+ * [model] 은 분석한 모델의 표시 이름이고 분석이 끝나기 전에는 null 이다. [job] 은 분석 작업 표(#205)의 상태로, 기다리는 동안 무엇을 기다리는지 가른다.
  */
-data class HistoryPractice(val answerId: String, val typeName: String, val model: String?, val analysis: AnswerAnalysis) : HistoryEntry
+data class HistoryPractice(val answerId: String, val typeName: String, val model: String?, val analysis: AnswerAnalysis, val job: JobState? = null) : HistoryEntry
 
 /** 문항 유형별 약점 한 줄. [typeName] 은 사용자에게 보일 유형 이름이다. */
 data class HistoryWeakness(val typeName: String, val score: Int)
@@ -55,7 +57,8 @@ class ObserveHistoryUseCase(
     private val modelCatalog: ModelCatalog,
     private val gradeScale: GradeScale,
 ) {
-    operator fun invoke(): Flow<History> = combine(store.sessions(), store.answers(), store.flags()) { sessions, answers, flags ->
+    operator fun invoke(): Flow<History> = combine(store.sessions(), store.answers(), store.flags(), store.jobs()) { sessions, answers, flags, jobs ->
+        val answerJobs = jobs.filter { it.kind == JobKind.Answer }.associate { it.targetId to it.state }
         val bySession = answers.groupBy { it.examSessionId }
         val position = answers.withIndex().associate { (index, answer) -> answer.id to index }
         // ponytail: 저장소에 시각이 없어 답변이 저장된 순서로 시간을 대신한다. 회차는 첫 답변 자리에, 답변이 없는 회차는 앞 회차 바로 뒤에 둔다.
@@ -74,7 +77,13 @@ class ObserveHistoryUseCase(
             )
         }
         val practices = answers.filter { it.examSessionId == null }.map { answer ->
-            position.getValue(answer.id) to HistoryPractice(answer.id, answer.question.type.name(), answer.analysis.analyzedBy?.displayName(), answer.analysis)
+            position.getValue(answer.id) to HistoryPractice(
+                answer.id,
+                answer.question.type.name(),
+                answer.analysis.analyzedBy?.displayName(),
+                answer.analysis,
+                answerJobs[answer.id],
+            )
         }
         History(
             entries = (exams + practices).sortedBy { it.first }.map { it.second }.asReversed(),
