@@ -19,6 +19,8 @@ enum UITestLaunch {
     static let offline = ["-debug_tools.offline", "YES"]
     /** 녹음을 실은 요청(분석, 등급)이 분석 작업의 시간 제한(2분)보다 오래 멈춘다. */
     static let stall = ["-debug_tools.stall", "YES"]
+    /** 녹음 분석 요청만 시스템 백그라운드 전송으로 이 Mac 의 테스트 서버(127.0.0.1:8765)에 보낸다. */
+    static let localUpload = ["-debug_tools.local_upload", "YES"]
 }
 
 extension XCUIApplication {
