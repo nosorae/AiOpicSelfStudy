@@ -18,9 +18,11 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.IOException
 import kotlinx.coroutines.withContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
@@ -98,6 +100,26 @@ class DebugWiringTest {
 
     @Test
     fun `빈 모듈에서는 가짜 Gemini 스위치를 켜도 가짜 엔진이 없다`() {
-        assertNull(fakeHttpEngine(OK_RESPONSE))
+        assertNull(fakeHttpEngine { OK_RESPONSE })
+    }
+
+    @Test
+    fun `끊김 한 번 스위치는 첫 분석 요청만 연결 오류로 끊고 키 확인과 출제는 그대로 둔다`() {
+        val gemini = FakeGemini(dropOnce = { true }, offline = { false })
+        val analysis = """{"contents":[{"parts":[{"inlineData":{}}]}]}"""
+
+        assertEquals(OK_RESPONSE, gemini.respond("Reply with OK."))
+        assertFailsWith<IOException> { gemini.respond(analysis) }
+        assertEquals(ANALYSIS_RESPONSE, gemini.respond(analysis))
+        assertEquals(ANALYSIS_RESPONSE, gemini.respond(analysis))
+    }
+
+    @Test
+    fun `계속 끊김 스위치는 분석 요청을 모두 연결 오류로 끊는다`() {
+        val gemini = FakeGemini(dropOnce = { false }, offline = { true })
+        val analysis = """{"inlineData":{}}"""
+
+        repeat(4) { assertFailsWith<IOException> { gemini.respond(analysis) } }
+        assertEquals(OK_RESPONSE, gemini.respond("Reply with OK."))
     }
 }

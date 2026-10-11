@@ -7,6 +7,7 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
+import io.ktor.client.engine.mock.toByteArray
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.statement.bodyAsText
@@ -73,7 +74,10 @@ private fun OutgoingContent.text(): String = when (this) {
 }
 
 /**
- * 보내지 않고 늘 200 과 [json] 을 돌려주는 HTTP 엔진. 앱이 디버깅 스위치로 실제 서버 대신 쓴다.
+ * 보내지 않고 요청 본문으로 [json] 이 고른 JSON 을 200 으로 돌려주는 HTTP 엔진. 앱이 디버깅 스위치로 실제 서버 대신 쓴다.
+ * [json] 이 예외를 던지면 연결이 끊긴 것처럼 요청이 그 예외로 실패한다.
  * 가짜 응답 엔진이 이 모듈에만 있어서 릴리스 빌드(debug-noop, 늘 null)에는 실리지 않는다.
  */
-public fun fakeHttpEngine(json: String): HttpClientEngine? = MockEngine { respond(json, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) }
+public fun fakeHttpEngine(json: (requestBody: String) -> String): HttpClientEngine? = MockEngine {
+    respond(json(it.body.toByteArray().decodeToString()), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+}

@@ -15,6 +15,7 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.api.createClientPlugin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.io.IOException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,6 +27,8 @@ internal object DebugSwitches {
     val fakeGemini = DebugTools.switch("fake_gemini", "Fake Gemini (applies after restart)")
     val slowResponse = DebugTools.switch("slow_response", "Slow Gemini response (3 s)")
     val recordFail = DebugTools.switch("record_fail", "Recording chunk write fails")
+    val dropOnce = DebugTools.switch("drop_once", "Fake Gemini: first analysis drops, then succeeds")
+    val offline = DebugTools.switch("offline", "Fake Gemini: every analysis drops")
 }
 
 /**
@@ -35,7 +38,7 @@ internal object DebugSwitches {
  */
 // ponytail: 가짜 여부는 클라이언트를 만들 때 한 번 읽는다. 스위치를 바꾸면 앱을 다시 시작해야 한다. 요청마다 바꿔야 하면 엔진을 감싼다.
 fun debugGeminiClient(
-    fakeEngine: HttpClientEngine? = if (DebugSwitches.fakeGemini.enabled) fakeHttpEngine(OK_RESPONSE) else null,
+    fakeEngine: HttpClientEngine? = if (DebugSwitches.fakeGemini.enabled) fakeHttpEngine(FakeGemini()::respond) else null,
     slow: () -> Boolean = { DebugSwitches.slowResponse.enabled },
     slowDelay: Duration = 3.seconds,
 ): GeminiClient {
@@ -47,6 +50,35 @@ fun debugGeminiClient(
 }
 
 internal const val OK_RESPONSE = """{"candidates":[{"content":{"parts":[{"text":"OK"}]}}]}"""
+
+/** 출력 검사를 통과하는 답변 분석 결과. 연결이 돌아온 뒤 분석이 끝나는지 볼 때 돌려준다. */
+internal const val ANALYSIS_RESPONSE =
+    """{"candidates":[{"content":{"parts":[{"text":"{\"transcript\":\"I live in Seoul.\",\"corrections\":[],\"upgrades\":[],\"tenseConsistent\":true,\"sentenceCount\":1,\"wordsPerMinute\":120.0,\"pauses\":[],\"pronunciation\":\"Clear.\",\"score\":80}"}]}}]}"""
+
+/**
+ * 가짜 Gemini 의 응답(#203). 녹음을 실은 요청(답변 분석, 회차 등급)만 연결 끊김 스위치를 따르고, 키 확인과 출제는 늘 "OK" 다.
+ * [dropOnce] 면 첫 분석 요청은 연결 오류, 그 뒤로는 읽을 수 있는 분석 결과다. 연결이 잠깐 끊겼다 돌아온 경우다.
+ * [offline] 이면 분석 요청이 모두 연결 오류다. 대기열이 다시 보내기를 다 써도 연결되지 않은 경우다.
+ * 실제 기기 네트워크를 끊지 않고 같은 길(연결 오류, 실패 저장, 대기열 다시 보내기)을 탄다.
+ */
+// ponytail: 끊김 한 번은 프로세스마다 한 번이다. 대기열이 한 번에 하나만 보내서 잠금 없이 센다.
+internal class FakeGemini(
+    private val dropOnce: () -> Boolean = { DebugSwitches.dropOnce.enabled },
+    private val offline: () -> Boolean = { DebugSwitches.offline.enabled },
+) {
+    private var dropped = false
+
+    fun respond(requestBody: String): String {
+        if ("inlineData" !in requestBody) return OK_RESPONSE
+        if (offline()) throw IOException("debug: offline")
+        if (!dropOnce()) return OK_RESPONSE
+        if (!dropped) {
+            dropped = true
+            throw IOException("debug: connection dropped once")
+        }
+        return ANALYSIS_RESPONSE
+    }
+}
 
 /** 녹음 시작과 끝을 디버깅 로그에 남긴다. [fail] 이 켜져 있으면 녹음은 그대로 하고 멈출 때 조각 쓰기에 실패했다고 알린다. */
 fun Recorder.withDebugTools(fail: () -> Boolean = { DebugSwitches.recordFail.enabled }): Recorder {
