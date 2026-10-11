@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.libs.workqueue.api
 
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -16,15 +17,25 @@ class IosWorkQueueTest {
     private val drains = mutableListOf<Long>()
 
     /** 부를 때마다 차례로 돌려준다. 다 쓰면 null(남은 작업 없음)이다. */
-    private val answers = ArrayDeque<() -> Duration?>()
+    private val answers = ArrayDeque<suspend () -> Duration?>()
+
+    /** 받은 뒤로 시간 순서. 앱이 뒤로 가도 끝낼 시간을 받고(begin) 돌려준(end) 기록이다. */
+    private val extraTime = mutableListOf<String>()
+    private var expire: (() -> Unit)? = null
 
     private fun TestScope.queue() = IosWorkQueue(
         drain = {
             drains += testScheduler.currentTime
+            extraTime += "drain"
             answers.removeFirstOrNull()?.invoke()
         },
         scope = backgroundScope,
         network = online,
+        extraTime = { onExpire ->
+            extraTime += "begin"
+            expire = onExpire
+            { extraTime += "end" }
+        },
     ).also { runCurrent() }
 
     @Test
@@ -91,5 +102,26 @@ class IosWorkQueueTest {
         runCurrent()
 
         assertEquals(listOf(0L, 30_000L), drains)
+    }
+
+    @Test
+    fun `216 비우는 동안은 앱이 뒤로 가도 끝낼 시간을 받아 두고 끝나면 돌려준다`() = runTest {
+        queue()
+
+        assertEquals(listOf("begin", "drain", "end"), extraTime)
+    }
+
+    @Test
+    fun `216 받은 시간이 끝나면 보내던 비우기를 멈추고 대기열은 나중에 다시 비운다`() = runTest {
+        answers += { awaitCancellation() }
+        queue()
+
+        expire!!.invoke()
+        runCurrent()
+        advanceTimeBy(1.minutes)
+        runCurrent()
+
+        assertEquals(listOf(0L, 30_000L), drains)
+        assertEquals(listOf("begin", "drain", "end", "begin", "drain", "end"), extraTime)
     }
 }
