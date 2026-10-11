@@ -13,6 +13,7 @@ import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.ui.featurereport.flag.FakeFlagStore
 import io.github.nosorae.aiopic.ui.featurereport.flag.MarkCorrectionWrongUseCase
 import io.github.nosorae.aiopic.ui.featurereport.flag.ObserveAnswerReportUseCase
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -37,12 +38,75 @@ class AnswerReportViewModelTest {
 
     private val flagStore = FakeFlagStore()
 
-    private fun viewModel(answerId: String, store: FakeReportStore) = AnswerReportViewModel(
+    private val tts = FakeTts()
+
+    private fun viewModel(answerId: String, store: FakeReportStore, voice: ScriptVoice = FakeScriptVoice()) = AnswerReportViewModel(
         answerId,
         ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore, store, FakeCatalog),
         MarkCorrectionWrongUseCase(flagStore),
         RetryAnswerAnalysisUseCase(store),
+        ListenScriptUseCase(voice, tts),
     )
+
+    private fun scripted() = answers("s1", 1).map { answer ->
+        val analysis = done()
+        answer.copy(analysis = analysis.copy(feedback = analysis.feedback.copy(finalScript = "I went to the park.")))
+    }
+
+    @Test
+    fun `217 최종 스크립트 듣기를 누르면 자연스러운 음성을 받는 동안 준비 중이고 읽는 동안 듣는 중이다`() = runTest(dispatcher) {
+        val voice = FakeScriptVoice(ready = CompletableDeferred())
+        val viewModel = viewModel("a0", FakeReportStore(answers = scripted()), voice)
+        advanceUntilIdle()
+
+        viewModel.onIntent(AnswerReportIntent.ListenScript)
+        advanceUntilIdle()
+        assertEquals(ScriptPlayback.Preparing, viewModel.uiState.value.scriptPlayback)
+        voice.ready.complete(Unit)
+        advanceUntilIdle()
+        assertEquals(ScriptPlayback.Playing, viewModel.uiState.value.scriptPlayback)
+        tts.finish()
+        advanceUntilIdle()
+
+        assertEquals(ScriptPlayback.Idle, viewModel.uiState.value.scriptPlayback)
+        assertEquals(listOf("I went to the park."), voice.asked)
+        assertEquals("I went to the park." to 1, tts.spoken.single().let { it.first to it.second?.size })
+    }
+
+    @Test
+    fun `217 듣는 중에 다시 누르면 읽기를 멈춘다`() = runTest(dispatcher) {
+        val viewModel = viewModel("a0", FakeReportStore(answers = scripted()))
+        advanceUntilIdle()
+        viewModel.onIntent(AnswerReportIntent.ListenScript)
+        advanceUntilIdle()
+
+        viewModel.onIntent(AnswerReportIntent.ListenScript)
+        advanceUntilIdle()
+
+        assertEquals(ScriptPlayback.Idle, viewModel.uiState.value.scriptPlayback)
+        assertEquals(1, tts.spoken.size)
+    }
+
+    @Test
+    fun `217 자연스러운 음성을 받지 못하면 기기 음성으로 읽는다`() = runTest(dispatcher) {
+        val viewModel = viewModel("a0", FakeReportStore(answers = scripted()), FakeScriptVoice(audio = null))
+        advanceUntilIdle()
+
+        viewModel.onIntent(AnswerReportIntent.ListenScript)
+        advanceUntilIdle()
+
+        assertEquals("I went to the park." to null, tts.spoken.single())
+    }
+
+    @Test
+    fun `217 최종 스크립트를 복사하면 복사했다는 표시가 남는다`() = runTest(dispatcher) {
+        val viewModel = viewModel("a0", FakeReportStore(answers = scripted()))
+        advanceUntilIdle()
+
+        viewModel.onIntent(AnswerReportIntent.ScriptCopied)
+
+        assertEquals(true, viewModel.uiState.value.scriptCopied)
+    }
 
     /** a0 은 40점에 교정 둘, a1 은 80점에 교정 하나. 문항 유형이 같다. */
     private fun corrected() = answers("s1", 2).mapIndexed { i, answer ->
