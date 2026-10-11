@@ -4,9 +4,9 @@
 
 서버는 없다. 사용자가 자기 Gemini API 키를 넣고, 녹음은 기기에만 남는다. Compose Multiplatform 으로 두 플랫폼을 같은 코드로 만든다.
 
-| 키 넣기 | 문항 | 회차 리포트 | 답변 리포트 | 기록 |
-|---|---|---|---|---|
-| <img src="docs/images/screen-key.png" width="150"> | <img src="docs/images/screen-question.png" width="150"> | <img src="docs/images/screen-report-session.png" width="150"> | <img src="docs/images/screen-report-answer.png" width="150"> | <img src="docs/images/screen-history.png" width="150"> |
+| 키 넣기 | 모의고사 탭 | 연습 탭 | 문항 | 회차 리포트 | 답변 리포트 | 기록 |
+|---|---|---|---|---|---|---|
+| <img src="docs/images/screen-key.png" width="150"> | <img src="docs/images/screen-exam-tab.png" width="150"> | <img src="docs/images/screen-practice-tab.png" width="150"> | <img src="docs/images/screen-question.png" width="150"> | <img src="docs/images/screen-report-session.png" width="150"> | <img src="docs/images/screen-report-answer.png" width="150"> | <img src="docs/images/screen-history.png" width="150"> |
 
 ## 모의시험 한 회
 
@@ -57,7 +57,7 @@ sequenceDiagram
     end
     M->>M: 몇 초마다 조각 파일로 쓴다
     Note over U,M: 앱 강제 종료. 저장된 회차와 녹음 조각이 남고 40분은 멈춘다
-    U->>V: 다시 켜서 홈의 "이어 보기"
+    U->>V: 다시 켜서 모의고사 탭의 "이어 보기"
     V->>R: 회차 읽기
     R-->>V: 같은 단계, 남은 시간, 다시 듣기 여부
     U->>V: Play
