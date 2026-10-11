@@ -163,9 +163,7 @@ class AnalysisJobs(
         store.save(job.copy(state = JobState.Running, updatedAt = clock.now()))
         val saved = SavedResponses({ store.response(job.kind, job.targetId, it) }, { stage, text -> store.saveResponse(job.kind, job.targetId, stage, text) })
         val error = try {
-            withTimeout(timeout) {
-                withContext(saved) { if (job.kind == JobKind.Answer) analyzeAnswer(job.targetId) else grade(job.targetId) }
-            }
+            withContext(saved) { if (job.kind == JobKind.Answer) analyzeAnswer(job.targetId) else grade(job.targetId) }
         } catch (_: TimeoutCancellationException) {
             AnalysisError.Retryable
         } catch (e: CancellationException) {
@@ -210,7 +208,8 @@ class AnalysisJobs(
         val answer = store.answers().first().firstOrNull { it.id == answerId }
         if (answer == null || answer.analysis !is AnswerAnalysis.Pending) return null
         val (model, prompt, recording) = answerRequest(answer)
-        return when (val result = router.analyze(answer, model, prompt, recording)) {
+        // ponytail: 시간 제한은 포트 호출만 감싼다. 앞뒤 DB 읽기, 쓰기가 제한에 걸려 중간에 끊기지 않게 한다. 포트 안의 원문 저장은 제한 안에 남는다.
+        return when (val result = withTimeout(timeout) { router.analyze(answer, model, prompt, recording) }) {
             is AnalysisResult.Success -> null.also { store.save(result.value) }
 
             // 경로 고르기는 평가 불가를 답변에 넣어 Success 로 돌려준다. 여기 오지 않는다.
@@ -226,7 +225,7 @@ class AnalysisJobs(
         if (session.grade != null) return null
         val answered = analyzedAnswers(session) ?: return null
         val (model, prompt, scale, recordings) = gradeRequest(answered)
-        return when (val result = grader.grade(model, prompt, scale, recordings)) {
+        return when (val result = withTimeout(timeout) { grader.grade(model, prompt, scale, recordings) }) {
             // 등급을 기다리는 동안 회차가 바뀌었을 수 있어 최신 값에 등급만 얹는다.
             is AnalysisResult.Success -> null.also { store.save((store.session(sessionId).first() ?: session).copy(grade = result.value, gradeError = null)) }
 
