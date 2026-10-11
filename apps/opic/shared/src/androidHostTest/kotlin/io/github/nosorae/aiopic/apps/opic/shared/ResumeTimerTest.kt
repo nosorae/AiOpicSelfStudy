@@ -165,6 +165,6 @@ class ResumeTimerTest {
         )[SessionReportViewModel::class].uiState.first { it.report != null }.report!!
         assertEquals(12, report.questionCount)
         assertEquals(1, report.answers.size)
-        assertEquals(11, report.timeShortCount)
+        assertEquals(11, report.unansweredCount)
     }
 }
