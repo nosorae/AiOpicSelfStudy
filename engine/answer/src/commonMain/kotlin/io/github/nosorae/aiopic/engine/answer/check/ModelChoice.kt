@@ -8,7 +8,7 @@ data class ModelChoice(val model: ModelInfo, val fellBackFrom: String?)
 
 /**
  * 고른 모델 id 로 쓸 모델을 정한다(F5.7, F5.8). 고르지 않았으면 기본 모델이다. 앱 업데이트로 목록에서 빠졌거나
- * 분석이 [io.github.nosorae.aiopic.engine.answer.port.AnalysisError.ModelUnavailable] 로 끝나 [unavailable] 이면 기본 모델로 돌린다.
+ * 분석이 [io.github.nosorae.aiopic.engine.session.model.AnalysisError.ModelUnavailable] 로 끝나 [unavailable] 이면 기본 모델로 돌린다.
  */
 fun ModelCatalog.choose(selectedId: String?, unavailable: Boolean = false): ModelChoice {
     val selected = models.firstOrNull { it.id == selectedId }

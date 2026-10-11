@@ -11,7 +11,7 @@ import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.answer.model.Upgrade
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -71,10 +71,15 @@ internal object ReportSamples {
         brokeAt = listOf(3),
     )
 
-    private fun report(answers: List<Answer>, status: ExamStatus = ExamStatus.Finished, grade: SessionGrade? = this.grade) = SessionReportUiState(
+    private fun report(
+        answers: List<Answer>,
+        status: ExamStatus = ExamStatus.Finished,
+        grade: SessionGrade? = this.grade,
+        gradeError: AnalysisError? = null,
+    ) = SessionReportUiState(
         loading = false,
         report = SessionReport(
-            session = ExamSession(id = "s1", level = 4, answerIds = answers.map { it.id }, status = status, grade = grade),
+            session = ExamSession(id = "s1", level = 4, answerIds = answers.map { it.id }, status = status, grade = grade, gradeError = gradeError),
             answers = answers,
             questionCount = 7,
             names = names,
@@ -130,4 +135,7 @@ internal object ReportSamples {
         List(7) { answer(it, if (it == 6) AnswerAnalysis.Failed(AnalysisError.Rejected) else AnswerAnalysis.Done(flash, feedback)) },
         grade = null,
     )
+
+    /** 답변은 다 분석했지만 키가 틀려 등급을 받지 못했다(#203). */
+    val gradeFailed = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null, gradeError = AnalysisError.InvalidKey)
 }

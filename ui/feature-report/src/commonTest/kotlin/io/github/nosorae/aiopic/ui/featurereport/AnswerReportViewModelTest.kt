@@ -2,7 +2,7 @@ package io.github.nosorae.aiopic.ui.featurereport
 
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Correction
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.answer.weakness.TypeWeakness
 import io.github.nosorae.aiopic.engine.answer.weakness.weaknessScores

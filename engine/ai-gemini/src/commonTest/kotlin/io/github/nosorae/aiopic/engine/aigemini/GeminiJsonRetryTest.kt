@@ -1,6 +1,6 @@
 package io.github.nosorae.aiopic.engine.aigemini
 
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording

@@ -102,6 +102,15 @@ class ReportScreenshotTest {
         rule.onNodeWithText("예상 등급을 내고 있습니다", substring = true).assertDoesNotExist()
     }
 
+    @Test fun session_gradeFailed() = session(ReportSamples.gradeFailed)
+
+    @Test
+    fun `등급을 키 때문에 받지 못했으면 키를 고치라는 이유와 다시 분석하기를 보인다`() {
+        show { SessionReport(ReportSamples.gradeFailed) }
+        rule.onNodeWithText("예상 등급을 내지 못했습니다. Gemini 키가 맞지 않습니다", substring = true).assertExists()
+        rule.onNodeWithText("다시 분석하기").assertExists()
+    }
+
     @Test
     fun `등급 구슬이 눈금 위로 미끄러져 멈춘다`() = assertMoves { SessionReport(ReportSamples.mixedModels) }
 
@@ -118,7 +127,7 @@ class ReportScreenshotTest {
     fun `동작 줄이기면 분석 대기 점이 모인 채 멈춘다`() = assertStill { AnswerReport(ReportSamples.answerPending) }
 
     @Composable
-    private fun SessionReport(state: SessionReportUiState) = SessionReportScreen(state = state, onOpenAnswer = {}, onRetryClick = {})
+    private fun SessionReport(state: SessionReportUiState) = SessionReportScreen(state = state, onOpenAnswer = {}, onIntent = {})
 
     @Composable
     private fun AnswerReport(state: AnswerReportUiState) = AnswerReportScreen(state = state, onIntent = {})

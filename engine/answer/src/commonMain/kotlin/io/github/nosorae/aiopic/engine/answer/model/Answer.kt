@@ -1,6 +1,6 @@
 package io.github.nosorae.aiopic.engine.answer.model
 
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.question.model.Question
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

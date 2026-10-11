@@ -1,7 +1,7 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
@@ -180,7 +180,7 @@ class SessionReportViewModelTest {
 
     @Test
     fun `203 등급을 내지 못했으면 등급 기다림을 끝내고 다시 분석하기를 보인다`() = runTest(dispatcher) {
-        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 2).copy(gradeFailed = true)), answers("s1", 2)))
+        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 2).copy(gradeError = AnalysisError.InvalidKey)), answers("s1", 2)))
         advanceUntilIdle()
 
         val report = viewModel.uiState.value.report!!
@@ -190,7 +190,7 @@ class SessionReportViewModelTest {
 
     @Test
     fun `203 다시 분석하기를 누르면 회차의 실패한 분석을 다시 보낸다`() = runTest(dispatcher) {
-        val store = FakeReportStore(listOf(session(level = 3, answers = 1).copy(gradeFailed = true)), answers("s1", 1))
+        val store = FakeReportStore(listOf(session(level = 3, answers = 1).copy(gradeError = AnalysisError.InvalidKey)), answers("s1", 1))
         val viewModel = viewModel(store)
         advanceUntilIdle()
 

@@ -7,7 +7,7 @@ import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.FakeDeafProvider
@@ -151,9 +151,10 @@ class SessionGradeHandlerTest {
         val handler = handler()
         (1..15).forEach { handler.handle("a$it") }
 
+        val saved = mutableListOf<AnalysisError?>()
         val outcomes = AnalysisError.entries.associateWith {
             gradeResult = AnalysisResult.Failed(it)
-            handler.handle(gradePayload("s1"))
+            handler.handle(gradePayload("s1")).also { saved += session().gradeError }
         }
 
         assertEquals(
@@ -166,7 +167,8 @@ class SessionGradeHandlerTest {
             outcomes,
         )
         assertNull(session().grade)
-        assertTrue(session().gradeFailed)
+        // 회차에 이유가 남아야 리포트가 키 오류와 연결 오류를 다르게 안내한다(#203).
+        assertEquals(AnalysisError.entries, saved)
     }
 
     @Test
@@ -194,7 +196,7 @@ class SessionGradeHandlerTest {
         retrySession(store, queue, "s1")
 
         assertEquals(AnswerAnalysis.Pending, store.answers("s1").first().first().analysis)
-        assertFalse(session().gradeFailed)
+        assertNull(session().gradeError)
         assertEquals(listOf("a1"), queue.ids)
 
         gradeResult = AnalysisResult.Success(grade)

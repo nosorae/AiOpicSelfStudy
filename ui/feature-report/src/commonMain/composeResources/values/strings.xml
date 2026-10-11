@@ -17,7 +17,7 @@
     <string name="status_pending">분석 대기 중</string>
     <string name="status_failed">분석하지 못했습니다</string>
     <string name="session_failed">답변 %1$d개를 분석하지 못했습니다. 녹음은 남아 있어 다시 보낼 수 있습니다.</string>
-    <string name="session_grade_failed">예상 등급을 내지 못했습니다. 답변 분석은 남아 있어 등급만 다시 요청합니다.</string>
+    <string name="session_grade_failed">예상 등급을 내지 못했습니다. %1$s</string>
     <string name="status_unscorable">평가할 수 없음, %1$s, %2$s</string>
     <string name="reason_silent">말소리가 없습니다</string>
     <string name="reason_wrong_language">시험 언어가 아닌 말로 답했습니다</string>

@@ -3,7 +3,7 @@ package io.github.nosorae.aiopic.engine.answer.analysis
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording
@@ -54,7 +54,7 @@ class SessionGradeHandler(
         return when (val result = grader.grade(model, prompt, scale, recordings)) {
             is AnalysisResult.Success -> {
                 // 등급을 기다리는 동안 회차가 바뀌었을 수 있어 최신 값에 등급만 얹는다.
-                store.save((store.session(sessionId).first() ?: session).copy(grade = result.value, gradeFailed = false))
+                store.save((store.session(sessionId).first() ?: session).copy(grade = result.value, gradeError = null))
                 WorkResult.Success
             }
 
@@ -62,7 +62,7 @@ class SessionGradeHandler(
 
             is AnalysisResult.Failed -> {
                 // 화면이 등급 기다림을 끝내고 다시 분석하기를 보이게 남긴다(#203). 다시 보내 받으면 등급이 덮는다.
-                store.save((store.session(sessionId).first() ?: session).copy(gradeFailed = true))
+                store.save((store.session(sessionId).first() ?: session).copy(gradeError = result.error))
                 if (result.error == AnalysisError.Retryable) WorkResult.Retry else WorkResult.Failure
             }
         }
@@ -77,7 +77,7 @@ class SessionGradeHandler(
  */
 suspend fun requestGradeIfReady(store: OpicStore, queue: WorkQueue, sessionId: String) {
     val session = store.session(sessionId).first() ?: return
-    if (session.grade != null || session.gradeFailed || analyzedAnswers(store, session) == null) return
+    if (session.grade != null || session.gradeError != null || analyzedAnswers(store, session) == null) return
     queue.enqueue(gradePayload(sessionId), gradePayload(sessionId))
 }
 
@@ -100,8 +100,8 @@ suspend fun retryAnalysis(store: OpicStore, queue: WorkQueue, answerId: String) 
 suspend fun retrySession(store: OpicStore, queue: WorkQueue, sessionId: String) {
     store.answers(sessionId).first().filter { it.analysis is AnswerAnalysis.Failed }.forEach { retryAnalysis(store, queue, it.id) }
     val session = store.session(sessionId).first() ?: return
-    if (!session.gradeFailed) return
-    store.save(session.copy(gradeFailed = false))
+    if (session.gradeError == null) return
+    store.save(session.copy(gradeError = null))
     requestGradeIfReady(store, queue, sessionId)
 }
 

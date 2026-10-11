@@ -44,7 +44,7 @@ val SessionGrade.range: String get() = if (low == high) low else "$low ~ $high"
 @Composable
 fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerId: String) -> Unit, modifier: Modifier = Modifier) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    SessionReportScreen(state = state, onOpenAnswer = onOpenAnswer, onRetryClick = { viewModel.onIntent(SessionReportIntent.RetryAnalysis) }, modifier = modifier)
+    SessionReportScreen(state = state, onOpenAnswer = onOpenAnswer, onIntent = viewModel::onIntent, modifier = modifier)
 }
 
 /**
@@ -54,13 +54,13 @@ fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerI
  * 보는 중에 등급이 나오면 구슬이 멈춘 뒤 큰 축하가 한 번 터진다.
  */
 @Composable
-fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, onRetryClick: () -> Unit, modifier: Modifier = Modifier) {
+fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, onIntent: (SessionReportIntent) -> Unit, modifier: Modifier = Modifier) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.session_title)) }) {
         val report = state.report
         when {
             state.loading -> Unit
             report == null -> Paragraph(stringResource(Res.string.session_not_found), secondary = true)
-            else -> SessionReportContent(report, onOpenAnswer, onRetryClick)
+            else -> SessionReportContent(report, onOpenAnswer) { onIntent(SessionReportIntent.RetryAnalysis) }
         }
     }
 }
@@ -133,10 +133,11 @@ private fun GradeHeader(report: SessionReport) {
             if (grade != null) {
                 Text(grade.range, style = typography.title1.bold, color = colors.foregroundNeutralStrong)
             } else {
+                val gradeError = report.session.gradeError
                 val waiting = if (report.failedCount > 0) {
                     stringResource(Res.string.session_failed, report.failedCount)
-                } else if (report.session.gradeFailed) {
-                    stringResource(Res.string.session_grade_failed)
+                } else if (gradeError != null) {
+                    stringResource(Res.string.session_grade_failed, stringResource(gradeError.text))
                 } else if (report.grading) {
                     stringResource(Res.string.session_grade_grading)
                 } else {
@@ -186,7 +187,7 @@ private fun AnswerRow(number: Int, answer: Answer, names: ReportNames, broke: Bo
 @Preview
 @Composable
 private fun SessionReportScreenPreview() {
-    MontageTheme { SessionReportScreen(state = ReportSamples.mixedModels, onOpenAnswer = {}, onRetryClick = {}) }
+    MontageTheme { SessionReportScreen(state = ReportSamples.mixedModels, onOpenAnswer = {}, onIntent = {}) }
 }
 
 /** 등급 구슬이 스프링으로 미끄러져 멈추는 데 걸리는 시간. 축하는 그 뒤에 터진다. */

@@ -43,7 +43,7 @@ class ReportHapticsTest {
     @Test
     fun `등급을 기다리던 중에 등급이 나오면 구슬이 멈춘 뒤 큰 축하를 한다`() {
         var state by mutableStateOf(ReportSamples.grading)
-        show(dark = false) { SessionReportScreen(state = state, onOpenAnswer = {}, onRetryClick = {}) }
+        show(dark = false) { SessionReportScreen(state = state, onOpenAnswer = {}, onIntent = {}) }
 
         change { state = ReportSamples.mixedModels }
         rule.mainClock.advanceTimeBy(1_500)
@@ -62,7 +62,7 @@ class ReportHapticsTest {
     /** 등급이 나오고 1.5초 뒤, 구슬이 멈추고 축하 조각이 터지는 중인 장면. */
     private fun gradeCelebration(dark: Boolean) {
         var state by mutableStateOf(ReportSamples.grading)
-        show(dark) { SessionReportScreen(state = state, onOpenAnswer = {}, onRetryClick = {}) }
+        show(dark) { SessionReportScreen(state = state, onOpenAnswer = {}, onIntent = {}) }
         change { state = ReportSamples.mixedModels }
         rule.mainClock.advanceTimeBy(1_500)
         rule.onRoot().captureRoboImage()
@@ -79,7 +79,7 @@ class ReportHapticsTest {
 
     @Test
     fun `이미 등급이 나온 회차를 열면 축하하지 않는다`() {
-        show(dark = false) { SessionReportScreen(state = ReportSamples.mixedModels, onOpenAnswer = {}, onRetryClick = {}) }
+        show(dark = false) { SessionReportScreen(state = ReportSamples.mixedModels, onOpenAnswer = {}, onIntent = {}) }
 
         rule.mainClock.advanceTimeBy(3_000)
 
