@@ -44,6 +44,10 @@ class ComponentsScreenshotTest {
 
     @Test fun alert_dark() = shot(dark = true) { AlertSamples() }
 
+    @Config(fontScale = 2f)
+    @Test
+    fun alert_fontScale200() = shot(dark = false) { AlertSamples() }
+
     @Test fun listCell_light() = shot(dark = false) { ListCellSamples() }
 
     @Test fun listCell_dark() = shot(dark = true) { ListCellSamples() }
