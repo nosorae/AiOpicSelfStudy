@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -50,10 +49,19 @@ internal fun ContentFixRow(fix: ContentFix) {
 /**
  * 최종 스크립트(#217). 따라 읽을 글이라 옅은 면 위에 본문 크기로 두고, 아래에 복사와 듣기를 둔다.
  * 듣기는 자연스러운 음성을 받는 몇 초 동안 버튼에 처리 중 표시를 하고, 읽는 동안은 멈추기로 바뀐다.
- * 복사는 바로 끝나서 체크와 문구, 성공 진동으로만 알린다.
+ * 복사는 바로 끝나서 체크와 문구, 성공 진동으로만 알린다. 진동은 누를 때 한 번 내고, 체크는 [answerId] 로 한 번만 그린다.
+ * [copied] 는 계속 true 로 남아서, 그릴 때 알리면 스크롤로 다시 내려오거나 화면을 돌릴 때마다 또 울린다.
  */
 @Composable
-internal fun FinalScript(script: String, playback: ScriptPlayback, copied: Boolean, onCopyClick: () -> Unit, onListenClick: () -> Unit) {
+internal fun FinalScript(
+    answerId: String,
+    script: String,
+    playback: ScriptPlayback,
+    copied: Boolean,
+    onCopyClick: () -> Unit,
+    onListenClick: () -> Unit,
+) {
+    val haptics = LocalHaptics.current
     val colors = MontageTheme.colors
     val typography = MontageTheme.typography
     Column(Modifier.fillMaxWidth().padding(horizontal = MontageSpacing.spacing20), verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing12)) {
@@ -78,17 +86,18 @@ internal fun FinalScript(script: String, playback: ScriptPlayback, copied: Boole
             )
             MontageButton(
                 text = stringResource(Res.string.answer_script_copy),
-                onClick = onCopyClick,
+                onClick = {
+                    haptics.play(HapticEffect.Success)
+                    onCopyClick()
+                },
                 variant = MontageButtonVariant.Outlined,
                 size = MontageButtonSize.Medium,
                 modifier = Modifier.weight(1f).testTag("script-copy"),
             )
         }
         if (copied) {
-            val haptics = LocalHaptics.current
-            LaunchedEffect(Unit) { haptics.play(HapticEffect.Success) }
             Row(horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing4), verticalAlignment = Alignment.CenterVertically) {
-                MontageCheckMark(Modifier.size(MontageSpacing.spacing40))
+                MontageCheckMark(Modifier.size(MontageSpacing.spacing40), playOnceKey = "script-copied:$answerId")
                 Text(
                     text = stringResource(Res.string.answer_script_copied),
                     style = typography.body2.regular,

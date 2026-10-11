@@ -16,16 +16,20 @@ import androidx.compose.ui.graphics.drawscope.Stroke
  * 끝났다는 표시. 옅은 주홍 원 안에 체크가 왼쪽 아래에서 오른쪽 위로 그려지고, 다 그려지면 둥근 물결이 한 번 퍼지고 사라진다.
  * 키 확인, 저장, 복사가 끝났다는 것을 문구를 읽기 전에 보이게 한다. 그림뿐이라 결과 문구는 옆에 둔다.
  * 크기는 [modifier] 로 정하고, 물결이 퍼질 몫까지 포함한 크기다. 동작 줄이기면 원과 체크가 처음부터 다 그려져 있다.
+ * 목록 안에 두면 스크롤로 화면 밖에 나갔다 돌아올 때 다시 그려진다. 그때는 [playOnceKey] 를 줘서 한 번 그린 뒤에는 다 그려진 체크부터 보인다.
  */
 @Composable
-fun MontageCheckMark(modifier: Modifier = Modifier) {
+fun MontageCheckMark(modifier: Modifier = Modifier, playOnceKey: String? = null) {
     val colors = MontageTheme.colors
     val reduceMotion = MontageMotion.reduceMotion
     val drawSpec = MontageMotion.spec<Float>(MontageMotion.LONG_MILLIS)
     val rippleSpec = MontageMotion.spec<Float>(MontageMotion.LONG_MILLIS)
-    val drawn = remember { Animatable(if (reduceMotion) 1f else 0f) }
-    val ripple = remember { Animatable(if (reduceMotion) 1f else 0f) }
+    val played = MontageMotion.played
+    val still = remember { reduceMotion || (playOnceKey != null && playOnceKey in played) }
+    val drawn = remember { Animatable(if (still) 1f else 0f) }
+    val ripple = remember { Animatable(if (still) 1f else 0f) }
     LaunchedEffect(Unit) {
+        playOnceKey?.let(played::add)
         drawn.animateTo(1f, drawSpec)
         ripple.animateTo(1f, rippleSpec)
     }
