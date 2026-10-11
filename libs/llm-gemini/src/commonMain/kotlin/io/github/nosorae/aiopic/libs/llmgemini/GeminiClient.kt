@@ -6,7 +6,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.content.TextContent
@@ -29,13 +28,17 @@ import kotlin.io.encoding.Base64
 /**
  * Gemini `generateContent` 를 부르는 HTTP 클라이언트. 분석 포트와 프롬프트를 모르고 요청 하나를 결과 하나로 바꾼다.
  * 기본 [HttpClient] 는 플랫폼 엔진(Android HttpURLConnection, iOS NSURLSession)을 쓴다.
+ * [upload] 가 있으면 녹음을 실은 요청(분석, 등급)은 그 길로 보낸다. 앱이 멈춰도 전송이 끝나야 하는 요청이다(#216).
  */
-public class GeminiClient(private val http: HttpClient = HttpClient()) {
+public class GeminiClient(private val http: HttpClient = HttpClient(), private val upload: GeminiUpload? = null) {
     public suspend fun generate(request: LlmRequest): LlmResult {
         // 본문은 try 밖에서 만든다. 스키마 글이 JSON 이 아니면 연결 없음으로 숨지 않고 바로 드러나야 한다.
-        val response = post(request.apiKey, request.model, body(request)) ?: return LlmResult.Retryable(null)
-        val status = response.status.value
-        val json = runCatching { Json.parseToJsonElement(response.bodyAsText()).jsonObject }.getOrDefault(JsonObject(emptyMap()))
+        val body = body(request).toString()
+        val response = (
+            if (upload != null && request.audio.isNotEmpty()) upload.post(url(request.model), request.apiKey, body) else post(request.apiKey, request.model, body)
+            ) ?: return LlmResult.Retryable(null)
+        val status = response.status
+        val json = runCatching { Json.parseToJsonElement(response.body).jsonObject }.getOrDefault(JsonObject(emptyMap()))
         return when {
             status == 200 -> success(json)
             status == 401 || status == 403 || (status == 400 && "API_KEY_INVALID" in json.toString()) -> LlmResult.InvalidKey
@@ -57,21 +60,21 @@ public class GeminiClient(private val http: HttpClient = HttpClient()) {
                 putJsonObject("speechConfig") { putJsonObject("voiceConfig") { putJsonObject("prebuiltVoiceConfig") { put("voiceName", voice) } } }
             }
         }
-        val response = post(apiKey, model, body)?.takeIf { it.status.value == 200 } ?: return null
+        val response = post(apiKey, model, body.toString())?.takeIf { it.status == 200 } ?: return null
         return runCatching {
-            val data = Json.parseToJsonElement(response.bodyAsText()).jsonObject["candidates"]!!.jsonArray[0].jsonObject["content"]!!.jsonObject["parts"]!!.jsonArray
+            val data = Json.parseToJsonElement(response.body).jsonObject["candidates"]!!.jsonArray[0].jsonObject["content"]!!.jsonObject["parts"]!!.jsonArray
                 .firstNotNullOf { it.jsonObject["inlineData"]?.jsonObject?.get("data")?.jsonPrimitive?.content }
             Base64.decode(data)
         }.getOrNull()
     }
 
     /** 연결하지 못하면 null 이다. */
-    private suspend fun post(apiKey: String, model: String, body: JsonObject): HttpResponse? = try {
-        http.post("$BASE_URL/models/$model:generateContent") {
+    private suspend fun post(apiKey: String, model: String, body: String): RawResponse? = try {
+        http.post(url(model)) {
             // 키를 주소에 넣으면 접속 기록에 남아서 헤더로 보낸다.
             header("x-goog-api-key", apiKey)
-            setBody(TextContent(body.toString(), ContentType.Application.Json))
-        }
+            setBody(TextContent(body, ContentType.Application.Json))
+        }.let { RawResponse(it.status.value, it.bodyAsText()) }
     } catch (e: CancellationException) {
         throw e
     } catch (_: Exception) {
@@ -106,9 +109,10 @@ public class GeminiClient(private val http: HttpClient = HttpClient()) {
                 }
             }
         }
-        request.responseSchema?.let { schema ->
-            // mimeType 은 대문자여야 하고(`application/json` 은 400), 스키마를 함께 줘야 마크다운 표가 아닌 JSON 이 온다(설계 11절).
-            putJsonObject("generationConfig") {
+        if (request.responseSchema == null && request.thinkingLevel == null) return@buildJsonObject
+        putJsonObject("generationConfig") {
+            request.responseSchema?.let { schema ->
+                // mimeType 은 대문자여야 하고(`application/json` 은 400), 스키마를 함께 줘야 마크다운 표가 아닌 JSON 이 온다(설계 11절).
                 putJsonObject("responseFormat") {
                     putJsonObject("text") {
                         put("mimeType", "APPLICATION_JSON")
@@ -116,8 +120,11 @@ public class GeminiClient(private val http: HttpClient = HttpClient()) {
                     }
                 }
             }
+            request.thinkingLevel?.let { putJsonObject("thinkingConfig") { put("thinkingLevel", it) } }
         }
     }
+
+    private fun url(model: String) = "$BASE_URL/models/$model:generateContent"
 
     private companion object {
         const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta"

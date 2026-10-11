@@ -8,6 +8,9 @@ import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.libs.debug.network.fakeHttpEngine
+import io.github.nosorae.aiopic.libs.llmgemini.GeminiUpload
+import io.github.nosorae.aiopic.libs.llmgemini.RawResponse
+import io.github.nosorae.aiopic.libs.llmgemini.api.AudioPart
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmRequest
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmResult
 import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
@@ -122,5 +125,36 @@ class DebugWiringTest {
 
         repeat(4) { assertFailsWith<IOException> { gemini.respond(analysis) } }
         assertEquals(OK_RESPONSE, gemini.respond("Reply with OK."))
+    }
+
+    private val recordingRequest = request.copy(audio = listOf(AudioPart(byteArrayOf(1), "audio/mp4")))
+    private val uploaded = mutableListOf<String>()
+    private val upload = GeminiUpload { url, _, _ ->
+        uploaded += url
+        RawResponse(200, OK_RESPONSE)
+    }
+
+    @Test
+    fun `216 실제 Gemini 를 쓰면 녹음 요청은 플랫폼 업로드로 보낸다`() = runTest {
+        debugGeminiClient(fakeEngine = null, upload = upload, localUpload = false).generate(recordingRequest)
+
+        assertEquals(listOf("https://generativelanguage.googleapis.com/v1beta/models/m:generateContent"), uploaded)
+    }
+
+    @Test
+    fun `216 가짜 Gemini 는 녹음 요청도 가짜 엔진으로 보낸다`() = runTest {
+        debugGeminiClient(fakeEngine = fakeEngine(), slow = { false }, upload = upload, localUpload = false).generate(recordingRequest)
+
+        assertEquals(emptyList(), uploaded)
+    }
+
+    @Test
+    fun `216 로컬 업로드 스위치는 녹음 요청만 이 컴퓨터의 테스트 서버로 업로드한다`() = runTest {
+        val client = debugGeminiClient(fakeEngine = fakeEngine(), slow = { false }, upload = upload, localUpload = true)
+
+        client.generate(recordingRequest)
+        client.generate(request)
+
+        assertEquals(listOf("http://127.0.0.1:8765/v1beta/models/m:generateContent"), uploaded)
     }
 }

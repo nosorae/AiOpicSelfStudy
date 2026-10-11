@@ -5,7 +5,7 @@
 | 플랫폼 | 구현 | 방식 |
 |---|---|---|
 | Android | `WorkManagerWorkQueue(context, drain)` | 고유 작업 사슬 하나에 비우기 작업을 이어 붙인다. 네트워크가 연결돼야 돌고 앱이 꺼져도 WorkManager 가 깨운다 |
-| iOS | `IosWorkQueue(drain, scope, backgroundTask = "...")` | 앱이 앞에 있고 연결돼 있는 동안 비운다. 뒤로 가면 네트워크가 필요한 백그라운드 처리 작업(BGProcessingTask)을 예약해 이어서 비운다 |
+| iOS | `IosWorkQueue(drain, scope, backgroundTask = "...")` | 앱이 앞에 있고 연결돼 있는 동안 비운다. 비우는 동안은 앱이 뒤로 가도 끝낼 시간(`beginBackgroundTask`)을 받아 둔다. 뒤로 가면 네트워크가 필요한 백그라운드 처리 작업(BGProcessingTask)을 예약해 이어서 비운다 |
 
 ```kotlin
 val queue = WorkManagerWorkQueue(context) {

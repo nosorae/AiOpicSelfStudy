@@ -10,6 +10,8 @@ public data class LlmRequest(
     public val audio: List<AudioPart> = emptyList(),
     /** 응답 JSON 스키마. 스키마 없이 JSON 을 요청하면 마크다운 표가 올 때가 있어서 JSON 응답에는 늘 준다(설계 11절). */
     public val responseSchema: String? = null,
+    /** 생각 수준(`low` 등). 없으면 모델 기본값이다. 낮추면 답이 빨리 온다(#216). */
+    public val thinkingLevel: String? = null,
 ) {
     /** 로그나 오류 메시지에 키가 찍히지 않게 키를 가린다. */
     override fun toString(): String = "LlmRequest(model=$model, audio=${audio.size}, responseSchema=${responseSchema != null})"

@@ -226,4 +226,20 @@ class GeminiAnalyzerTest {
     fun `목록의 모델 id 는 겹치지 않는다`() {
         assertEquals(GeminiModels.models.size, GeminiModels.models.map { it.id }.toSet().size)
     }
+
+    private fun sentGenerationConfig() = Json.parseToJsonElement((sent.last().body as TextContent).text).jsonObject.getValue("generationConfig").jsonObject
+
+    @Test
+    fun `216 답변 분석은 생각 수준을 낮춰 보낸다`() = runTest {
+        analyzer(ok(GeminiFixtures.ANSWER)).analyze(model, prompt, question, recording)
+
+        assertEquals("""{"thinkingLevel":"low"}""", sentGenerationConfig()["thinkingConfig"].toString())
+    }
+
+    @Test
+    fun `216 회차 등급은 모델 기본 생각 수준으로 보낸다`() = runTest {
+        analyzer(ok(GeminiFixtures.SESSION_GRADE)).grade(model, prompt, scale, List(3) { recording })
+
+        assertEquals(null, sentGenerationConfig()["thinkingConfig"])
+    }
 }
