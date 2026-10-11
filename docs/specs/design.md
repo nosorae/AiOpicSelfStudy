@@ -123,7 +123,7 @@
 | 화면 | `ui/design`, `ui/navigation`, `ui/feature-*` | 팩이 주는 문구, 단계 이름, 등급 체계를 받아 그린다. "오픽"이라는 말이 코드에 없다 |
 | 시험 팩 | `packs/opic-en` | 서베이, 문항 순서, ACTFL 체크리스트, 프롬프트, 내장 문항, 등급 NL~AL |
 | 엔진 | `engine/session`, `engine/answer`, `engine/question`, `engine/ai-gemini` | 진행 상태 계산과 이어 보기, 답변 저장과 분석 포트와 경로 고르기와 출력 검사와 약점 점수, 출제 순서와 대체 문항, Gemini 어댑터 |
-| 라이브러리 | `libs/recorder`, `libs/llm-gemini`, `libs/work-queue`, `libs/keyvault`, `libs/tts`, `libs/timer` | 프로젝트 안 다른 모듈 의존 0개. 폴더째 떼어 다른 저장소나 Maven 배포로 옮길 수 있다 |
+| 라이브러리 | `libs/recorder`, `libs/llm-gemini`, `libs/work-queue`, `libs/keyvault`, `libs/tts`, `libs/timer`, `libs/haptics`, `libs/debug` | 프로젝트 안 다른 모듈 의존 0개. 폴더째 떼어 다른 저장소나 Maven 배포로 옮길 수 있다 |
 
 의존은 위에서 아래로만 간다. 다른 언어 오픽은 `packs/opic-ja` 와 `apps/opic-ja` 만 새로 만들면 된다. 경계는 `./gradlew check` 의 모듈 의존 검사가 강제한다. 라이브러리는 Kotlin explicit API 모드로 공개 API 만 노출한다.
 
@@ -131,7 +131,7 @@
 
 | 공통 (Android, iOS 같이) | Android | iOS |
 |---|---|---|
-| 진행 상태 계산, 출제, 분석 포트와 경로 고르기, Gemini 요청과 응답 해석, 답변 저장소, 리포트 집계, 화면 전부 | 조각 녹음, Keystore, WorkManager, 하단 탭과 예측 뒤로가기 | 조각 녹음, Keychain, 앞으로 올 때 대기열 비우기, TabView 하단 탭과 뒤로 스와이프 |
+| 진행 상태 계산, 출제, 분석 포트와 경로 고르기, Gemini 요청과 응답 해석, 답변 저장소, 리포트 집계, 화면 전부 | 조각 녹음, Keystore, WorkManager, 하단 탭과 예측 뒤로가기 | 조각 녹음, Keychain, 앞에 있을 때 대기열 비우기와 뒤로 가면 BGProcessingTask, 녹음 분석 요청의 백그라운드 전송, TabView 하단 탭과 뒤로 스와이프 |
 
 화면 코드의 모양(ViewModel, UseCase, 이동, DI)은 `.claude/skills/architecture/SKILL.md` 에 있다.
 

@@ -19,14 +19,14 @@ description: 이 앱의 층과 의존, ViewModel(UiState, Intent, onIntent), Use
 
 - 화면은 시험 팩을 모른다. 문구, 단계 이름, 등급 체계는 엔진의 타입으로 받고, 앱 층이 팩을 넣어 조립한다
 - libs 는 프로젝트 모듈을 의존하지 않고 DI 주석도 쓰지 않는다. 평범한 생성자만 둔다. 폴더째 떼어 다른 저장소로 옮길 수 있어야 한다
-- 화면 모듈은 api, impl 로 나누지 않는다. 내비게이션 키는 `ui/navigation` 한 곳에 모은다
+- 화면 모듈은 api, impl 로 나누지 않는다. 화면 경로 키는 앱 층의 `AppRoute` 한 곳에 둔다(5절)
 - 검사는 `./gradlew checkLayers` 가 한다
 
 ## 2. ViewModel
 
 ```kotlin
 class ExamViewModel(
-    @Assisted private val key: ExamKey,
+    @Assisted val sessionId: String,
     private val submitAnswerUseCase: SubmitAnswerUseCase,
     private val observeExamUseCase: ObserveExamUseCase,
 ) : ViewModel() {
@@ -90,14 +90,26 @@ fun ExamScreen(state: ExamUiState, onIntent: (ExamIntent) -> Unit) { /* 그리�
 
 ## 5. 이동
 
-- Navigation 3(JetBrains 포트)를 쓴다. 키는 `ui/navigation` 의 직렬화 가능한 `NavKey`, 화면 등록은 화면 모듈의 함수, 백스택 조립은 앱 층
+화면 경로 키와 화면 등록은 앱 층(`apps/opic/shared`) 한 곳에 둔다(ADR 0034). 화면 모듈은 키도 플랫폼도 탭도 모른다.
+
+| 맡은 일 | 파일 |
+|---|---|
+| 키와 경로 표: 화면마다 탭 표시, 뒤로가기 가로채기, iOS 뒤로 버튼, 제목, 탭 순서 | commonMain `AppRoute.kt` (`@Serializable sealed class AppRoute`) |
+| 화면 등록: 키마다 그릴 `XxxRoute` 와 ViewModel | commonMain `RouteContent.kt` 의 `when` 하나 |
+| Android 앱 틀: Navigation 3 `NavDisplay`, 하단 탭(Material 3 Expressive `ShortNavigationBar`), 예측 뒤로가기 | androidMain `AppShell.kt` |
+| iOS 앱 틀: SwiftUI `TabView` 안 탭마다 `NavigationStack`, 뒤로 버튼과 가장자리 스와이프 | `apps/opic/iosApp/iosApp/ContentView.swift` |
+
+- 하단 탭은 모의고사, 연습, 기록, 설정 넷이다(`AppRoute.tabs`). 앱을 켜면 모의고사 탭이 먼저 보인다
+- Android 는 백스택이 하나다. 하위 화면에서 탭을 숨기므로 탭을 옮기는 건 탭 화면에서뿐이다. 다른 탭은 모의고사 탭 위에 쌓아 뒤로가기로 모의고사 탭에 돌아온다. iOS 는 탭마다 경로를 따로 둔다
+- 첫 실행의 키 입력과 동의(`StartKeyEntry`, `StartConsent`)는 탭 없이 혼자 뜨고, 끝나면 시작 분기를 다시 해 백스택을 통째로 바꾼다
+- 새 화면은 `AppRoute` 에 case 를 더하고 `RouteContent` 에 가지를 더한다. 빠뜨리면 `when` 이 컴파일되지 않는다. `ui/navigation` 모듈은 비어 있다
 - 저장이나 검증이 끝나야 가는 이동(시험 나가기, 시험 끝, 키 확인 성공)만 UiState 의 `navigation` 필드로 한다
-- 뒤로가기, 탭 전환, 리포트 열기 같은 단순 이동은 화면이 람다로 바로 처리한다. Intent 쌍이 늘지 않고 시스템 뒤로가기 애니메이션이 유지된다
-- 막아야 하는 뒤로가기(시험 중)만 가로챈다
+- 뒤로가기, 탭 전환, 리포트 열기 같은 단순 이동은 화면이 람다로 바로 처리한다. 앱 층이 그 람다에서 다음 `AppRoute` 를 쌓는다. Intent 쌍이 늘지 않고 시스템 뒤로가기 애니메이션이 유지된다
+- 막아야 하는 뒤로가기는 시험 중(`blocksBack`)과 화면이 처리 중일 때(키 확인 중, `onBlockBack`)뿐이다. 녹음 중 연습과 바꾼 답이 있는 서베이는 화면이 뒤로가기를 받아 나갈지 묻는다
 
 ## 6. 화면 인자
 
-ViewModel 생성자에 Metro assisted 주입으로 받는다. 인자는 `NavKey` 에 담겨 백스택과 함께 복원되므로 프로세스가 죽어도 남고, 진입이 두 번 들어오는 경우를 따로 막을 필요가 없다. `Entered(id)` 같은 진입 Intent 를 만들지 않는다.
+ViewModel 생성자에 Metro assisted 주입으로 받는다(`ExamViewModel.Factory.create(sessionId)`). 인자는 `AppRoute` 의 속성이고 `RouteContent` 가 키 값으로 ViewModel 을 만든다(`viewModel(key = route.toString())`). Android 는 백스택을 직렬화해 저장하므로 프로세스가 죽어도 인자가 남고, iOS 는 다시 켜면 모의고사 탭부터 보이며 시험은 Room 에서 이어 본다. 진입이 두 번 들어오는 경우를 따로 막을 필요가 없다. `Entered(id)` 같은 진입 Intent 를 만들지 않는다.
 
 ## 7. UseCase
 
@@ -140,4 +152,6 @@ sealed interface DomainResult<out T> {
 
 ## 11. 플랫폼 서비스
 
-녹음, 키 보관, 음성 합성, 대기열은 commonMain 인터페이스 + 플랫폼 구현 클래스로 둔다. `expect class` 를 쓰지 않는다. Activity 가 필요한 기능은 `@Composable rememberXxx()` 로 노출한다.
+녹음, 키 보관, 음성 합성, 진동, 대기열은 commonMain 인터페이스 + 플랫폼 구현 클래스로 둔다. `expect class` 를 쓰지 않는다. Activity 가 필요한 기능은 `@Composable rememberXxx()` 로 노출한다.
+
+분석 작업의 상태는 Room 의 `analysis_job` 표 한 곳에 있다(ADR 0032). 플랫폼 대기열(`WorkQueue`)은 상태를 들지 않고 표를 비우라는 신호만 준다. Android 는 WorkManager 가 연결 조건으로 비우기를 부르고, iOS 는 앱이 앞에 있을 때 비우며 뒤로 가면 이어 돌 시간을 받아 두고 BGProcessingTask 를 예약한다. iOS 의 녹음을 실은 요청(답변 분석, 회차 등급)은 백그라운드 `URLSession` 업로드로 보내 앱을 내려도 끊기지 않는다(#216).

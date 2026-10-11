@@ -71,21 +71,26 @@ sequenceDiagram
 
 ## 답변 하나가 분석되는 길
 
-Gemini 응답은 그대로 믿지 않는다. 교정의 원문 구절이 전문에 있는지, 값 범위가 맞는지 앱이 검사하고 통과 못한 항목은 버린다. 네트워크 실패는 대기열이 다시 보내고, 그 밖의 실패는 답변을 분석 전 상태로 남긴다.
+Gemini 응답은 그대로 믿지 않는다. 교정의 원문 구절이 전문에 있는지, 값 범위가 맞는지 앱이 검사하고 통과 못한 항목은 버린다. 분석 작업의 상태는 DB 의 작업 표 한 곳에 있고, 작업은 어떤 경우에도 성공이나 실패로 끝난다. 실패하면 리포트가 이유와 다시 분석하기를 보인다(ADR 0032).
 
 ```mermaid
 flowchart TD
-    next["Next<br/>답변 저장<br/>(분석 전)"] --> queue[["분석 대기열<br/>하나씩 순서대로"]]
+    next["Next<br/>답변 저장<br/>(분석 전)"] --> job[("분석 작업 표<br/>DB 한 곳")]
+    job --> queue[["플랫폼 대기열<br/>표를 하나씩<br/>순서대로 비운다"]]
     queue --> route{"모델이 음성을<br/>직접 듣나"}
-    route -- "예 (지금 경로)" --> one["Gemini<br/>한 번 호출<br/>녹음 + 프롬프트"]
+    route -- "예 (지금 경로)" --> one["Gemini<br/>한 번 호출<br/>녹음 + 프롬프트<br/>iOS 는 백그라운드 전송"]
     route -- "아니오" --> two["받아쓰기 후<br/>글 분석<br/>나중 제공사용,<br/>지금은 테스트만"]
-    one --> check{"출력 검사"}
-    two --> check
+    one --> saved["응답 원문을<br/>해석 전에 저장"]
+    two --> saved
+    saved --> check{"출력 검사"}
     check -- "통과" --> done["답변 저장<br/>(분석 끝)<br/>회차가 다 끝나면<br/>등급 요청"]
     check -- "실패" --> again["한 번 다시 요청<br/>그래도 틀리면<br/>그 항목을 버린다"]
     again --> done
-    one -. "429, 408, 5xx,<br/>오프라인" .-> retry["30초부터 두 배씩<br/>최대 3번 다시"]
-    retry -.-> queue
+    one -. "429, 408, 5xx,<br/>시간 초과 2분" .-> retry["30초부터 두 배씩<br/>최대 3번 다시"]
+    one -. "기기 오프라인" .-> wait["연결 기다림<br/>횟수를 쓰지 않는다"]
+    retry -.-> job
+    wait -.-> job
+    retry -. "다 쓰면" .-> fail["실패<br/>이유와<br/>다시 분석하기"]
 ```
 
 두 단계 경로는 음성을 못 듣는 제공사를 붙일 때 쓰려고 포트만 나눠 둔 것이다(ADR 0019).
@@ -100,7 +105,7 @@ flowchart TD
     ui["ui<br/>design<br/>navigation<br/>feature-*"]
     packs["packs<br/>opic-en"]
     engine["engine<br/>session, answer<br/>question<br/>ai-gemini"]
-    libs["libs<br/>recorder<br/>tts, timer<br/>llm-gemini<br/>work-queue<br/>keyvault"]
+    libs["libs<br/>recorder<br/>tts, timer<br/>llm-gemini<br/>work-queue<br/>keyvault<br/>haptics, debug"]
     tools["tools/eval"]
 
     apps --> ui
@@ -113,11 +118,11 @@ flowchart TD
 
 | 층 | 하는 일 |
 |---|---|
-| apps | 조립만. DI 그래프, Android, iOS 진입점 |
+| apps | 조립만. DI 그래프, 화면 경로 표와 화면 등록(`AppRoute`, `RouteContent`), Android, iOS 앱 틀 |
 | ui | 화면. 시험 팩을 모르고 엔진의 타입으로 그린다 |
 | packs | 시험 하나의 내용. 서베이, 문항 순서, 체크리스트, 프롬프트, 등급 |
 | engine | 시험 진행 계산과 이어 보기, 답변 분석 흐름과 출력 검사, 출제, Gemini 어댑터 |
-| libs | 녹음, Gemini 호출, 대기열, 키 보관, 음성 합성, 타이머 |
+| libs | 녹음, Gemini 호출, 대기열, 키 보관, 음성 합성, 타이머, 진동, 디버그 도구 |
 
 ## 실행
 
