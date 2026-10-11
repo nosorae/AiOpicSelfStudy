@@ -38,6 +38,7 @@ import kotlin.math.roundToInt
 @Composable
 fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+
     // ponytail: 내보내기 화면처럼 예전 클립보드 API 하나로 두 플랫폼을 덮는다. 새 API 는 넣는 값을 플랫폼마다 따로 만들어야 한다.
     @Suppress("DEPRECATION")
     val clipboard = LocalClipboardManager.current

@@ -80,9 +80,14 @@ private val STALL = 10.minutes
 
 internal const val OK_RESPONSE = """{"candidates":[{"content":{"parts":[{"text":"OK"}]}}]}"""
 
-/** 출력 검사를 통과하는 답변 분석 결과. 연결이 돌아온 뒤 분석이 끝나는지 볼 때 돌려준다. */
+/**
+ * 출력 검사를 통과하는 답변 분석 결과. 연결이 돌아온 뒤 분석이 끝나는지 볼 때 돌려준다.
+ * 내용 교정 하나와 최종 스크립트(#217)도 담아 리포트에 두 칸이 보이는지 시뮬레이터에서 본다.
+ */
 internal const val ANALYSIS_RESPONSE =
-    """{"candidates":[{"content":{"parts":[{"text":"{\"transcript\":\"I live in Seoul.\",\"corrections\":[],\"upgrades\":[],\"tenseConsistent\":true,\"sentenceCount\":1,\"wordsPerMinute\":120.0,\"pauses\":[],\"pronunciation\":\"Clear.\",\"score\":80}"}]}}]}"""
+    """{"candidates":[{"content":{"parts":[{"text":"{\"transcript\":\"I live in Seoul.\",\"corrections\":[],\"upgrades\":[],\"tenseConsistent\":true,\"sentenceCount\":1,\"wordsPerMinute\":120.0,\"pauses\":[],\"pronunciation\":\"Clear.\",\"score\":80,""" +
+        """\"contentFixes\":[{\"original\":\"I live in Seoul.\",\"problem\":\"질문에 답하지 않고 사는 곳만 말했다.\",\"corrected\":\"I live in Seoul, and I like it because everything is close.\"}],""" +
+        """\"finalScript\":\"I live in Seoul, and I really like it because everything I need is close to my home.\"}"}]}}]}"""
 
 /**
  * 가짜 Gemini 의 응답(#203). 녹음을 실은 요청(답변 분석, 회차 등급)만 연결 끊김 스위치를 따르고, 키 확인과 출제는 늘 "OK" 다.
