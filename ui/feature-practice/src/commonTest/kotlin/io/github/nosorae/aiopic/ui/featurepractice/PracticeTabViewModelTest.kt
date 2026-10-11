@@ -22,8 +22,7 @@ class PracticeTabViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(repository: FakePracticeRepository) =
-        PracticeTabViewModel(PickPracticeQuestionUseCase(repository, typeNames = mapOf(QuestionType("roleplay") to "롤플레이")))
+    private fun viewModel(repository: FakePracticeRepository) = PracticeTabViewModel(PickPracticeQuestionUseCase(repository, typeNames = mapOf(QuestionType("roleplay") to "롤플레이")))
 
     @Test
     fun `F4_1 연습 탭은 다음 문항을 낼 약한 유형과 점수를 보인다`() = runTest(dispatcher) {
