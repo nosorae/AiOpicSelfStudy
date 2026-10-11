@@ -116,7 +116,9 @@ class ExamE2eTest {
 
         back()
         click("기록")
-        await("회차별 예상 등급")
+        // 회차 등급(F5.3)은 마지막 답변 분석 뒤 작업 표가 보낸다. 받으면 기록 화면에 등급 제목과 범위가 보인다
+        await("회차별 예상 등급", timeoutMs = ANALYSIS_TIMEOUT)
+        await(FAKE_GRADE)
 
         // 한 문항 연습(F4): 연습 탭의 Play 가 연습 화면을 열고 바로 질문을 읽는다. 답을 내면 그 답변 리포트로 간다
         click("연습")
