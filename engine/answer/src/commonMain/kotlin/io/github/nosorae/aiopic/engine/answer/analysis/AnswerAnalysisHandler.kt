@@ -3,12 +3,12 @@ package io.github.nosorae.aiopic.engine.answer.analysis
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
-import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording
 import io.github.nosorae.aiopic.engine.answer.route.AnswerRouter
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkHandler
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import kotlinx.coroutines.flow.first

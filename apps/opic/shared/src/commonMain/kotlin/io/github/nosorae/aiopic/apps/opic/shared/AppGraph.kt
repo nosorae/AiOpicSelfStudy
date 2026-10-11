@@ -21,7 +21,6 @@ import io.github.nosorae.aiopic.engine.answer.check.choose
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
-import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.ModelCatalog
@@ -38,6 +37,7 @@ import io.github.nosorae.aiopic.engine.answer.weakness.weaknessScores
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.question.pick.parseQuestions
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.GradeScale

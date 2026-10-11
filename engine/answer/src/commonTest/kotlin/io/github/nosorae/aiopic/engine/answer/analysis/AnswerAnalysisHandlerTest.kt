@@ -7,7 +7,6 @@ import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
-import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.FakeDeafProvider
@@ -18,6 +17,7 @@ import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.engine.answer.store.inMemoryDatabase
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest

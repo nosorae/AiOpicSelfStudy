@@ -11,8 +11,8 @@ import androidx.compose.ui.semantics.semantics
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
-import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.ui.design.MontageButton
 import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
 import io.github.nosorae.aiopic.ui.design.MontageSpacing

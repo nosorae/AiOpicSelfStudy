@@ -9,7 +9,6 @@ import io.github.nosorae.aiopic.engine.answer.model.Pause
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
-import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.FakeDeafProvider
@@ -20,6 +19,7 @@ import io.github.nosorae.aiopic.engine.answer.port.Transcriber
 import io.github.nosorae.aiopic.engine.answer.port.Transcript
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlin.test.Test

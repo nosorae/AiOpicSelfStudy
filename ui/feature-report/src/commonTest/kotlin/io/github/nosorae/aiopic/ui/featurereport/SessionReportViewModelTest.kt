@@ -1,8 +1,8 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
-import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
