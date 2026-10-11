@@ -2,6 +2,7 @@ import XCTest
 
 // 한 문항 연습을 화면 터치로 끝까지 돈다(#134). 홈 > 한 문항 풀기 > Play > 녹음 10초 > Next > 답변 리포트 > 기록 탭.
 // 첫 실행처럼 비우고 가짜 Gemini 로 띄운다. 분석은 가짜 응답을 못 읽어 실패하지만 리포트 화면으로 가는지만 본다.
+// 기록 탭에 그 연습이 한 줄로 뜨고 실패가 보이며, 누르면 그 답변 리포트가 다시 열리는지 본다(F7.4, #207).
 final class PracticeFlowUITests: XCTestCase {
     private let app = XCUIApplication()
 
@@ -35,7 +36,14 @@ final class PracticeFlowUITests: XCTestCase {
 
         app.tabBars.buttons["기록"].tap()
         XCTAssertTrue(app.staticTexts["기록"].waitForExistence(timeout: 10))
+        let row = app.tag("history-practice")
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "기록 탭에 연습 답변이 보이지 않는다")
+        XCTAssertTrue(app.staticTexts["분석 실패"].waitForExistence(timeout: 30), "분석이 실패한 연습 줄에 실패가 보이지 않는다")
         attachScreenshot("기록")
+
+        app.tapTag("history-practice")
+        XCTAssertTrue(app.staticTexts["답변 리포트"].waitForExistence(timeout: 10), "기록의 연습 줄을 눌러도 답변 리포트가 열리지 않는다")
+        attachScreenshot("기록에서 연 답변 리포트")
     }
 
     private func tapWhenReady(_ element: XCUIElement) {
