@@ -25,6 +25,7 @@ import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import platform.Foundation.NSFileManager
@@ -70,7 +71,9 @@ class MigrationTest {
     @Test
     fun `205 version 1 에서 기다리던 답변은 작업 표로 옮겨져 다시 분석된다`() = runTest {
         writeVersion1(answer("a1"), answer("a2", AnswerAnalysis.Failed(AnalysisError.Rejected)))
-        val db = Room.databaseBuilder<OpicDatabase>(name = path).setDriver(BundledSQLiteDriver()).addMigrations(*OPIC_MIGRATIONS).build()
+        // 쿼리를 테스트 시계 위에서 돌린다. 다른 스레드에서 도는 동안 테스트 시계가 분석 시간 제한을 넘겨 버리지 않게 한다.
+        val db = Room.databaseBuilder<OpicDatabase>(name = path).setDriver(BundledSQLiteDriver()).addMigrations(*OPIC_MIGRATIONS)
+            .setQueryCoroutineContext(StandardTestDispatcher(testScheduler)).build()
         val store = OpicStore(db)
         val deaf = FakeDeafProvider()
         val jobs = AnalysisJobs(
