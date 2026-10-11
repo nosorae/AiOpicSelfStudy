@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.ui.featurehistory
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -13,4 +14,7 @@ interface HistoryStore {
 
     /** 리포트에서 "틀림"을 누른 교정. 약점 점수에서 뺀다(F8.2). */
     fun flags(): Flow<Set<CorrectionFlag>>
+
+    /** 분석 작업 표(#205). 기다리는 연습 답변이 지금 무엇을 기다리는지 보인다. */
+    fun jobs(): Flow<List<AnalysisJob>>
 }

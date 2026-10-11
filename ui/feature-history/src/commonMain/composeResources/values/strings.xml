@@ -2,7 +2,21 @@
 <resources>
     <string name="history_title">기록</string>
     <string name="history_grades">회차별 예상 등급</string>
-    <string name="history_session">%1$d회차</string>
+    <string name="history_session">모의시험 %1$d회차</string>
+    <string name="history_list">모의시험과 연습</string>
+    <string name="history_filter_all">전체</string>
+    <string name="history_filter_exam">모의시험</string>
+    <string name="history_filter_practice">연습</string>
+    <string name="history_practice">%1$s 연습</string>
+    <string name="history_practice_pending">분석 중</string>
+    <string name="history_practice_queued">차례가 되면 점수와 교정을 분석합니다</string>
+    <string name="history_practice_running">점수와 교정을 분석하고 있습니다</string>
+    <string name="history_practice_waiting_network">인터넷이 연결되면 바로 분석합니다</string>
+    <string name="history_practice_retry">결과를 받지 못해 곧 다시 보냅니다</string>
+    <string name="history_practice_failed">분석 실패</string>
+    <string name="history_practice_failed_caption">눌러서 이유를 보고 다시 분석할 수 있습니다</string>
+    <string name="history_practice_unscorable">평가할 수 없음</string>
+    <string name="history_grade_failed">등급 실패</string>
     <string name="history_models">분석 모델 %1$s</string>
     <string name="history_models_mixed">분석 모델 섞임, %1$s</string>
     <string name="history_models_none">분석 대기 중</string>
@@ -12,5 +26,5 @@
     <string name="history_weakness">문항 유형별 약점</string>
     <string name="history_weakness_help">점수가 낮을수록 약한 유형입니다. 한 문항 연습 답변도 함께 셉니다.</string>
     <string name="history_score">%1$d점</string>
-    <string name="history_empty">아직 끝낸 모의시험이 없습니다. 홈에서 모의시험이나 한 문항 연습을 시작하세요.</string>
+    <string name="history_empty">아직 기록이 없습니다. 홈에서 모의시험이나 한 문항 연습을 시작하세요.</string>
 </resources>

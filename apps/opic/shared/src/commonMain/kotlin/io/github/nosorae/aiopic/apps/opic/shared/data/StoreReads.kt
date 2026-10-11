@@ -14,7 +14,7 @@ import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportStore
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 홈, 리포트, 기록, 내보내기가 구독하는 저장소(F7, F8.1, F8.3). 리포트는 분석 작업 표(#205)도 구독하고, 다시 분석하기(#203)는 작업을 다시 넣는다. 다섯 인터페이스 모두 [OpicStore] 를 그대로 흘려 보내서
+ * 홈, 리포트, 기록, 내보내기가 구독하는 저장소(F7, F8.1, F8.3). 리포트와 기록은 분석 작업 표(#205)도 구독하고, 다시 분석하기(#203)는 작업을 다시 넣는다. 다섯 인터페이스 모두 [OpicStore] 를 그대로 흘려 보내서
  * 한 클래스가 맡는다. 분석이 끝나 답변이 바뀌면 구독한 화면이 바로 새 값을 받는다.
  */
 class StoreReads(private val store: OpicStore, private val jobs: AnalysisJobs) :

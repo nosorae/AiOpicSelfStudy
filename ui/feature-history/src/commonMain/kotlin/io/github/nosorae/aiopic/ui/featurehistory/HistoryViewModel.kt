@@ -10,17 +10,20 @@ import kotlinx.coroutines.flow.stateIn
 
 data class HistoryUiState(
     val loading: Boolean = true,
-    val sessions: List<HistorySession> = emptyList(),
+    /** 회차와 연습 답변, 최근 것부터. */
+    val entries: List<HistoryEntry> = emptyList(),
     val weaknesses: List<HistoryWeakness> = emptyList(),
     val grades: List<String> = emptyList(),
 ) {
-    val empty: Boolean get() = !loading && sessions.isEmpty() && weaknesses.isEmpty()
+    val sessions: List<HistorySession> get() = entries.filterIsInstance<HistorySession>()
+
+    val empty: Boolean get() = !loading && entries.isEmpty() && weaknesses.isEmpty()
 }
 
 /** 기록 탭(S13). 저장소 값을 그대로 보여 주는 화면이라 stateIn 으로 내보낸다. 회차 열기는 화면이 람다로 처리한다. */
 @Inject
 class HistoryViewModel(observeHistoryUseCase: ObserveHistoryUseCase) : ViewModel() {
     val uiState: StateFlow<HistoryUiState> = observeHistoryUseCase()
-        .map { HistoryUiState(loading = false, sessions = it.sessions, weaknesses = it.weaknesses, grades = it.grades) }
+        .map { HistoryUiState(loading = false, entries = it.entries, weaknesses = it.weaknesses, grades = it.grades) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 }
