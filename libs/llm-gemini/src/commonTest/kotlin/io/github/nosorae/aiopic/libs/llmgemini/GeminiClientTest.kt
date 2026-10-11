@@ -137,4 +137,51 @@ class GeminiClientTest {
 
         assertEquals(LlmResult.Rejected(400, "Invalid schema."), result)
     }
+
+    @Test
+    fun `216 생각 수준을 주면 생성 설정에 넣는다`() = runTest {
+        client(HttpStatusCode.OK, """{"candidates":[]}""").generate(request.copy(responseSchema = null, thinkingLevel = "low"))
+
+        assertEquals("""{"thinkingConfig":{"thinkingLevel":"low"}}""", sentBody().getValue("generationConfig").toString())
+    }
+
+    @Test
+    fun `216 생각 수준이 없으면 모델 기본값을 쓴다`() = runTest {
+        client(HttpStatusCode.OK, """{"candidates":[]}""").generate(request)
+
+        assertEquals(false, "thinkingConfig" in sentBody().getValue("generationConfig").jsonObject)
+    }
+
+    @Test
+    fun `216 녹음을 실은 요청은 플랫폼 업로드로 보내고 응답을 그대로 해석한다`() = runTest {
+        val uploaded = mutableListOf<Triple<String, String, String>>()
+        val upload = GeminiUpload { url, apiKey, body ->
+            uploaded += Triple(url, apiKey, body)
+            RawResponse(200, """{"candidates":[{"content":{"parts":[{"text":"done"}]}}]}""")
+        }
+        val client = GeminiClient(HttpClient(MockEngine { request -> sent += request; respond("", HttpStatusCode.OK) }), upload)
+
+        val result = client.generate(request)
+
+        assertEquals(LlmResult.Success("done"), result)
+        assertEquals(emptyList(), sent)
+        assertEquals("https://generativelanguage.googleapis.com/v1beta/models/test-model:generateContent" to "test-key", uploaded.single().first to uploaded.single().second)
+        assertEquals(true, "inlineData" in uploaded.single().third)
+    }
+
+    @Test
+    fun `216 녹음이 없는 요청은 업로드를 쓰지 않는다`() = runTest {
+        val client = GeminiClient(HttpClient(MockEngine { request -> sent += request; respond("""{"candidates":[]}""", HttpStatusCode.OK) }), { _, _, _ -> error("업로드를 쓰면 안 된다") })
+
+        client.generate(request.copy(audio = emptyList()))
+
+        assertEquals(1, sent.size)
+    }
+
+    @Test
+    fun `216 업로드가 연결하지 못하면 상태 코드 없이 다시 보낼 수 있다`() = runTest {
+        val client = GeminiClient(HttpClient(MockEngine { error("쓰지 않는다") }), { _, _, _ -> null })
+
+        assertEquals(LlmResult.Retryable(null), client.generate(request))
+    }
 }
