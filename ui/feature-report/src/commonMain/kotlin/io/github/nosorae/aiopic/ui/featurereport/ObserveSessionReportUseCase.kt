@@ -34,8 +34,10 @@ data class SessionReport(
     val gradeUp: Boolean get() {
         val grade = session.grade ?: return false
         val previous = previousGrade ?: return false
-        val rank = { g: SessionGrade -> names.grades.indexOf(g.low).takeIf { it >= 0 }?.let { low -> names.grades.indexOf(g.high).takeIf { it >= 0 }?.plus(low) } }
-        return (rank(grade) ?: return false) > (rank(previous) ?: return false)
+        val grades = names.grades
+        if (!grades.containsAll(listOf(grade.low, grade.high, previous.low, previous.high))) return false
+        val rank = { g: SessionGrade -> grades.indexOf(g.low) + grades.indexOf(g.high) }
+        return rank(grade) > rank(previous)
     }
 
     /** 답변 하나의 분석 작업. 기다리는 답변 줄에 무엇을 기다리는지 쓴다. */
