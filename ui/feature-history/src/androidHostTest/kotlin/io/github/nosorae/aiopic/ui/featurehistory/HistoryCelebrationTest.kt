@@ -31,6 +31,15 @@ class HistoryCelebrationTest {
     @get:Rule val rule = createComposeRule()
 
     private val played = mutableListOf<HapticEffect>()
+    private val intents = mutableListOf<HistoryIntent>()
+
+    @Test
+    fun `198 오른 약점 줄의 축하가 시작될 때 본 표시를 남기라고 알린다`() {
+        show(HistorySamples.weaknessRose)
+        rule.mainClock.advanceTimeBy(300)
+
+        assertEquals(HistorySamples.weaknessRose.weaknesses.filter { it.rose }.map { HistoryIntent.MarkWeaknessSeen(it) }, intents)
+    }
 
     @Test fun weaknessRose() = shot(dark = false)
 
@@ -77,7 +86,7 @@ class HistoryCelebrationTest {
         rule.mainClock.autoAdvance = false
         rule.setContent {
             MontageTheme(darkTheme = dark, reduceMotion = reduceMotion) {
-                CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) { HistoryScreen(state = state, onOpenSession = {}, onOpenAnswer = {}) }
+                CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) { HistoryScreen(state = state, onOpenSession = {}, onOpenAnswer = {}, onIntent = { intents += it }) }
             }
         }
     }

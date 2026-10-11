@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -54,7 +55,7 @@ fun HistoryRoute(
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    HistoryScreen(state = state, onOpenSession = onOpenSession, onOpenAnswer = onOpenAnswer, modifier = modifier)
+    HistoryScreen(state = state, onOpenSession = onOpenSession, onOpenAnswer = onOpenAnswer, onIntent = viewModel::onIntent, modifier = modifier)
 }
 
 /** 기록 목록에서 볼 종류. 회차와 연습이 둘 다 있을 때만 고를 수 있다. */
@@ -72,6 +73,7 @@ fun HistoryScreen(
     state: HistoryUiState,
     onOpenSession: (sessionId: String) -> Unit,
     onOpenAnswer: (answerId: String) -> Unit,
+    onIntent: (HistoryIntent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // ponytail: 필터는 이 화면 안의 보기 상태라 ViewModel 대신 rememberSaveable 에 둔다. 다른 화면이 필터를 알아야 하면 UiState 로 옮긴다.
@@ -125,8 +127,9 @@ fun HistoryScreen(
                                 style = MontageTheme.typography.body2.bold,
                                 color = MontageTheme.colors.foregroundNeutralPrimary,
                             )
-                            // 지난번에 본 것보다 오른 점수를 처음 볼 때 점수 둘레에 작은 축하를 한다(#198). 줄이 화면에 들어올 때 터진다.
+                            // 지난번에 본 것보다 오른 점수를 처음 볼 때 점수 둘레에 작은 축하를 한다(#198). 줄이 화면에 들어올 때 터지고, 그때 본 표시를 남긴다.
                             if (weakness.rose) {
+                                LaunchedEffect(weakness.score) { onIntent(HistoryIntent.MarkWeaknessSeen(weakness)) }
                                 MontageCelebration(
                                     MontageCelebrationSize.Small,
                                     Modifier.matchParentSize().wrapContentSize(unbounded = true).requiredSize(MontageSpacing.spacing48 * 2),
@@ -307,5 +310,5 @@ private fun Body(text: String) {
 @Preview
 @Composable
 private fun HistoryScreenPreview() {
-    MontageTheme { HistoryScreen(state = HistorySamples.filled, onOpenSession = {}, onOpenAnswer = {}) }
+    MontageTheme { HistoryScreen(state = HistorySamples.filled, onOpenSession = {}, onOpenAnswer = {}, onIntent = {}) }
 }
