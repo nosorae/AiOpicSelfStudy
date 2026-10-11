@@ -23,7 +23,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 모의시험 화면(S4~S8). 서베이, 수준 선택, 점검, 문항, 재조정을 회차의 지금 단계에 따라 그린다.
+ * 모의고사 화면(S4~S8). 서베이, 수준 선택, 점검, 문항, 재조정을 회차의 지금 단계에 따라 그린다.
  * [sessionId] 는 화면 인자다. 홈에서 새 id 로 들어오면 새 회차, 저장된 id 로 들어오면 이어 보기다(F3).
  *
  * 시간은 단조 시계 [timer] 로 잰다. 이 ViewModel 이 살아 있는 동안만 1초마다 흐른 시간을 회차에 넣으므로

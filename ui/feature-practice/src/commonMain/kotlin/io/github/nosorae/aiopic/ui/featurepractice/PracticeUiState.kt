@@ -5,7 +5,7 @@ import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-/** 녹음 시작 뒤 다시 듣기를 할 수 있는 시간. 모의시험과 같은 규칙이다(F2.4, F4.1). */
+/** 녹음 시작 뒤 다시 듣기를 할 수 있는 시간. 모의고사와 같은 규칙이다(F2.4, F4.1). */
 val ReplayWindow = 5.seconds
 
 /** 녹음 시작 뒤 Next 가 켜지기까지의 시간(F2.4, F4.1). */

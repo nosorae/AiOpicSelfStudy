@@ -47,7 +47,7 @@ class MontageAlertLayoutTest {
     @Config(fontScale = 2f)
     @Test
     fun `글자 200% 에서도 버튼 글자가 잘리면 세로로 쌓는다`() {
-        show(cancel = "계속 진행하기", confirm = "모의시험 나가기")
+        show(cancel = "계속 진행하기", confirm = "모의고사 나가기")
         assertTrue(bounds("alert-confirm").bottom <= bounds("alert-cancel").top)
     }
 }

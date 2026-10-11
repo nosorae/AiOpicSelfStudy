@@ -42,7 +42,7 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * 서베이 한 화면. 맨 위 진행 막대 아래에 질문 하나 또는 주제 묶음 하나를 그리고, 화면이 바뀌면 옆으로 밀려난다.
  * 묶음 화면이면 그 묶음의 최소 개수와 전체 최소 개수를 맨 아래에 고정해 보인다.
- * 앞으로 가면 새 화면이 오른쪽에서, 뒤로 가면 왼쪽에서 들어온다. 모의시험의 서베이 단계와 설정의 서베이가 같이 쓴다.
+ * 앞으로 가면 새 화면이 오른쪽에서, 뒤로 가면 왼쪽에서 들어온다. 모의고사의 서베이 단계와 설정의 서베이가 같이 쓴다.
  */
 @Composable
 fun SurveyFlow(state: SurveyState, onChoose: (String) -> Unit, onToggle: (String) -> Unit, modifier: Modifier = Modifier) {

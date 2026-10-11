@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.JobState
+import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import io.github.nosorae.aiopic.ui.design.MontageChip
 import io.github.nosorae.aiopic.ui.design.MontageChipVariant
@@ -55,7 +56,7 @@ fun HistoryRoute(
 internal enum class HistoryFilter { All, Exam, Practice }
 
 /**
- * 기록 탭(S13, F7.3, F7.4). 모의시험 회차와 한 문항 연습 답변을 한 목록에 최근 것부터 보인다. 회차는 등급과 분석 모델,
+ * 기록 탭(S13, F7.3, F7.4). 모의고사 회차와 한 문항 연습 답변을 한 목록에 최근 것부터 보인다. 회차는 등급과 분석 모델,
  * 연습은 문항 유형과 점수를 보이고 분석 중과 실패도 그 줄에 보인다. 모델이 섞인 회차는 표시한다(F5.7).
  * 회차를 누르면 [onOpenSession] 로 회차 리포트를, 연습을 누르면 [onOpenAnswer] 로 그 답변 리포트를 연다.
  * 아래에 문항 유형별 약점 점수를 약한 것부터 막대와 함께 둔다.
@@ -160,10 +161,15 @@ private val HistoryFilter.label: StringResource
 private fun SessionRow(row: HistorySession, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val models = row.models.joinToString(", ")
     MontageListCell(
-        title = stringResource(Res.string.history_session, row.number),
+        title = stringResource(if (row.session.status == ExamStatus.Abandoned) Res.string.history_session_abandoned else Res.string.history_session, row.number),
         caption = when {
+            // 답한 문항 없이 끝난 회차는 분석할 것도 등급도 없다.
+            row.answered == 0 && row.session.grade == null -> null
+
             row.models.isEmpty() -> stringResource(Res.string.history_models_none)
+
             row.mixedModels -> stringResource(Res.string.history_models_mixed, models)
+
             else -> stringResource(Res.string.history_models, models)
         },
         chevron = true,
@@ -174,6 +180,7 @@ private fun SessionRow(row: HistorySession, onClick: () -> Unit, modifier: Modif
         when {
             grade != null -> Text(grade.range, style = MontageTheme.typography.headline2.bold, color = MontageTheme.colors.foregroundNeutralStrong)
             row.session.gradeError != null -> Status(stringResource(Res.string.history_grade_failed), failed = true)
+            row.answered == 0 -> Unit
             row.analyzed < row.answered -> Status(stringResource(Res.string.history_grade_waiting, row.analyzed, row.answered))
             else -> Status(stringResource(Res.string.history_grade_pending))
         }

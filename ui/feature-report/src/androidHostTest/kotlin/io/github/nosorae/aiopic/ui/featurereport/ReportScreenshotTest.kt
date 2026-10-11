@@ -3,6 +3,7 @@ package io.github.nosorae.aiopic.ui.featurereport
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -50,6 +51,33 @@ class ReportScreenshotTest {
     @Config(qualifiers = "w360dp-h1000dp-xhdpi")
     @Test
     fun session_timeShort() = session(ReportSamples.timeUp)
+
+    @Config(qualifiers = "w360dp-h1000dp-xhdpi")
+    @Test
+    fun session_abandoned() = shot(dark = false, settleMillis = 0) { SessionReport(ReportSamples.abandoned) }
+
+    @Test fun session_abandonedEmpty() = session(ReportSamples.abandonedEmpty)
+
+    @Test
+    fun `223 답한 문항 없이 끝난 미완료 회차는 기다림 대신 등급이 없다고 쓰고 움직이지 않는다`() {
+        show { SessionReport(ReportSamples.abandonedEmpty) }
+        rule.onNodeWithText("답한 문항 없이 끝난 회차라 예상 등급이 없습니다.").assertExists()
+        rule.onNodeWithText("미완료").assertExists()
+        rule.onNodeWithText("분석했습니다", substring = true).assertDoesNotExist()
+        rule.onNodeWithText("예상 등급을 내고 있습니다", substring = true).assertDoesNotExist()
+        val first = frame()
+        rule.mainClock.advanceTimeBy(SETTLE_MILLIS)
+        assertTrue("기다릴 것이 없는데 움직인다", first.sameAs(frame()))
+    }
+
+    @Config(qualifiers = "w360dp-h1000dp-xhdpi")
+    @Test
+    fun `223 미완료 회차는 미완료 표시와 답하지 않은 문항을 보인다`() {
+        show { SessionReport(ReportSamples.abandoned) }
+        rule.onNodeWithText("미완료").assertExists()
+        rule.onAllNodesWithText("답하지 않음", substring = true).assertCountEquals(4)
+        rule.onNodeWithText("시간 부족", substring = true).assertDoesNotExist()
+    }
 
     @Test fun session_grading() = shot(dark = false, settleMillis = 0) { SessionReport(ReportSamples.grading) }
 

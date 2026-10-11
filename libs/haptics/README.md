@@ -27,7 +27,7 @@ haptics.play(HapticEffect.Success)
 | 기다린 일이 됨 (키 저장 체크가 다 그려질 때, 보는 중에 답변 분석이 끝남, 틀림 표시 복사) | `Success` | `CONFIRM` (API 30), 아래는 `VIRTUAL_KEY` | 성공 알림 |
 | 되돌릴 수 없는 일 확인 (키 지우기, 동의 철회) | `Warning` | `LONG_PRESS` | 경고 알림 |
 | 오류 안내 | `Error` | `REJECT` (API 30), 아래는 `LONG_PRESS` | 오류 알림 |
-| 모의시험 완료와 등급 공개 (회차에 한 번) | `Celebrate` | Composition 연속 진동, 못 내면 `Success` 와 같다 | 성공 알림 뒤 가벼운 충격 두 번 |
+| 모의고사 완료와 등급 공개 (회차에 한 번) | `Celebrate` | Composition 연속 진동, 못 내면 `Success` 와 같다 | 성공 알림 뒤 가벼운 충격 두 번 |
 
 ## 테스트
 

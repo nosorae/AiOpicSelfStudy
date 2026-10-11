@@ -41,5 +41,16 @@ internal object HistorySamples {
         grades = listOf("NL", "NM", "NH", "IL", "IM1", "IM2", "IM3", "IH", "AL"),
     )
 
+    /** 새로 시작해 미완료로 끝낸 회차(#223). 답한 문항이 있으면 그 문항으로 등급이 나오고, 없으면 등급을 기다리지 않는다. */
+    val abandoned = HistoryUiState(
+        loading = false,
+        entries = listOf(
+            HistorySession(ExamSession(id = "s3", status = ExamStatus.Abandoned), emptyList(), number = 3),
+            HistorySession(session("s2", "IM1", "IM2", ExamStatus.Abandoned), listOf(FLASH), answered = 4, analyzed = 4, number = 2),
+            HistorySession(session("s1", "IM1", "IM2"), listOf(FLASH), number = 1),
+        ),
+        grades = filled.grades,
+    )
+
     val empty = HistoryUiState(loading = false)
 }

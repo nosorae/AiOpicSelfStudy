@@ -6,7 +6,7 @@ import io.github.nosorae.aiopic.engine.question.model.SurveyQuestion
 import io.github.nosorae.aiopic.engine.question.model.TopicGroup
 
 /**
- * 서베이를 한 화면에 질문 하나씩 넘기는 상태. 모의시험의 서베이 단계와 설정의 서베이가 같이 쓴다(F2.2).
+ * 서베이를 한 화면에 질문 하나씩 넘기는 상태. 모의고사의 서베이 단계와 설정의 서베이가 같이 쓴다(F2.2).
  * 화면 순서는 지금 보여야 하는 질문(고른 답에 따라 하위 질문이 끼어든다) 다음에 주제 묶음 하나씩이다.
  * 하나만 고르는 질문은 고르는 즉시 다음 화면으로 가고, 묶음 화면은 그 묶음의 최소 개수를 채워야 다음으로 간다.
  */

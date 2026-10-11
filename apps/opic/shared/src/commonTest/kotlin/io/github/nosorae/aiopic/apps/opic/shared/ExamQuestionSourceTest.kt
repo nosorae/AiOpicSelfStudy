@@ -51,7 +51,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 모의시험 출제(F6.1, F6.2)가 앱 그래프에서 이어지는지 본다. 그래프를 메모리 DB 와 가짜 Gemini 로 만들고 시험 화면의 ViewModel 에
+ * 모의고사 출제(F6.1, F6.2)가 앱 그래프에서 이어지는지 본다. 그래프를 메모리 DB 와 가짜 Gemini 로 만들고 시험 화면의 ViewModel 에
  * 서베이, 수준, 점검을 보낸 뒤 기기 음성이 읽은 질문을 본다. 호스트 JVM 테스트는 시험 팩 파일을 못 읽어서 문항 풀과 출제 프롬프트만 바꿔 넣는다.
  */
 class ExamQuestionSourceTest {

@@ -17,7 +17,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 
-/** 큰 축하는 회차에 한두 번 오는 순간(모의시험 완료, 등급 공개), 작은 축하는 기다린 일이 끝난 순간(키 저장, 답변 분석)이다. */
+/** 큰 축하는 회차에 한두 번 오는 순간(모의고사 완료, 등급 공개), 작은 축하는 기다린 일이 끝난 순간(키 저장, 답변 분석)이다. */
 enum class MontageCelebrationSize { Large, Small }
 
 /**

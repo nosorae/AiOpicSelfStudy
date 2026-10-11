@@ -30,8 +30,17 @@ data class SessionReport(
     /** 등급 작업. 없으면 아직 넣지 않았다. */
     val gradeJob: AnalysisJob? get() = jobs.firstOrNull { it.kind == JobKind.Grade }
 
-    /** 40분이 지나 답하지 못한 문항 수. 리포트 끝에 "시간 부족"으로 붙는다(F2.6). */
-    val timeShortCount: Int get() = if (session.status == ExamStatus.TimeUp) (questionCount - answers.size).coerceAtLeast(0) else 0
+    /** 새로 시작해 미완료로 끝낸 회차(#223). 리포트에 미완료라고 표시한다. */
+    val abandoned: Boolean get() = session.status == ExamStatus.Abandoned
+
+    /**
+     * 답하지 못한 문항 수. 시간이 다 된 회차는 "시간 부족"(F2.6), 미완료 회차는 "답하지 않음"으로 리포트 끝에 붙는다.
+     * 답한 문항이 없는 미완료 회차는 서베이나 수준을 고르기 전에 끝났을 수 있어 문항 수를 정할 수 없으므로 세지 않는다.
+     */
+    val unansweredCount: Int get() = when {
+        session.status == ExamStatus.TimeUp || (abandoned && answers.isNotEmpty()) -> (questionCount - answers.size).coerceAtLeast(0)
+        else -> 0
+    }
 
     /** 이 회차 답변을 분석한 모델. 제공사와 모델 id 가 같으면 하나로 센다(F5.7). */
     val models: List<AnalyzedBy> get() = answers.mapNotNull { it.analysis.analyzedBy }.distinctBy { it.provider to it.modelId }

@@ -9,6 +9,7 @@ import io.github.nosorae.aiopic.engine.session.model.GradeCheck
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -27,6 +28,11 @@ import kotlin.time.Duration.Companion.minutes
 class HomeViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val sessions = MutableStateFlow<List<ExamSession>>(emptyList())
+    private val source = object : ExamSessionSource {
+        override fun sessions() = sessions
+
+        override suspend fun save(session: ExamSession) = sessions.update { all -> all.map { if (it.id == session.id) session else it } }
+    }
 
     // 수준 1 이면 3문항, 수준 3 이상이면 4문항인 시험.
     private val spec = ExamSpec(
@@ -40,14 +46,14 @@ class HomeViewModelTest {
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
     private fun TestScope.loadedViewModel(): HomeViewModel {
-        val viewModel = HomeViewModel(ObserveHomeUseCase({ sessions }, spec))
+        val viewModel = HomeViewModel(ObserveHomeUseCase(source, spec), StartNewExamUseCase(source))
         advanceUntilIdle()
         return viewModel
     }
 
     @Test
     fun `저장소를 읽기 전에는 지난 회차가 정해지지 않은 로딩 상태다`() {
-        val viewModel = HomeViewModel(ObserveHomeUseCase({ sessions }, spec))
+        val viewModel = HomeViewModel(ObserveHomeUseCase(source, spec), StartNewExamUseCase(source))
 
         assertNull(viewModel.uiState.value.pastSessions)
     }
@@ -126,6 +132,28 @@ class HomeViewModelTest {
 
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished))
         advanceUntilIdle()
+
+        assertEquals(listOf("a"), viewModel.uiState.value.pastSessions?.map { it.id })
+    }
+
+    @Test
+    fun `새로 시작하면 진행 중인 회차를 미완료로 끝내고 끝난 회차는 그대로 둔다`() = runTest(dispatcher) {
+        sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished), ExamSession(id = "b", answerIds = listOf("x"), status = ExamStatus.InProgress))
+        val viewModel = loadedViewModel()
+
+        viewModel.onIntent(HomeIntent.StartNewExam)
+        advanceUntilIdle()
+
+        assertEquals(listOf(ExamStatus.Finished, ExamStatus.Abandoned), sessions.value.map { it.status })
+        assertEquals(listOf("x"), sessions.value[1].answerIds)
+        assertFalse(viewModel.uiState.value.canResume)
+    }
+
+    @Test
+    fun `미완료로 끝난 회차는 다시 보기에 올리지 않는다`() = runTest(dispatcher) {
+        sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished), ExamSession(id = "b", status = ExamStatus.Abandoned))
+
+        val viewModel = loadedViewModel()
 
         assertEquals(listOf("a"), viewModel.uiState.value.pastSessions?.map { it.id })
     }

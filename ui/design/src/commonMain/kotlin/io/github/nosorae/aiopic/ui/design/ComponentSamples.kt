@@ -81,10 +81,10 @@ internal fun TopBarSamples() = Column {
 @Composable
 internal fun AlertSamples() = Samples {
     MontageAlertContent(
-        "진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.",
+        "진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 모의고사 탭의 이어 보기로 여기서부터 이어서 할 수 있습니다.",
         "나가기",
         {},
-        title = "모의시험을 나갈까요?",
+        title = "모의고사를 나갈까요?",
         cancel = "취소",
         negative = true,
     )

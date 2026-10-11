@@ -6,6 +6,7 @@ import io.github.nosorae.aiopic.engine.answer.model.JobKind
 import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.AnalysisError
+import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
@@ -40,8 +41,8 @@ class SessionReportViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(store: FakeReportStore) = SessionReportViewModel(
-        "s1",
+    private fun viewModel(store: FakeReportStore, sessionId: String = "s1") = SessionReportViewModel(
+        sessionId,
         ObserveSessionReportUseCase(store, spec, typeNames, FakeCatalog, GradeScale(listOf("NL", "IM", "AL"))),
         RetrySessionAnalysisUseCase(store),
     )
@@ -53,7 +54,7 @@ class SessionReportViewModelTest {
         val viewModel = viewModel(store)
         advanceUntilIdle()
 
-        assertEquals(2, viewModel.uiState.value.report?.timeShortCount)
+        assertEquals(2, viewModel.uiState.value.report?.unansweredCount)
     }
 
     @Test
@@ -63,7 +64,7 @@ class SessionReportViewModelTest {
         val viewModel = viewModel(store)
         advanceUntilIdle()
 
-        assertEquals(1, viewModel.uiState.value.report?.timeShortCount)
+        assertEquals(1, viewModel.uiState.value.report?.unansweredCount)
     }
 
     @Test
@@ -73,7 +74,24 @@ class SessionReportViewModelTest {
         val viewModel = viewModel(store)
         advanceUntilIdle()
 
-        assertEquals(0, viewModel.uiState.value.report?.timeShortCount)
+        assertEquals(0, viewModel.uiState.value.report?.unansweredCount)
+    }
+
+    @Test
+    fun `223 미완료 회차는 답하지 못한 문항을 세고 답이 없으면 세지 않는다`() = runTest(dispatcher) {
+        val store = FakeReportStore(
+            listOf(session(level = 3, answers = 2, status = ExamStatus.Abandoned), ExamSession(id = "s2", status = ExamStatus.Abandoned)),
+            answers("s1", 2),
+        )
+
+        val partial = viewModel(store)
+        val empty = viewModel(store, "s2")
+        advanceUntilIdle()
+
+        assertEquals(3, partial.uiState.value.report?.unansweredCount)
+        assertTrue(partial.uiState.value.report!!.abandoned)
+        assertEquals(0, empty.uiState.value.report?.unansweredCount)
+        assertFalse(empty.uiState.value.report!!.grading)
     }
 
     @Test

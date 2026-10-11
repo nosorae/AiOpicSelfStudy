@@ -59,7 +59,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
- * 모의시험 한 회를 iOS 에서 앱 그래프로 끝까지 돈다(완료 기준). 화면 대신 화면이 쓰는 ViewModel 에 같은 의도를 보낸다.
+ * 모의고사 한 회를 iOS 에서 앱 그래프로 끝까지 돈다(완료 기준). 화면 대신 화면이 쓰는 ViewModel 에 같은 의도를 보낸다.
  * DB 는 실제 파일이고 Gemini 는 저장한 응답이다. 시뮬레이터 테스트에는 마이크와 음성이 없어 녹음기와 기기 음성은 가짜다.
  *
  * 강제 종료는 ViewModel 을 모두 치우고 DB 를 닫은 뒤 같은 DB 파일, 같은 설정, 같은 녹음 폴더로 그래프를 새로 만드는 것으로 본다.
@@ -118,7 +118,7 @@ class ExamE2eIosTest {
     }
 
     @Test
-    fun `완료 기준 첫 실행에서 모의시험 한 회를 보다 앱이 죽어도 이어 보고 리포트와 기록과 한 문항 연습까지 간다`() = runTest(dispatcher, timeout = 2.minutes) {
+    fun `완료 기준 첫 실행에서 모의고사 한 회를 보다 앱이 죽어도 이어 보고 리포트와 기록과 한 문항 연습까지 간다`() = runTest(dispatcher, timeout = 2.minutes) {
         // 실패해도 ViewModel 의 1초 시계를 멈춰야 runTest 가 남은 작업을 비우고 끝난다.
         try {
             // 첫 실행(F1.0): 키 넣기, 동의

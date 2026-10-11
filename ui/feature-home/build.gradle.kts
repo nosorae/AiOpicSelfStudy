@@ -11,5 +11,7 @@ kotlin {
     sourceSets.getByName("androidHostTest").dependencies {
         implementation(libs.compose.uiTestJunit4)
         implementation(libs.compose.uiTestManifest)
+        // 새로 시작 확인 대화상자는 따로 뜨는 창이라 화면 전체를 찍는다.
+        implementation(libs.roborazzi.core)
     }
 }
