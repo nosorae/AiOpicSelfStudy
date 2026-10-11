@@ -6,7 +6,7 @@
     <string name="home_resume_exam">이어 보기</string>
     <string name="home_resume_progress">%1$d문항 중 %2$d문항을 마쳤습니다</string>
     <string name="home_review">다시 보기</string>
-    <string name="home_review_session">최근 %1$d회차 리포트</string>
+    <string name="home_review_session">%1$d회차 리포트, %2$s</string>
     <string name="home_past_sessions_empty">아직 마친 회차가 없습니다. 모의고사를 마치면 여기서 리포트를 다시 볼 수 있습니다.</string>
     <string name="home_grade_pending">분석 중</string>
     <string name="home_time_up">시간 부족</string>

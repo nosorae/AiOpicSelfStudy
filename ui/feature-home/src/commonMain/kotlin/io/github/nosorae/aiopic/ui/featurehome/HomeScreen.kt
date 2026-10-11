@@ -84,7 +84,7 @@ fun HomeScreen(
                 last != null -> Group {
                     val grade = last.gradeRange ?: stringResource(Res.string.home_grade_pending)
                     val detail = if (last.timeUp) "$grade, ${stringResource(Res.string.home_time_up)}" else grade
-                    Caption("${stringResource(Res.string.home_review_session, last.number)}  $detail")
+                    Caption(stringResource(Res.string.home_review_session, last.number, detail))
                     MontageButton(
                         text = stringResource(Res.string.home_review),
                         onClick = { onSessionClick(last.id) },
