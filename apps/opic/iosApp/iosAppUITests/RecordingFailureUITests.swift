@@ -16,7 +16,7 @@ final class RecordingFailureUITests: XCTestCase {
         app.passFirstLaunch()
 
         // 한 문항 연습: Next 를 눌러도 리포트로 가지 않고 이유와 다시 녹음이 보인다.
-        tapWhenReady(app.buttons["한 문항 풀기"])
+        app.tabBars.buttons["연습"].tap()
         tapWhenReady(app.buttons["Play"])
         tapNext()
         XCTAssertTrue(app.staticTexts[message].waitForExistence(timeout: 10), "연습: 녹음 실패 안내가 보이지 않는다")
@@ -31,7 +31,8 @@ final class RecordingFailureUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["연습을 나갈까요?"].waitForExistence(timeout: 5), "녹음 중 나가기 확인 대화상자가 보이지 않는다")
         attachScreenshot("연습 나가기 확인")
         app.tapTag("alert-confirm")
-        app.tapTag("home-exam")
+        app.tabBars.buttons["모의고사"].tap()
+        app.tapTag("exam-start")
         app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")

@@ -60,7 +60,7 @@ class ExamE2eTest {
         click("키 확인하고 저장")
         click("동의하고 계속하기")
 
-        click("모의시험 시작")
+        click("시작")
         // 서베이(F2.2): 한 화면에 질문 하나, 고르면 바로 다음 화면. 네 묶음에서 묶음 최소를 넘게 합쳐 12개. 난이도 1단계(12문항)
         SURVEY_OPTIONS.forEach(::click)
         SURVEY_GROUPS.forEach { topics ->
@@ -118,9 +118,8 @@ class ExamE2eTest {
         click("기록")
         await("회차별 예상 등급")
 
-        // 한 문항 연습(F4): 답을 내면 그 답변 리포트로 간다
-        click("홈")
-        click("한 문항 풀기")
+        // 한 문항 연습(F4): 연습 탭의 Play 가 연습 화면을 열고 바로 질문을 읽는다. 답을 내면 그 답변 리포트로 간다
+        click("연습")
         answer()
         await("답변 리포트")
         await(FAKE_TRANSCRIPT, timeoutMs = ANALYSIS_TIMEOUT)

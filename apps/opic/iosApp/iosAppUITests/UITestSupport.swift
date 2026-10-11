@@ -49,11 +49,11 @@ extension XCUIApplication {
         XCTFail("\(id) 를 \(Int(timeout))초 안에 누를 수 없다")
     }
 
-    /** 첫 실행이면 가짜 키를 넣고 음성 전송에 동의한다. 홈이 보이면 그대로 둔다. */
+    /** 첫 실행이면 가짜 키를 넣고 음성 전송에 동의한다. 모의고사 탭이 보이면 그대로 둔다. */
     func passFirstLaunch() {
         let field = tag("key-field")
-        let home = tag("home-exam")
-        XCTAssertTrue(waitUntil(30) { field.exists || home.exists }, "키 입력과 홈 둘 다 보이지 않는다")
+        let examTab = tag("exam-start")
+        XCTAssertTrue(waitUntil(30) { field.exists || examTab.exists }, "키 입력과 모의고사 탭 둘 다 보이지 않는다")
         guard field.exists else { return }
         tapTag("key-provider-gemini")
         field.tap()

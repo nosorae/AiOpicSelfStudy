@@ -1,6 +1,6 @@
 import XCTest
 
-// 한 문항 연습을 화면 터치로 끝까지 돈다(#134). 홈 > 한 문항 풀기 > Play > 녹음 10초 > Next > 답변 리포트 > 기록 탭.
+// 한 문항 연습을 화면 터치로 끝까지 돈다(#134). 연습 탭 > Play(연습 화면이 열리고 바로 질문을 읽는다) > 녹음 10초 > Next > 답변 리포트 > 기록 탭.
 // 첫 실행처럼 비우고 가짜 Gemini 로 띄운다. 분석은 가짜 응답을 못 읽어 실패하지만 리포트 화면으로 가는지만 본다.
 // 기록 탭에 그 연습이 한 줄로 뜨고 실패가 보이며, 누르면 그 답변 리포트가 다시 열리는지 본다(F7.4, #207).
 final class PracticeFlowUITests: XCTestCase {
@@ -15,8 +15,8 @@ final class PracticeFlowUITests: XCTestCase {
     func testPracticeNextOpensAnswerReport() throws {
         app.passFirstLaunch()
 
-        tapWhenReady(app.buttons["한 문항 풀기"])
-        // 규칙 문단 대신 단계 표시(듣기, 답하기, 피드백)가 보인다(#186).
+        app.tabBars.buttons["연습"].tap()
+        // 연습 탭은 연습 화면의 Play 전 모습과 같다. 규칙 문단 대신 단계 표시(듣기, 답하기, 피드백)가 보인다(#186).
         for step in ["듣기", "답하기", "피드백"] {
             XCTAssertTrue(app.staticTexts[step].waitForExistence(timeout: 10), "단계 \(step) 가 보이지 않는다")
         }

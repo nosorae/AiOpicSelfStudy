@@ -14,7 +14,7 @@ final class FirstPlayUITests: XCTestCase {
 
     func testFirstPlayDoesNotWaitForGemini() {
         app.passFirstLaunch()
-        app.tapTag("home-exam")
+        app.tapTag("exam-start")
         app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")

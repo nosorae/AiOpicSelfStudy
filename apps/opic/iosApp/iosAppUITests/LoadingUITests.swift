@@ -34,14 +34,14 @@ final class LoadingUITests: XCTestCase {
         XCTAssertFalse(app.navigationBars.buttons.firstMatch.exists, "키를 확인하는 동안 뒤로 버튼이 보인다")
         // 확인 중에 다른 탭을 눌러도 키 입력 화면에 남는다.
         XCTAssertEqual(app.tag("key-submit").label, "처리 중", "탭을 누르기 전에 키 확인이 끝났다")
-        app.tabBars.buttons["홈"].tap()
+        app.tabBars.buttons["모의고사"].tap()
         XCTAssertTrue(app.tabBars.buttons["설정"].isSelected, "키를 확인하는 동안 탭이 바뀌었다")
         XCTAssertTrue(app.tag("key-field").exists, "키를 확인하는 동안 탭을 누르자 키 입력 화면이 사라졌다")
         XCTAssertTrue(waitUntil(10) { !self.app.tag("key-field").exists }, "키 저장 뒤 설정으로 돌아오지 않았다")
 
         // 모의시험 점검: Play 를 누르면 질문을 읽는 동안 처리 중이다.
-        app.tabBars.buttons["홈"].tap()
-        app.tapTag("home-exam")
+        app.tabBars.buttons["모의고사"].tap()
+        app.tapTag("exam-start")
         app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")

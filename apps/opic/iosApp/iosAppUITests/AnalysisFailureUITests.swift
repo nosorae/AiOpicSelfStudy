@@ -17,7 +17,7 @@ final class AnalysisFailureUITests: XCTestCase {
 
     /** 한 문항을 녹음하고 Next 를 눌러 답변 리포트까지 간다. */
     private func answerOneQuestion() {
-        tapWhenReady(app.buttons["한 문항 풀기"])
+        app.tabBars.buttons["연습"].tap()
         tapWhenReady(app.buttons["Play"])
         let next = app.buttons["Next"]
         XCTAssertTrue(waitUntil(60) { next.exists && next.isEnabled }, "Next 가 60초 안에 켜지지 않았다")
@@ -89,7 +89,7 @@ final class AnalysisFailureUITests: XCTestCase {
 
     func testExamReportAnalysisFailureShowsRetry() {
         launch()
-        app.tapTag("home-exam")
+        app.tapTag("exam-start")
         app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")
