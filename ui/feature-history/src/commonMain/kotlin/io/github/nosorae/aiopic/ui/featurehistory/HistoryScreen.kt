@@ -165,8 +165,11 @@ private fun SessionRow(row: HistorySession, onClick: () -> Unit, modifier: Modif
         caption = when {
             // 답한 문항 없이 끝난 회차는 분석할 것도 등급도 없다.
             row.answered == 0 && row.session.grade == null -> null
+
             row.models.isEmpty() -> stringResource(Res.string.history_models_none)
+
             row.mixedModels -> stringResource(Res.string.history_models_mixed, models)
+
             else -> stringResource(Res.string.history_models, models)
         },
         chevron = true,

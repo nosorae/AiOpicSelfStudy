@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
-/** 답변 하나. 모의고사과 한 문항 연습이 같은 모양으로 남기고, 리포트와 다음 출제는 이것을 쌓아 본다. */
+/** 답변 하나. 모의고사와 한 문항 연습이 같은 모양으로 남기고, 리포트와 다음 출제는 이것을 쌓아 본다. */
 @Serializable
 data class Answer(
     val id: String,

@@ -137,7 +137,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `#223 새로 시작하면 진행 중인 회차를 미완료로 끝내고 끝난 회차는 그대로 둔다`() = runTest(dispatcher) {
+    fun `새로 시작하면 진행 중인 회차를 미완료로 끝내고 끝난 회차는 그대로 둔다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished), ExamSession(id = "b", answerIds = listOf("x"), status = ExamStatus.InProgress))
         val viewModel = loadedViewModel()
 
@@ -150,7 +150,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `#223 미완료로 끝난 회차는 다시 보기에 올리지 않는다`() = runTest(dispatcher) {
+    fun `미완료로 끝난 회차는 다시 보기에 올리지 않는다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished), ExamSession(id = "b", status = ExamStatus.Abandoned))
 
         val viewModel = loadedViewModel()

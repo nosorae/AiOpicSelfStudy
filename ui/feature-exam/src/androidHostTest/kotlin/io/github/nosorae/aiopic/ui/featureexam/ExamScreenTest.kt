@@ -267,7 +267,7 @@ class ExamScreenTest {
 
         rule.onNodeWithContentDescription("나가기").performClick()
 
-        rule.onNodeWithText("모의고사을 나갈까요?").assertIsDisplayed()
+        rule.onNodeWithText("모의고사를 나갈까요?").assertIsDisplayed()
         rule.onNodeWithText("진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 모의고사 탭의 이어 보기로 여기서부터 이어서 할 수 있습니다.").assertIsDisplayed()
         assertEquals(emptyList<ExamIntent>(), intents)
     }
@@ -279,7 +279,7 @@ class ExamScreenTest {
         rule.onNodeWithContentDescription("나가기").performClick()
         rule.onNodeWithText("취소").performClick()
 
-        rule.onNodeWithText("모의고사을 나갈까요?").assertDoesNotExist()
+        rule.onNodeWithText("모의고사를 나갈까요?").assertDoesNotExist()
         assertEquals(emptyList<ExamIntent>(), intents)
     }
 

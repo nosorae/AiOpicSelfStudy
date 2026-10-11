@@ -49,7 +49,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun `#223 진행 중인 회차가 있으면 새로 시작은 확인을 받고 나서 id 없이 넘기고 이어 보기가 더 위에 있다`() {
+    fun `진행 중인 회차가 있으면 새로 시작은 확인을 받고 나서 id 없이 넘기고 이어 보기가 더 위에 있다`() {
         show(HomeSamples.history)
 
         val resumeTop = rule.onNodeWithTag("exam-resume").fetchSemanticsNode().boundsInRoot.top
@@ -68,7 +68,7 @@ class HomeScreenTest {
     }
 
     @Test
-    fun `#223 새로 시작 확인에서 취소하면 아무 데도 가지 않는다`() {
+    fun `새로 시작 확인에서 취소하면 아무 데도 가지 않는다`() {
         show(HomeSamples.history)
 
         rule.onNodeWithTag("exam-start").performClick()

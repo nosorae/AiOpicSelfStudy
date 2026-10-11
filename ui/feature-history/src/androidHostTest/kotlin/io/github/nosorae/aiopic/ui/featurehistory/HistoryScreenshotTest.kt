@@ -48,6 +48,8 @@ class HistoryScreenshotTest {
 
     @Test fun empty() = shot(HistorySamples.empty)
 
+    @Test fun abandoned() = shot(HistorySamples.abandoned)
+
     @Test
     fun filled_practiceFilter() {
         show(HistorySamples.filled)
@@ -129,7 +131,7 @@ class HistoryScreenshotTest {
     }
 
     @Test
-    fun `#223 미완료로 끝난 회차는 미완료로 보이고 답이 없으면 등급을 기다리지 않는다`() {
+    fun `미완료로 끝난 회차는 미완료로 보이고 답이 없으면 등급을 기다리지 않는다`() {
         val row = HistorySession(ExamSession(id = "s9", status = ExamStatus.Abandoned), emptyList(), number = 3)
         show(HistoryUiState(loading = false, entries = listOf(row)))
         rule.onNodeWithText("모의고사 3회차, 미완료").assertExists()

@@ -9,7 +9,7 @@ interface PracticeRepository {
     /** 낼 수 있는 질문 전부. 내장 풀과 사용자가 불러온 파일(F6.3)을 합친 것이다. */
     suspend fun pool(): List<Question>
 
-    /** 지금까지 남긴 답변 전부. 모의고사과 한 문항 연습 답변을 함께 본다. */
+    /** 지금까지 남긴 답변 전부. 모의고사와 한 문항 연습 답변을 함께 본다. */
     suspend fun answers(): List<Answer>
 
     /** 사용자가 "틀림"을 누른 교정(F8.1). 그 답변은 약점 점수에서 빠진다. */

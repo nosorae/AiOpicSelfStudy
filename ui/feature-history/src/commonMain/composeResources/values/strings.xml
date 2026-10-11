@@ -4,7 +4,7 @@
     <string name="history_grades">회차별 예상 등급</string>
     <string name="history_session">모의고사 %1$d회차</string>
     <string name="history_session_abandoned">모의고사 %1$d회차, 미완료</string>
-    <string name="history_list">모의고사과 연습</string>
+    <string name="history_list">모의고사와 연습</string>
     <string name="history_filter_all">전체</string>
     <string name="history_filter_exam">모의고사</string>
     <string name="history_filter_practice">연습</string>
