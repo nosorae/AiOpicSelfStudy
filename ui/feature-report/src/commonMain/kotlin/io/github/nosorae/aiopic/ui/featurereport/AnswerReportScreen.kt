@@ -14,9 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
@@ -37,7 +38,19 @@ import kotlin.math.roundToInt
 @Composable
 fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    AnswerReportScreen(state = state, onIntent = viewModel::onIntent, modifier = modifier)
+    // ponytail: 내보내기 화면처럼 예전 클립보드 API 하나로 두 플랫폼을 덮는다. 새 API 는 넣는 값을 플랫폼마다 따로 만들어야 한다.
+    @Suppress("DEPRECATION")
+    val clipboard = LocalClipboardManager.current
+    AnswerReportScreen(
+        state = state,
+        onIntent = { intent ->
+            if (intent == AnswerReportIntent.ScriptCopied) {
+                ((state.answer?.analysis as? AnswerAnalysis.Done)?.feedback?.finalScript)?.let { clipboard.setText(AnnotatedString(it)) }
+            }
+            viewModel.onIntent(intent)
+        },
+        modifier = modifier,
+    )
 }
 
 /**
@@ -46,6 +59,7 @@ fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Mod
  * 기다리는 동안 분석 작업이 무엇을 기다리는지(차례, 보내는 중, 연결, 다시 보낼 때까지 남은 초) 쓰고(#205), 분석하지 못했으면 이유와 다시 분석하기를 보인다(#203).
  * 이 화면의 움직임은 하나다. 분석을 기다리는 동안은 모이는 점, 분석이 끝났으면 굴러 올라가는 점수다(답변마다 한 번만).
  * 보는 중에 분석이 끝나면 점수 둘레에 작은 축하가 한 번 터진다.
+ * 표현 교정 아래에 내용 교정을, 맨 끝에 최종 스크립트를 둔다(#217). 프롬프트 v3 전에 분석한 답변은 최종 스크립트가 없어 두 칸을 모두 숨긴다.
  */
 @Composable
 fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent) -> Unit, modifier: Modifier = Modifier) {
@@ -62,12 +76,9 @@ fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent
                 LazyColumn(Modifier.fillMaxWidth()) {
                     answerContent(
                         answer,
-                        state.names,
-                        state.wrongCorrections,
-                        state.job,
+                        state,
                         waited,
-                        onWrongClick = { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) },
-                        onRetryClick = { onIntent(AnswerReportIntent.RetryAnalysis) },
+                        onIntent,
                     )
                 }
             }
@@ -75,23 +86,15 @@ fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent
     }
 }
 
-private fun LazyListScope.answerContent(
-    answer: Answer,
-    names: ReportNames,
-    wrongCorrections: Set<Int>,
-    job: AnalysisJob?,
-    celebrate: Boolean,
-    onWrongClick: (index: Int) -> Unit,
-    onRetryClick: () -> Unit,
-) {
+private fun LazyListScope.answerContent(answer: Answer, state: AnswerReportUiState, celebrate: Boolean, onIntent: (AnswerReportIntent) -> Unit) {
     item {
-        answer.analysis.analyzedBy?.let { Paragraph(stringResource(Res.string.answer_analyzed_by, names.model(it)), secondary = true) }
+        answer.analysis.analyzedBy?.let { Paragraph(stringResource(Res.string.answer_analyzed_by, state.names.model(it)), secondary = true) }
         SectionTitle(stringResource(Res.string.answer_question))
         Paragraph(answer.question.text)
     }
     when (val analysis = answer.analysis) {
         AnswerAnalysis.Pending -> item {
-            val status = jobStatus(job)
+            val status = jobStatus(state.job)
             MontageGatheringDots(status, Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8))
             Paragraph(status)
             Paragraph(stringResource(Res.string.answer_pending), secondary = true)
@@ -107,14 +110,14 @@ private fun LazyListScope.answerContent(
         is AnswerAnalysis.Failed -> item {
             SectionTitle(stringResource(Res.string.answer_failed))
             Paragraph(stringResource(analysis.error.text))
-            RetryButton(onRetryClick, tag = "answer-retry")
+            RetryButton({ onIntent(AnswerReportIntent.RetryAnalysis) }, tag = "answer-retry")
         }
 
-        is AnswerAnalysis.Done -> feedback(answer.id, analysis.feedback, wrongCorrections, celebrate, onWrongClick)
+        is AnswerAnalysis.Done -> feedback(answer.id, analysis.feedback, state, celebrate, onIntent)
     }
 }
 
-private fun LazyListScope.feedback(answerId: String, feedback: Feedback, wrongCorrections: Set<Int>, celebrate: Boolean, onWrongClick: (index: Int) -> Unit) {
+private fun LazyListScope.feedback(answerId: String, feedback: Feedback, state: AnswerReportUiState, celebrate: Boolean, onIntent: (AnswerReportIntent) -> Unit) {
     item {
         SectionTitle(stringResource(Res.string.answer_score))
         Box(Modifier.padding(horizontal = MontageSpacing.spacing20), contentAlignment = Alignment.Center) {
@@ -135,7 +138,15 @@ private fun LazyListScope.feedback(answerId: String, feedback: Feedback, wrongCo
     item { SectionTitle(stringResource(Res.string.answer_corrections)) }
     if (feedback.corrections.isEmpty()) item { Paragraph(stringResource(Res.string.answer_corrections_none), secondary = true) }
     items(feedback.corrections.size) {
-        CorrectionRow(feedback.corrections[it], wrong = it in wrongCorrections, onWrongClick = { onWrongClick(it) })
+        CorrectionRow(feedback.corrections[it], wrong = it in state.wrongCorrections, onWrongClick = { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) })
+    }
+    // 옛 답변은 최종 스크립트가 없다. 그때는 내용 교정을 보지 않은 것이라 "고칠 곳이 없다"고 쓰지 않고 칸을 숨긴다.
+    if (feedback.finalScript != null) {
+        item {
+            SectionTitle(stringResource(Res.string.answer_content_fixes))
+            Paragraph(stringResource(if (feedback.contentFixes.isEmpty()) Res.string.answer_content_fixes_none else Res.string.answer_content_fixes_help), secondary = true)
+        }
+        items(feedback.contentFixes.size) { ContentFixRow(feedback.contentFixes[it]) }
     }
     item { SectionTitle(stringResource(Res.string.answer_upgrades)) }
     if (feedback.upgrades.isEmpty()) item { Paragraph(stringResource(Res.string.answer_upgrades_none), secondary = true) }
@@ -169,6 +180,18 @@ private fun LazyListScope.feedback(answerId: String, feedback: Feedback, wrongCo
                 SectionTitle(stringResource(Res.string.answer_pronunciation))
                 Paragraph(pronunciation.comment)
             }
+        }
+    }
+    feedback.finalScript?.let { script ->
+        item {
+            SectionTitle(stringResource(Res.string.answer_script))
+            FinalScript(
+                script,
+                state.scriptPlayback,
+                state.scriptCopied,
+                onCopyClick = { onIntent(AnswerReportIntent.ScriptCopied) },
+                onListenClick = { onIntent(AnswerReportIntent.ListenScript) },
+            )
         }
     }
 }

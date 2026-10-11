@@ -4,6 +4,7 @@ import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.ContentFix
 import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.JobKind
@@ -115,6 +116,30 @@ internal object ReportSamples {
 
     /** 첫 교정에 "틀림"을 누른 상태(F8.1). */
     val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)), wrongCorrections = setOf(0), names = names)
+
+    /** 프롬프트 v3 결과(#217). 내용 교정 하나와 최종 스크립트가 있고, 스크립트를 복사한 뒤다. */
+    val answerScripted = answerEvaluated.copy(
+        wrongCorrections = emptySet(),
+        answer = answer(
+            1,
+            AnswerAnalysis.Done(
+                flash,
+                feedback.copy(
+                    contentFixes = listOf(
+                        ContentFix(
+                            original = "I walked my dog and we play with a ball for about an hour.",
+                            problem = "공원에서 무엇을 했는지만 말하고 그때 어땠는지가 없어 이야기가 끝나지 않는다.",
+                            corrected = "I walked my dog, and we played with a ball for about an hour. It was the most relaxing hour of my week.",
+                        ),
+                    ),
+                    finalScript = "Last weekend, I went to the park near my house. It's a small park with a walking trail and a big open lawn. " +
+                        "I walked my dog there, and we played with a ball for about an hour. She kept bringing the ball back, so I couldn't stop laughing. " +
+                        "Honestly, it was the most relaxing hour of my week, and I'm planning to go again this Saturday.",
+                ),
+            ),
+        ),
+        scriptCopied = true,
+    )
 
     /** 받아쓴 글만 분석한 경로(F5.9). 롤플레이라 한 질문 수도 보인다. */
     val pronunciationNotEvaluated = AnswerReportUiState(

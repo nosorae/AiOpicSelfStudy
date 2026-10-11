@@ -7,6 +7,7 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -84,6 +85,35 @@ class ReportScreenshotTest {
     @Config(fontScale = 2f)
     @Test
     fun answer_unscorable_fontScale200() = answer(ReportSamples.answerUnscorable)
+
+    @Config(qualifiers = "w360dp-h2000dp-xhdpi")
+    @Test
+    fun answer_scripted() = answer(ReportSamples.answerScripted)
+
+    @Config(qualifiers = "w360dp-h2000dp-xhdpi")
+    @Test
+    fun answer_scripted_dark() = answer(ReportSamples.answerScripted, dark = true)
+
+    @Config(qualifiers = "w360dp-h4200dp-xhdpi", fontScale = 2f)
+    @Test
+    fun answer_scripted_fontScale200() = answer(ReportSamples.answerScripted)
+
+    @Config(qualifiers = "w360dp-h2000dp-xhdpi")
+    @Test
+    fun `217 새 결과는 표현 교정과 따로 내용 교정과 최종 스크립트를 보인다`() {
+        show { AnswerReport(ReportSamples.answerScripted) }
+        rule.onNodeWithText("내용 교정").assertExists()
+        rule.onNodeWithText("공원에서 무엇을 했는지만", substring = true).assertExists()
+        rule.onNodeWithTag("final-script").assertExists()
+    }
+
+    @Config(qualifiers = "w360dp-h2000dp-xhdpi")
+    @Test
+    fun `217 최종 스크립트가 없는 옛 결과는 내용 교정과 최종 스크립트 칸을 숨긴다`() {
+        show { AnswerReport(ReportSamples.answerEvaluated) }
+        rule.onNodeWithText("내용 교정").assertDoesNotExist()
+        rule.onNodeWithTag("final-script").assertDoesNotExist()
+    }
 
     @Test fun answer_pending() = answer(ReportSamples.answerPending, settleMillis = 0)
 
