@@ -1,10 +1,13 @@
 package io.github.nosorae.aiopic.ui.featurehistory
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
+import io.github.nosorae.aiopic.engine.answer.model.JobKind
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
@@ -30,6 +33,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class HistoryViewModelTest {
     private val dispatcher = StandardTestDispatcher()
@@ -141,6 +145,23 @@ class HistoryViewModelTest {
         assertEquals("롤플레이", second.typeName)
         assertEquals(null, second.model)
         assertTrue(second.analysis is AnswerAnalysis.Failed)
+    }
+
+    @Test
+    fun `F7_4 분석을 기다리는 연습 답변은 분석 작업 표의 상태를 따라간다`() = runTest(dispatcher) {
+        val store = FakeHistoryStore(answers = listOf(answer("p1", null).copy(analysis = AnswerAnalysis.Pending)))
+        store.jobs.value = listOf(
+            AnalysisJob(JobKind.Grade, "p1", JobState.Failed, updatedAt = Instant.fromEpochSeconds(0)),
+            AnalysisJob(JobKind.Answer, "p1", JobState.WaitingNetwork, updatedAt = Instant.fromEpochSeconds(0)),
+        )
+
+        val viewModel = subscribed(store)
+        advanceUntilIdle()
+        assertEquals(JobState.WaitingNetwork, (viewModel.uiState.value.entries.single() as HistoryPractice).job)
+
+        store.jobs.value = listOf(AnalysisJob(JobKind.Answer, "p1", JobState.Running, updatedAt = Instant.fromEpochSeconds(1)))
+        advanceUntilIdle()
+        assertEquals(JobState.Running, (viewModel.uiState.value.entries.single() as HistoryPractice).job)
     }
 
     @Test

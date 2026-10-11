@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.ui.featurehistory
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -10,10 +11,13 @@ class FakeHistoryStore(sessions: List<ExamSession> = emptyList(), answers: List<
     val sessions = MutableStateFlow(sessions)
     val answers = MutableStateFlow(answers)
     val flags = MutableStateFlow(emptySet<CorrectionFlag>())
+    val jobs = MutableStateFlow(emptyList<AnalysisJob>())
 
     override fun sessions(): Flow<List<ExamSession>> = sessions
 
     override fun answers(): Flow<List<Answer>> = answers
 
     override fun flags(): Flow<Set<CorrectionFlag>> = flags
+
+    override fun jobs(): Flow<List<AnalysisJob>> = jobs
 }
