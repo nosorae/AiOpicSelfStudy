@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import kotlinx.coroutines.flow.Flow
@@ -16,6 +17,10 @@ class FakeReportStore(sessions: List<ExamSession> = emptyList(), answers: List<A
     override fun answers(examSessionId: String): Flow<List<Answer>> = answers.map { list -> list.filter { it.examSessionId == examSessionId } }
 
     override fun answers(): Flow<List<Answer>> = answers
+
+    val jobs = MutableStateFlow(emptyList<AnalysisJob>())
+
+    override fun jobs(): Flow<List<AnalysisJob>> = jobs
 
     /** 다시 보내 달라고 받은 답변 id 와 `session:` 을 붙인 회차 id. */
     val retried = mutableListOf<String>()

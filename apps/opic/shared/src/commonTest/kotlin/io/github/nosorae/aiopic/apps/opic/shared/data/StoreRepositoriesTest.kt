@@ -1,6 +1,7 @@
 package io.github.nosorae.aiopic.apps.opic.shared.data
 
 import io.github.nosorae.aiopic.apps.opic.shared.AppSettings
+import io.github.nosorae.aiopic.apps.opic.shared.testAnalysisJobs
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.store.OpicDatabase
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
@@ -27,15 +28,13 @@ import kotlin.time.Duration.Companion.minutes
 /** 플랫폼마다 메모리 DB 를 만든다. Android 는 호스트 JVM, iOS 는 시뮬레이터에서 같은 테스트를 돈다. */
 expect fun inMemoryDatabase(): OpicDatabase
 
-/** 넣은 id 를 순서대로 모은다. 같은 id 는 한 번만 넣는 대기열 규칙을 따른다. */
+/** 깨운 횟수만 센다. 일은 DB 의 분석 작업 표에 있어서 테스트는 [io.github.nosorae.aiopic.engine.answer.analysis.AnalysisJobs.drain] 을 직접 부른다. */
 class FakeWorkQueue : WorkQueue {
-    val ids = mutableListOf<String>()
+    var wakes = 0
 
-    override suspend fun enqueue(id: String, payload: String) {
-        if (id !in ids) ids += id
+    override fun wake() {
+        wakes++
     }
-
-    override suspend fun cancelAll() = ids.clear()
 }
 
 private val spec = ExamSpec(
@@ -61,10 +60,9 @@ private fun answer(id: String, sessionId: String?) = Answer(id, pool.first(), se
 class StoreRepositoriesTest {
     private val db = inMemoryDatabase()
     private val store = OpicStore(db)
-    private val queue = FakeWorkQueue()
-    private val reads = StoreReads(store, queue)
-
     private val settings = AppSettings.inMemory()
+    private val queue = testAnalysisJobs(store, FakeWorkQueue(), settings)
+    private val reads = StoreReads(store, queue)
 
     private fun exam() = StoreExamRepository(store, queue, spec, { pool }, recordingsRoot = "root", settings, maxOutsideTopics = 0, CoroutineScope(EmptyCoroutineContext)) { _, _, _ -> null }
 
@@ -141,7 +139,7 @@ class StoreRepositoriesTest {
         practice.save(answer("p1", null))
 
         assertEquals(listOf("s1-3", "p1"), store.answers().first().map { it.id })
-        assertEquals(listOf("s1-3", "p1"), queue.ids)
+        assertEquals(listOf("s1-3", "p1"), store.jobs().first().map { it.targetId })
     }
 
     @Test

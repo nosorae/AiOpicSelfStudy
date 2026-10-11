@@ -132,6 +132,6 @@ internal suspend fun dbRows(store: OpicStore): List<Pair<String, String>> {
         "exam_session" to "${sessions.size} rows" + sessions.lastOrNull()?.let { ", last ${it.id} (step ${it.stepIndex})" }.orEmpty(),
         "answer" to "${answers.size} rows" + answers.lastOrNull()?.let { ", last ${it.id} (${it.analysis::class.simpleName})" }.orEmpty(),
         "correction_flag" to "${store.flags().first().size} rows",
-        "analysis_job" to store.jobs().first().groupingBy { it.state }.eachCount().entries.joinToString { "${it.key} ${it.value}" },
+        "analysis_job" to store.jobs().first().let { jobs -> "${jobs.size} rows" + jobs.groupingBy { it.state }.eachCount().entries.joinToString("") { ", ${it.key} ${it.value}" } },
     )
 }

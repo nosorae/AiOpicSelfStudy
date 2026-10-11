@@ -1,22 +1,19 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import io.github.nosorae.aiopic.apps.opic.shared.data.FakeWorkQueue
 import io.github.nosorae.aiopic.apps.opic.shared.data.inMemoryDatabase
 import io.github.nosorae.aiopic.engine.aigemini.GeminiModels
-import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
 import io.github.nosorae.aiopic.engine.answer.model.Answer
-import io.github.nosorae.aiopic.engine.answer.port.Prompt
-import io.github.nosorae.aiopic.engine.answer.port.Recording
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
-import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -27,6 +24,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Instant
 
 class ModelFallBackTest {
     private val db = inMemoryDatabase()
@@ -47,7 +46,7 @@ class ModelFallBackTest {
         // 고른 모델은 404(모델 없음), 기본 모델은 503(잠시 못 씀)이라 분석 결과 JSON 없이 어느 모델로 갔는지만 본다.
         val client = GeminiClient(
             HttpClient(
-                MockEngine { request ->
+                mockEngine { request ->
                     val path = request.url.encodedPath
                     requested += path
                     respond("{}", if (selected in path) HttpStatusCode.NotFound else HttpStatusCode.ServiceUnavailable)
@@ -60,14 +59,16 @@ class ModelFallBackTest {
         }
         val keyVault = FakeKeyVault().apply { put(GeminiModels.PROVIDER, "test-key") }
         val store = OpicStore(db).apply { save(Answer("a1", Question("q1", "Tell me about your home.", QuestionType("intro"), "home"), null, chunkPaths = emptyList())) }
-        val handler = answerAnalysisHandler(store, client, keyVault, settings) { _, model ->
-            AnalysisRequest(model, Prompt("test", "prompt", "{}"), Recording(ByteArray(0), "audio/mp4", emptyList()))
+        val clock = object : Clock {
+            override fun now() = Instant.fromEpochMilliseconds(testScheduler.currentTime)
         }
+        val jobs = testAnalysisJobs(store, FakeWorkQueue(), settings, client, keyVault, clock)
+        jobs.enqueueAnswer("a1")
 
-        assertEquals(WorkResult.Retry, handler.handle("a1"))
+        advanceTimeBy(jobs.drain()!!)
         assertEquals(GeminiModels.defaultModel.id, settings.selectedModelId())
 
-        assertEquals(WorkResult.Retry, handler.handle("a1"))
+        jobs.drain()
         assertEquals(2, requested.size)
         assertTrue(GeminiModels.defaultModel.id in requested[1])
 

@@ -21,8 +21,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import io.github.nosorae.aiopic.ui.design.MontageCelebration
 import io.github.nosorae.aiopic.ui.design.MontageCelebrationSize
@@ -78,7 +80,7 @@ private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -
         item { SectionTitle(stringResource(Res.string.session_answers, report.questionCount)) }
         itemsIndexed(report.answers, key = { _, answer -> answer.id }) { index, answer ->
             val number = index + 1
-            AnswerRow(number, answer, report.names, broke = grade != null && number in grade.brokeAt, onClick = { onOpenAnswer(answer.id) })
+            AnswerRow(number, answer, report.job(answer.id), report.names, broke = grade != null && number in grade.brokeAt, onClick = { onOpenAnswer(answer.id) })
         }
         items(report.timeShortCount) {
             MontageListCell(
@@ -120,7 +122,7 @@ private fun GradeHeader(report: SessionReport) {
                 }
             }
 
-            report.grading -> MontageGatheringDots(stringResource(Res.string.session_grade_grading), scale)
+            report.grading -> MontageGatheringDots(gradeStatus(report), scale)
 
             grade == null && report.answers.isNotEmpty() -> MontageStepTrail(total = report.answers.size, done = report.analyzedCount, modifier = scale)
         }
@@ -139,7 +141,7 @@ private fun GradeHeader(report: SessionReport) {
                 } else if (gradeError != null) {
                     stringResource(Res.string.session_grade_failed, stringResource(gradeError.text))
                 } else if (report.grading) {
-                    stringResource(Res.string.session_grade_grading)
+                    gradeStatus(report)
                 } else {
                     stringResource(Res.string.session_grade_waiting, report.answers.size, report.analyzedCount)
                 }
@@ -167,10 +169,17 @@ private fun GradeHeader(report: SessionReport) {
     }
 }
 
+/** 등급을 기다리는 동안의 문구. 연결이나 다시 보내기를 기다리면 그것을 쓰고, 아니면 등급을 내는 중이라고 쓴다(#205). */
 @Composable
-private fun AnswerRow(number: Int, answer: Answer, names: ReportNames, broke: Boolean, onClick: () -> Unit) {
+private fun gradeStatus(report: SessionReport): String = when (report.gradeJob?.state) {
+    JobState.WaitingNetwork, JobState.RetryScheduled -> jobStatus(report.gradeJob)
+    else -> stringResource(Res.string.session_grade_grading)
+}
+
+@Composable
+private fun AnswerRow(number: Int, answer: Answer, job: AnalysisJob?, names: ReportNames, broke: Boolean, onClick: () -> Unit) {
     val status = when (val analysis = answer.analysis) {
-        AnswerAnalysis.Pending -> stringResource(Res.string.status_pending)
+        AnswerAnalysis.Pending -> jobStatus(job)
         is AnswerAnalysis.Failed -> stringResource(Res.string.status_failed)
         is AnswerAnalysis.Done -> stringResource(Res.string.status_score, analysis.feedback.score, names.model(analysis.analyzedBy))
         is AnswerAnalysis.Unscorable -> stringResource(Res.string.status_unscorable, stringResource(analysis.reason.text), names.model(analysis.analyzedBy))

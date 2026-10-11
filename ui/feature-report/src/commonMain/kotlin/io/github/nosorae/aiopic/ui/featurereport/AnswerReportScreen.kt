@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
@@ -42,7 +43,7 @@ fun AnswerReportRoute(viewModel: AnswerReportViewModel, modifier: Modifier = Mod
 /**
  * 답변 하나의 피드백(F5.2, F7.1). 모의시험과 한 문항 연습이 같은 화면을 쓴다. 분석한 제공사와 모델을 맨 위에 둔다(F5.7).
  * 받아쓴 글만 분석한 경로면 발음 칸에 "평가 안 함"을 쓴다(F5.9). 교정마다 "틀림"을 누를 수 있다(F8.1).
- * 분석하지 못했으면 이유와 다시 분석하기를 보인다(#203).
+ * 기다리는 동안 분석 작업이 무엇을 기다리는지(차례, 보내는 중, 연결, 다시 보낼 때까지 남은 초) 쓰고(#205), 분석하지 못했으면 이유와 다시 분석하기를 보인다(#203).
  * 이 화면의 움직임은 하나다. 분석을 기다리는 동안은 모이는 점, 분석이 끝났으면 굴러 올라가는 점수다(답변마다 한 번만).
  * 보는 중에 분석이 끝나면 점수 둘레에 작은 축하가 한 번 터진다.
  */
@@ -63,6 +64,7 @@ fun AnswerReportScreen(state: AnswerReportUiState, onIntent: (AnswerReportIntent
                         answer,
                         state.names,
                         state.wrongCorrections,
+                        state.job,
                         waited,
                         onWrongClick = { onIntent(AnswerReportIntent.ToggleCorrectionWrong(it)) },
                         onRetryClick = { onIntent(AnswerReportIntent.RetryAnalysis) },
@@ -77,6 +79,7 @@ private fun LazyListScope.answerContent(
     answer: Answer,
     names: ReportNames,
     wrongCorrections: Set<Int>,
+    job: AnalysisJob?,
     celebrate: Boolean,
     onWrongClick: (index: Int) -> Unit,
     onRetryClick: () -> Unit,
@@ -88,7 +91,9 @@ private fun LazyListScope.answerContent(
     }
     when (val analysis = answer.analysis) {
         AnswerAnalysis.Pending -> item {
-            MontageGatheringDots(stringResource(Res.string.status_pending), Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8))
+            val status = jobStatus(job)
+            MontageGatheringDots(status, Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8))
+            Paragraph(status)
             Paragraph(stringResource(Res.string.answer_pending), secondary = true)
         }
 

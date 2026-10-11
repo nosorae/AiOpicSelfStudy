@@ -9,6 +9,7 @@ import androidx.room3.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import io.github.nosorae.aiopic.apps.opic.shared.data.FakeWorkQueue
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.store.OpicDatabase
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
@@ -18,7 +19,6 @@ import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.github.nosorae.aiopic.libs.tts.api.Tts
-import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import io.github.nosorae.aiopic.ui.featureexam.ExamIntent
 import io.github.nosorae.aiopic.ui.featureexam.ExamViewModel
 import io.github.nosorae.aiopic.ui.featureexam.QuestionPhase
@@ -34,7 +34,6 @@ import io.github.nosorae.aiopic.ui.featurepractice.PracticeViewModel
 import io.github.nosorae.aiopic.ui.featurereport.AnswerReportViewModel
 import io.github.nosorae.aiopic.ui.featurereport.SessionReportViewModel
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.engine.mock.toByteArray
 import io.ktor.http.HttpHeaders
@@ -53,6 +52,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
@@ -110,7 +110,7 @@ class ExamE2eIosTest {
             recorder = DiskRecorder(recordedDirectories),
             tts = SilentTts,
             workQueue = queue,
-            gemini = GeminiClient(HttpClient(MockEngine { respond(if ("brokeAt" in it.body.toByteArray().decodeToString()) GRADE_RESPONSE else ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) })),
+            gemini = GeminiClient(HttpClient(mockEngine { respond(if ("brokeAt" in it.body.toByteArray().decodeToString()) GRADE_RESPONSE else ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json")) })),
             timer = { now },
         )
         return App(graph, database).also { launched += it }
@@ -168,12 +168,11 @@ class ExamE2eIosTest {
                 resumed.answer()
             }
 
-            // 분석 대기열(F5.1)을 비우면 리포트(F7.2)에 답변 12개가 저장한 응답의 점수로 나온다
-            assertEquals(12, queue.ids.size)
-            // 마지막 답변 분석 뒤 회차 등급 요청(F5.3)이 같은 대기열에 붙는다.
-            var next = 0
-            while (next < queue.ids.size) assertEquals(WorkResult.Success, second.graph.analysisHandler.handle(queue.ids[next++]))
-            assertEquals(13, queue.ids.size)
+            // 분석 작업 표(F5.1)를 비우면 리포트(F7.2)에 답변 12개가 저장한 응답의 점수로 나온다
+            assertEquals(12, second.graph.opicStore.jobs().first().size)
+            // 마지막 답변 분석 뒤 회차 등급 작업(F5.3)이 붙어 같은 비우기에서 끝난다.
+            assertNull(second.graph.analysisJobs.drain())
+            assertEquals(List(13) { JobState.Succeeded }, second.graph.opicStore.jobs().first().map { it.state })
             val report = second.viewModel { sessionReportViewModelFactory.create("s1") }.uiState.first { it.report != null }.report!!
             assertEquals(ExamStatus.Finished, report.session.status)
             assertEquals("IM2", report.session.grade?.low)
@@ -192,7 +191,7 @@ class ExamE2eIosTest {
             now += 11.seconds
             practice.onIntent(PracticeIntent.SubmitAnswer)
             assertEquals(PracticeDestination.Feedback("p1"), practice.uiState.first { it.navigation != null }.navigation)
-            assertEquals(WorkResult.Success, second.graph.analysisHandler.handle("p1"))
+            assertNull(second.graph.analysisJobs.drain())
             val feedback = second.viewModel("answer-p1") { answerReportViewModelFactory.create("p1") }
             assertEquals(FAKE_SCORE, (feedback.uiState.first { it.answer?.analysis is AnswerAnalysis.Done }.answer!!.analysis as AnswerAnalysis.Done).feedback.score)
         } finally {

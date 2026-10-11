@@ -18,8 +18,8 @@ import io.github.nosorae.aiopic.engine.answer.port.Recording
 import io.github.nosorae.aiopic.engine.answer.port.SavedResponses
 import io.github.nosorae.aiopic.engine.answer.port.SessionGrader
 import io.github.nosorae.aiopic.engine.answer.port.TextAnalysis
-import io.github.nosorae.aiopic.engine.answer.port.Transcript
 import io.github.nosorae.aiopic.engine.answer.port.Transcriber
+import io.github.nosorae.aiopic.engine.answer.port.Transcript
 import io.github.nosorae.aiopic.engine.answer.port.TranscriptAnalyzer
 import io.github.nosorae.aiopic.engine.answer.route.AnswerRouter
 import io.github.nosorae.aiopic.engine.answer.store.OpicStore

@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import kotlinx.coroutines.flow.Flow
@@ -14,6 +15,9 @@ interface ReportStore {
     fun answers(examSessionId: String): Flow<List<Answer>>
 
     fun answers(): Flow<List<Answer>>
+
+    /** 분석 작업 표(#205). 기다리는 답변과 등급이 지금 무엇을 기다리는지 보인다. */
+    fun jobs(): Flow<List<AnalysisJob>>
 
     /** 분석하지 못한 답변을 기다림으로 돌려 다시 보낸다(#203). */
     suspend fun retryAnswer(answerId: String)

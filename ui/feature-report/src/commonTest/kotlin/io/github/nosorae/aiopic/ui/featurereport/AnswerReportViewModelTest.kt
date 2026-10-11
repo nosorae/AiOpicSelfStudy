@@ -1,7 +1,10 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Correction
+import io.github.nosorae.aiopic.engine.answer.model.JobKind
+import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.answer.weakness.TypeWeakness
 import io.github.nosorae.aiopic.engine.answer.weakness.weaknessScores
@@ -23,6 +26,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.time.Instant
 
 class AnswerReportViewModelTest {
     private val dispatcher = StandardTestDispatcher()
@@ -35,7 +39,7 @@ class AnswerReportViewModelTest {
 
     private fun viewModel(answerId: String, store: FakeReportStore) = AnswerReportViewModel(
         answerId,
-        ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore, FakeCatalog),
+        ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore, store, FakeCatalog),
         MarkCorrectionWrongUseCase(flagStore),
         RetryAnswerAnalysisUseCase(store),
     )
@@ -77,6 +81,19 @@ class AnswerReportViewModelTest {
         advanceUntilIdle()
 
         assertIs<AnswerAnalysis.Done>(viewModel.uiState.value.answer?.analysis)
+    }
+
+    @Test
+    fun `205 기다리는 답변은 분석 작업 상태가 바뀌는 대로 보인다`() = runTest(dispatcher) {
+        val store = FakeReportStore(answers = answers("s1", 1).map { it.copy(analysis = AnswerAnalysis.Pending) })
+        val viewModel = viewModel("a0", store)
+        store.jobs.value = listOf(AnalysisJob(JobKind.Answer, "a0", JobState.WaitingNetwork, updatedAt = Instant.fromEpochMilliseconds(0)))
+        advanceUntilIdle()
+        assertEquals(JobState.WaitingNetwork, viewModel.uiState.value.job?.state)
+
+        store.jobs.value = listOf(AnalysisJob(JobKind.Answer, "a0", JobState.Running, updatedAt = Instant.fromEpochMilliseconds(1)), AnalysisJob(JobKind.Answer, "other", JobState.Failed, updatedAt = Instant.fromEpochMilliseconds(1)))
+        advanceUntilIdle()
+        assertEquals(JobState.Running, viewModel.uiState.value.job?.state)
     }
 
     @Test

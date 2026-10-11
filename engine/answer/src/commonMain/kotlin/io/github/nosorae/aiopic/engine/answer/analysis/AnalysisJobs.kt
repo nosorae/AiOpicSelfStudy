@@ -134,8 +134,10 @@ class AnalysisJobs(
         store.jobs().first().mapNotNull {
             when (it.state) {
                 JobState.RetryScheduled -> (it.nextAttemptAt!! - now).coerceAtLeast(Duration.ZERO)
+
                 // 오프라인에서 멈춰 남은 대기도 연결을 다시 볼 때 함께 보낸다. 보내는 사이 넣은 대기는 넣을 때 깨워서 따로 돈다.
                 JobState.WaitingNetwork, JobState.Queued -> NETWORK_RECHECK
+
                 else -> null
             }
         }.minOrNull()
@@ -210,8 +212,10 @@ class AnalysisJobs(
         val (model, prompt, recording) = answerRequest(answer)
         return when (val result = router.analyze(answer, model, prompt, recording)) {
             is AnalysisResult.Success -> null.also { store.save(result.value) }
+
             // 경로 고르기는 평가 불가를 답변에 넣어 Success 로 돌려준다. 여기 오지 않는다.
             is AnalysisResult.Unscorable -> AnalysisError.Rejected
+
             is AnalysisResult.Failed -> result.error
         }
     }

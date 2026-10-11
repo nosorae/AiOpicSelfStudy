@@ -63,9 +63,13 @@ class GeminiAnalyzer(
             val text = saved?.take(stage) ?: when (val result = send(model, prompt, recordings)) {
                 // 받자마자 해석하기 전에 남긴다. 해석하다 앱이 죽어도 토큰을 쓴 응답은 남는다.
                 is LlmResult.Success -> result.text.also { saved?.save(stage, it) }
+
                 is LlmResult.Retryable -> return AnalysisResult.Failed(if (result.httpStatus == null) AnalysisError.Offline else AnalysisError.Retryable)
+
                 LlmResult.InvalidKey -> return AnalysisResult.Failed(AnalysisError.InvalidKey)
+
                 LlmResult.ModelNotFound -> return AnalysisResult.Failed(AnalysisError.ModelUnavailable)
+
                 is LlmResult.Rejected -> return AnalysisResult.Failed(AnalysisError.Rejected)
             }
             text.decodeOrNull(serializer)?.let { return AnalysisResult.Success(it) }

@@ -2,12 +2,20 @@ package io.github.nosorae.aiopic.apps.opic.shared
 
 import io.github.nosorae.aiopic.apps.opic.shared.data.FakeWorkQueue
 import io.github.nosorae.aiopic.apps.opic.shared.data.inMemoryDatabase
+import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisJobs
+import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
+import io.github.nosorae.aiopic.engine.answer.analysis.GradeRequest
+import io.github.nosorae.aiopic.engine.answer.port.Prompt
+import io.github.nosorae.aiopic.engine.answer.port.Recording
+import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.libs.keyvault.api.KeyVault
+import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmResult
 import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
 import io.github.nosorae.aiopic.libs.tts.api.Tts
+import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
 import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.ui.featureexam.ExamIntent
 import io.github.nosorae.aiopic.ui.featureexam.ExamViewModel
@@ -16,6 +24,12 @@ import io.github.nosorae.aiopic.ui.featureonboarding.DomainResult
 import io.github.nosorae.aiopic.ui.featureonboarding.consent.ConsentIntent
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartDestination
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.MockEngineConfig
+import io.ktor.client.engine.mock.MockRequestHandler
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -26,6 +40,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Clock
 import kotlin.time.Duration
 
 /** 서베이를 낼 수 있는 주제 12개. 묶음마다 최소(2, 1, 1, 1)를 넘게 앞에서부터 고른다. */
@@ -47,6 +62,41 @@ fun testAppGraph(settings: AppSettings = AppSettings.inMemory(), keyVault: KeyVa
     recorder = FakeRecorder,
     tts = FakeTts,
     workQueue = FakeWorkQueue(),
+)
+
+/**
+ * 그래프와 같은 조립 함수로 만든 분석 작업 표. 호스트 JVM 테스트는 시험 팩의 프롬프트 파일을 못 읽어서 요청만 바꿔 넣는다.
+ * 기본 클라이언트는 늘 503 이라 실제로 보내는 테스트는 [client] 를 넣는다.
+ */
+internal fun testAnalysisJobs(
+    store: OpicStore,
+    queue: WorkQueue,
+    settings: AppSettings,
+    client: GeminiClient = GeminiClient(HttpClient(mockEngine { respond("{}", HttpStatusCode.ServiceUnavailable) })),
+    keyVault: KeyVault = FakeKeyVault(),
+    clock: Clock = Clock.System,
+): AnalysisJobs {
+    val silence = Recording(ByteArray(0), "audio/mp4", emptyList())
+    return analysisJobs(
+        store = store,
+        queue = queue,
+        client = client,
+        keyVault = keyVault,
+        settings = settings,
+        answerRequest = { _, model -> AnalysisRequest(model, Prompt("answer-v1", "answer", "{\"transcript\":{}}"), silence) },
+        gradeRequest = { answers, model -> GradeRequest(model, Prompt("grade-v1", "grade", "{\"brokeAt\":{}}"), OpicEn.gradeScale, answers.map { silence }) },
+        clock = clock,
+    )
+}
+
+/**
+ * 부른 스레드에서 바로 답하는 가짜 Gemini. 다른 스레드에서 답하면 그동안 테스트 시계가 넘어가 분석 작업의 시간 제한(2분)에 걸린다.
+ */
+fun mockEngine(handler: MockRequestHandler) = MockEngine(
+    MockEngineConfig().apply {
+        dispatcher = Dispatchers.Unconfined
+        addHandler(handler)
+    },
 )
 
 class FakeKeyVault : KeyVault {
@@ -103,7 +153,7 @@ class AppGraphTest {
         graph.practiceViewModelFactory.create("answer")
         graph.sessionReportViewModelFactory.create("session")
         graph.answerReportViewModelFactory.create("answer")
-        graph.analysisHandler
+        graph.analysisJobs
     }
 
     @Test

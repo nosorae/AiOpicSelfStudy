@@ -1,9 +1,11 @@
 package io.github.nosorae.aiopic.ui.featurereport
 
 import dev.zacsweers.metro.Inject
+import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.JobKind
 import io.github.nosorae.aiopic.engine.answer.port.ModelCatalog
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
@@ -14,8 +16,20 @@ import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
-/** 회차 리포트(F7.2)에 그릴 값. [answers] 는 회차에서 답한 순서다. */
-data class SessionReport(val session: ExamSession, val answers: List<Answer>, val questionCount: Int, val names: ReportNames = ReportNames()) {
+/** 회차 리포트(F7.2)에 그릴 값. [answers] 는 회차에서 답한 순서다. [jobs] 는 이 회차 답변과 등급의 분석 작업이다(#205). */
+data class SessionReport(
+    val session: ExamSession,
+    val answers: List<Answer>,
+    val questionCount: Int,
+    val names: ReportNames = ReportNames(),
+    val jobs: List<AnalysisJob> = emptyList(),
+) {
+    /** 답변 하나의 분석 작업. 기다리는 답변 줄에 무엇을 기다리는지 쓴다. */
+    fun job(answerId: String): AnalysisJob? = jobs.firstOrNull { it.kind == JobKind.Answer && it.targetId == answerId }
+
+    /** 등급 작업. 없으면 아직 넣지 않았다. */
+    val gradeJob: AnalysisJob? get() = jobs.firstOrNull { it.kind == JobKind.Grade }
+
     /** 40분이 지나 답하지 못한 문항 수. 리포트 끝에 "시간 부족"으로 붙는다(F2.6). */
     val timeShortCount: Int get() = if (session.status == ExamStatus.TimeUp) (questionCount - answers.size).coerceAtLeast(0) else 0
 
@@ -55,7 +69,7 @@ class ObserveSessionReportUseCase(
     private val modelCatalog: ModelCatalog,
     private val gradeScale: GradeScale,
 ) {
-    operator fun invoke(sessionId: String): Flow<SessionReport?> = combine(store.session(sessionId), store.answers(sessionId)) { session, answers ->
+    operator fun invoke(sessionId: String): Flow<SessionReport?> = combine(store.session(sessionId), store.answers(sessionId), store.jobs()) { session, answers, jobs ->
         session ?: return@combine null
         val byId = answers.associateBy { it.id }
         val level = session.level ?: spec.levelCount
@@ -64,6 +78,7 @@ class ObserveSessionReportUseCase(
             answers = session.answerIds.mapNotNull(byId::get),
             questionCount = spec.steps.count { it is ExamStep.Ask && it.minLevel <= level },
             names = ReportNames(typeNames, modelCatalog.models, gradeScale.grades),
+            jobs = jobs.filter { if (it.kind == JobKind.Grade) it.targetId == sessionId else it.targetId in byId },
         )
     }
 }
