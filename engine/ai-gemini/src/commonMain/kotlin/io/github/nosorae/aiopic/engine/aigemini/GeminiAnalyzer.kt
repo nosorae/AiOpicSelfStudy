@@ -60,7 +60,7 @@ class GeminiAnalyzer(
         // 읽을 수 없는 JSON(출력 한도에 잘린 응답 등)은 출력 검사(F5.4)처럼 한 번 다시 요청하고, 두 번째도 못 읽으면 거절한다.
         // 남은 원문은 첫 번째로 센다. 남은 원문을 못 읽으면 한 번만 새로 받는다.
         repeat(2) {
-            val text = saved?.take(stage) ?: when (val result = send(model, prompt, recordings)) {
+            val text = saved?.take(stage) ?: when (val result = send(model, prompt, recordings, THINKING[stage])) {
                 // 받자마자 해석하기 전에 남긴다. 해석하다 앱이 죽어도 토큰을 쓴 응답은 남는다.
                 is LlmResult.Success -> result.text.also { saved?.save(stage, it) }
 
@@ -77,7 +77,7 @@ class GeminiAnalyzer(
         return AnalysisResult.Failed(AnalysisError.Rejected)
     }
 
-    private suspend fun send(model: ModelInfo, prompt: Prompt, recordings: List<Recording>): LlmResult {
+    private suspend fun send(model: ModelInfo, prompt: Prompt, recordings: List<Recording>, thinkingLevel: String?): LlmResult {
         val key = apiKey() ?: return LlmResult.InvalidKey
         return client.generate(
             LlmRequest(
@@ -86,6 +86,7 @@ class GeminiAnalyzer(
                 prompt = prompt.text,
                 audio = recordings.map { AudioPart(it.bytes, it.mimeType) },
                 responseSchema = prompt.responseSchema,
+                thinkingLevel = thinkingLevel,
             ),
         )
     }
@@ -104,6 +105,13 @@ class GeminiAnalyzer(
         /** [SavedResponses] 의 단계 이름. */
         const val ANSWER = "answer"
         const val GRADE = "grade"
+
+        /**
+         * 단계별 생각 수준(#216). 답변 분석은 낮춘다. 같은 녹음 네 개를 기본과 낮춘 설정으로 보내 보니 평균 10.2초가 5.6초가 됐고,
+         * 넣은 문법 오류 다섯 개를 둘 다 모두 잡았다. 롤플레이 답의 점수는 낮춘 쪽이 7~15점 높게 나왔다.
+         * 회차 등급은 회차에 한 번이고 앱이 내는 결론이라 기본값으로 둔다.
+         */
+        val THINKING = mapOf(ANSWER to "low")
     }
 }
 
