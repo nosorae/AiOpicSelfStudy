@@ -111,6 +111,12 @@ internal object ReportSamples {
         grade = null,
     )
 
+    /** 새로 시작해 끝낸 미완료 회차(#223). 3번까지 답해 분석이 끝났고 등급을 내는 중이다. */
+    val abandoned = report(List(3) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, status = ExamStatus.Abandoned, grade = null)
+
+    /** 서베이만 내고 답한 문항 없이 끝낸 미완료 회차(#223). 분석할 답이 없어 등급도 없다. */
+    val abandonedEmpty = report(emptyList(), status = ExamStatus.Abandoned, grade = null)
+
     /** 답변 7개를 모두 분석했고 회차 등급만 기다린다(등급 요청이 대기열에 있거나 모델이 내는 중). */
     val grading = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null)
 

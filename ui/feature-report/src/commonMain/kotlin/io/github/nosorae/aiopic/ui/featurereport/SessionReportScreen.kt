@@ -51,6 +51,8 @@ fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerI
 
 /**
  * 등급 범위와 근거, 무너진 문항, 답변 목록 순으로 그린다(F7.2). 시간이 다 된 회차는 답하지 못한 문항을 끝에 "시간 부족"으로 붙인다.
+ * 새로 시작해 끝낸 미완료 회차는 등급 옆에 미완료라고 쓰고 남은 문항을 "답하지 않음"으로 붙인다. 답한 문항이 없으면 기다림 대신
+ * 등급이 없다는 문구만 보인다(#223).
  * 이 화면의 움직임은 하나다. 등급이 나왔으면 등급 눈금의 구슬, 분석을 기다리는 중이면 분석한 답변 수만큼 차는 진행 점,
  * 분석은 다 끝나고 등급만 기다리면 모이는 점이다. 분석이나 등급이 실패하면 기다림 문구 대신 실패 문구와 다시 분석하기를 보인다(#203). 등급 구슬은 회차와 등급마다 한 번만 움직인다.
  * 보는 중에 등급이 나오면 구슬이 멈춘 뒤 큰 축하가 한 번 터진다.
@@ -73,6 +75,8 @@ private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -
     LazyColumn(Modifier.fillMaxWidth()) {
         item { GradeHeader(report) }
         if (report.canRetry) item { RetryButton(onRetryClick, tag = "session-retry") }
+        // 답한 문항 없이 끝난 미완료 회차는 보일 줄이 없다. 머리의 문구가 그 사실을 전한다.
+        if (report.answers.isEmpty() && report.unansweredCount == 0) return@LazyColumn
         if (grade != null && grade.reasons.isNotEmpty()) {
             item { SectionTitle(stringResource(Res.string.session_reasons)) }
             items(grade.reasons.size) { Paragraph(grade.reasons[it]) }
@@ -82,10 +86,10 @@ private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -
             val number = index + 1
             AnswerRow(number, answer, report.job(answer.id), report.names, broke = grade != null && number in grade.brokeAt, onClick = { onOpenAnswer(answer.id) })
         }
-        items(report.timeShortCount) {
+        items(report.unansweredCount) {
             MontageListCell(
                 title = stringResource(Res.string.session_number, report.answers.size + it + 1),
-                caption = stringResource(Res.string.session_time_short),
+                caption = stringResource(if (report.abandoned) Res.string.session_unanswered else Res.string.session_time_short),
             )
         }
     }
@@ -140,6 +144,9 @@ private fun GradeHeader(report: SessionReport) {
                     stringResource(Res.string.session_failed, report.failedCount)
                 } else if (gradeError != null) {
                     stringResource(Res.string.session_grade_failed, stringResource(gradeError.text))
+                } else if (report.answers.isEmpty()) {
+                    // 분석할 답이 없어 등급은 나오지 않는다. 기다림 문구를 쓰면 끝나지 않는 기다림이 된다.
+                    stringResource(Res.string.session_no_answers)
                 } else if (report.grading) {
                     gradeStatus(report)
                 } else {
@@ -147,16 +154,8 @@ private fun GradeHeader(report: SessionReport) {
                 }
                 Text(waiting, style = typography.body1Reading.regular, color = colors.foregroundNeutralSecondary)
             }
-            if (report.mixedModels) {
-                Text(
-                    text = stringResource(Res.string.session_models_mixed),
-                    style = typography.label2.bold,
-                    color = colors.foregroundNeutralPrimary,
-                    modifier = Modifier
-                        .border(1.dp, colors.lineNeutralPrimary, RoundedCornerShape(MontageRadius.radius8))
-                        .padding(horizontal = MontageSpacing.spacing8, vertical = MontageSpacing.spacing4),
-                )
-            }
+            if (report.abandoned) Badge(stringResource(Res.string.session_abandoned))
+            if (report.mixedModels) Badge(stringResource(Res.string.session_models_mixed))
         }
         if (report.models.isNotEmpty()) {
             Text(
@@ -167,6 +166,20 @@ private fun GradeHeader(report: SessionReport) {
             )
         }
     }
+}
+
+/** 등급 옆에 붙는 짧은 표시. 미완료 회차와 모델 섞임에 쓴다. */
+@Composable
+private fun Badge(text: String) {
+    val colors = MontageTheme.colors
+    Text(
+        text = text,
+        style = MontageTheme.typography.label2.bold,
+        color = colors.foregroundNeutralPrimary,
+        modifier = Modifier
+            .border(1.dp, colors.lineNeutralPrimary, RoundedCornerShape(MontageRadius.radius8))
+            .padding(horizontal = MontageSpacing.spacing8, vertical = MontageSpacing.spacing4),
+    )
 }
 
 /** 등급을 기다리는 동안의 문구. 연결이나 다시 보내기를 기다리면 그것을 쓰고, 아니면 등급을 내는 중이라고 쓴다(#205). */

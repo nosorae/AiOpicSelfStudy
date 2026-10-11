@@ -12,6 +12,9 @@
     <string name="session_broke">무너진 문항</string>
     <string name="session_number">%1$d번</string>
     <string name="session_time_short">시간 부족, 시험 시간 안에 답하지 못했습니다</string>
+    <string name="session_unanswered">답하지 않음, 회차를 끝내기 전에 답하지 않았습니다</string>
+    <string name="session_abandoned">미완료</string>
+    <string name="session_no_answers">답한 문항 없이 끝난 회차라 예상 등급이 없습니다.</string>
     <string name="session_not_found">이 회차를 찾을 수 없습니다.</string>
     <string name="status_score">%1$d점, %2$s</string>
     <string name="status_pending">분석 대기 중</string>
