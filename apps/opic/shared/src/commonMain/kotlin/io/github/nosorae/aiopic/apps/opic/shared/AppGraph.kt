@@ -12,11 +12,9 @@ import io.github.nosorae.aiopic.apps.opic.shared.data.StoreReads
 import io.github.nosorae.aiopic.engine.aigemini.GeminiAnalyzer
 import io.github.nosorae.aiopic.engine.aigemini.GeminiModels
 import io.github.nosorae.aiopic.engine.aigemini.GeminiQuestionWriter
+import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisJobs
 import io.github.nosorae.aiopic.engine.answer.analysis.AnalysisRequest
-import io.github.nosorae.aiopic.engine.answer.analysis.AnswerAnalysisHandler
 import io.github.nosorae.aiopic.engine.answer.analysis.GradeRequest
-import io.github.nosorae.aiopic.engine.answer.analysis.SessionGradeHandler
-import io.github.nosorae.aiopic.engine.answer.analysis.requeuePending
 import io.github.nosorae.aiopic.engine.answer.check.choose
 import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
@@ -51,9 +49,7 @@ import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.timer.api.MonotonicTimer
 import io.github.nosorae.aiopic.libs.timer.deviceMonotonicTimer
 import io.github.nosorae.aiopic.libs.tts.api.Tts
-import io.github.nosorae.aiopic.libs.workqueue.api.WorkHandler
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkQueue
-import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.packs.opicen.OpicPrompt
 import io.github.nosorae.aiopic.packs.opicen.OpicQuestionType
@@ -82,6 +78,7 @@ import io.github.nosorae.aiopic.ui.featurereport.ReportStore
 import io.github.nosorae.aiopic.ui.featurereport.SessionReportViewModel
 import io.github.nosorae.aiopic.ui.featurereport.flag.FlagStore
 import io.github.nosorae.aiopic.ui.featuresettings.SettingsViewModel
+import io.github.nosorae.aiopic.ui.featuresettings.consent.PendingAnalysis
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportStore
 import io.github.nosorae.aiopic.ui.featuresettings.export.FlagExportViewModel
 import io.github.nosorae.aiopic.ui.featuresettings.haptics.HapticsStore
@@ -90,13 +87,13 @@ import io.github.nosorae.aiopic.ui.featuresettings.practice.AnswerTimerStore
 import io.github.nosorae.aiopic.ui.featuresettings.practice.QuestionFileStore
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeModeStore
 import io.github.nosorae.aiopic.ui.featuresettings.voice.QuestionVoiceStore
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.MissingResourceException
+import kotlin.time.Clock
 import kotlin.time.DurationUnit
 
 /**
@@ -143,8 +140,11 @@ interface AppGraph {
     /** 앱 틀이 플랫폼 진동에 설정의 진동 켜기/끄기를 씌울 때 쓴다. */
     val settings: AppSettings
 
-    /** 플랫폼 대기열이 답변 id 나 회차 등급 요청을 꺼낼 때마다 부른다(F5.1, F5.3). 대기열은 그래프보다 먼저 만들어져서 이 값을 나중에 이어 준다. */
-    val analysisHandler: WorkHandler
+    /**
+     * 분석 작업 표(#205). 플랫폼 대기열이 깨어날 때마다 [AnalysisJobs.drain] 을 부르고(F5.1, F5.3), 앱 틀이 켤 때 [AnalysisJobs.recover] 를 부른다.
+     * 대기열은 그래프보다 먼저 만들어져서 이 값을 나중에 이어 준다.
+     */
+    val analysisJobs: AnalysisJobs
 
     /** 디버깅 화면의 DB 패널이 읽는다. */
     val opicStore: OpicStore
@@ -162,6 +162,8 @@ interface AppGraph {
     @Provides fun hapticsStore(settings: AppSettings): HapticsStore = settings
 
     @Provides fun surveyStore(settings: AppSettings): SurveyStore = settings
+
+    @Provides fun pendingAnalysis(jobs: AnalysisJobs): PendingAnalysis = PendingAnalysis(jobs::cancelAll)
 
     @Provides
     fun questionVoiceStore(settings: AppSettings, @Named(DEVICE_TTS) device: Tts): QuestionVoiceStore = object : QuestionVoiceStore {
@@ -201,7 +203,7 @@ interface AppGraph {
 
     @SingleIn(AppScope::class)
     @Provides
-    fun storeReads(store: OpicStore, queue: WorkQueue): StoreReads = StoreReads(store, queue)
+    fun storeReads(store: OpicStore, jobs: AnalysisJobs): StoreReads = StoreReads(store, jobs)
 
     @Provides fun examSessionSource(reads: StoreReads): ExamSessionSource = reads
 
@@ -240,7 +242,7 @@ interface AppGraph {
     @Provides
     fun examRepository(
         store: OpicStore,
-        queue: WorkQueue,
+        jobs: AnalysisJobs,
         spec: ExamSpec,
         @Named(RECORDINGS) recordingsRoot: String,
         settings: AppSettings,
@@ -251,16 +253,17 @@ interface AppGraph {
     ): ExamRepository {
         val writer = GeminiQuestionWriter(client) { keyVault.get(GeminiModels.PROVIDER) }
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-        return StoreExamRepository(store, queue, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope, OpicEn.survey::nearTopics, voice::prepare, voice::clean) { session, part, asked ->
+        return StoreExamRepository(store, jobs, spec, pack.pool, recordingsRoot, settings, OpicEn.MAX_OUTSIDE_TOPICS, scope, OpicEn.survey::nearTopics, voice::prepare, voice::clean) { session, part, asked ->
             examQuestions(session, part, asked, store, settings, writer, pack.questionsPrompt)
         }
     }
 
     @Provides
-    fun practiceRepository(store: OpicStore, queue: WorkQueue, settings: AppSettings, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, queue, { practicePool(settings) }, recordingsRoot)
+    fun practiceRepository(store: OpicStore, jobs: AnalysisJobs, settings: AppSettings, @Named(RECORDINGS) recordingsRoot: String): PracticeRepository = StorePracticeRepository(store, jobs, { practicePool(settings) }, recordingsRoot)
 
+    @SingleIn(AppScope::class)
     @Provides
-    fun analysisHandler(store: OpicStore, queue: WorkQueue, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): WorkHandler = analysisQueueHandler(
+    fun analysisJobs(store: OpicStore, queue: WorkQueue, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): AnalysisJobs = analysisJobs(
         store = store,
         queue = queue,
         client = client,
@@ -268,7 +271,7 @@ interface AppGraph {
         settings = settings,
         answerRequest = { answer, model -> analysisRequest(answer, model, recorder) },
         gradeRequest = { answers, model -> gradeRequest(answers, model, recorder) },
-    ).logged()
+    )
 
     @DependencyGraph.Factory
     fun interface Factory {
@@ -380,31 +383,11 @@ internal fun geminiKeyCheck(result: LlmResult): DomainResult<Unit> = when (resul
 }
 
 /**
- * 분석 대기열의 처리기. 테스트가 가짜 Gemini 클라이언트를 넣을 수 있게 그래프 밖에 둔다.
- * [request] 를 따로 받는 것은 호스트 JVM 테스트에서 시험 팩의 프롬프트 파일(Compose 리소스)을 못 읽어서다.
+ * 분석 작업 표(#205). 답변 분석과 회차 등급을 설정에서 고른 모델로 보내고, 작업을 넣으면 플랫폼 대기열을 깨운다.
+ * 테스트가 가짜 Gemini 클라이언트를 넣을 수 있게 그래프 밖에 둔다. 요청을 따로 받는 것은 호스트 JVM 테스트에서 시험 팩의 프롬프트 파일(Compose 리소스)을 못 읽어서다.
  */
-internal fun answerAnalysisHandler(
-    store: OpicStore,
-    client: GeminiClient,
-    keyVault: KeyVault,
-    settings: AppSettings,
-    request: suspend (Answer, ModelInfo) -> AnalysisRequest,
-): WorkHandler {
-    val gemini = FallBackToDefaultModel(GeminiAnalyzer(client) { keyVault.get(GeminiModels.PROVIDER) }, settings)
-    return AnswerAnalysisHandler(
-        store = store,
-        router = AnswerRouter(gemini, NoTwoStepPath, NoTwoStepPath),
-        consented = settings::isGiven,
-        request = { answer -> request(answer, GeminiModels.choose(settings.selectedModelId()).model) },
-    )
-}
-
-/**
- * 분석 대기열 하나의 처리기. 답변 분석을 처리하고, 회차 답변이 모두 분석되면 등급 요청을 같은 대기열에 넣어 처리한다(F5.3).
- * 등급도 설정에서 고른 모델로 보낸다. 요청을 따로 받는 이유는 [answerAnalysisHandler] 와 같다.
- */
-// ponytail: 등급 요청은 고른 모델이 내려가도 기본 모델로 돌리지 않고 버린다. 다음 답변 분석이 기본 모델로 바꿔 두므로, 등급을 다시 요청하는 길이 생기면 그때 돌린다.
-internal fun analysisQueueHandler(
+// ponytail: 등급 요청은 고른 모델이 내려가도 기본 모델로 돌리지 않고 실패로 끝낸다. 다음 답변 분석이 기본 모델로 바꿔 두므로 다시 분석하기로 다시 보낸다.
+internal fun analysisJobs(
     store: OpicStore,
     queue: WorkQueue,
     client: GeminiClient,
@@ -412,18 +395,24 @@ internal fun analysisQueueHandler(
     settings: AppSettings,
     answerRequest: suspend (Answer, ModelInfo) -> AnalysisRequest,
     gradeRequest: suspend (List<Answer>, ModelInfo) -> GradeRequest,
-): WorkHandler = SessionGradeHandler(
-    store = store,
-    queue = queue,
-    answers = answerAnalysisHandler(store, client, keyVault, settings, answerRequest),
-    grader = GeminiAnalyzer(client) { keyVault.get(GeminiModels.PROVIDER) },
-    consented = settings::isGiven,
-    request = { answers -> gradeRequest(answers, GeminiModels.choose(settings.selectedModelId()).model) },
-)
+    clock: Clock = Clock.System,
+): AnalysisJobs {
+    val gemini = GeminiAnalyzer(client) { keyVault.get(GeminiModels.PROVIDER) }
+    return AnalysisJobs(
+        store = store,
+        router = AnswerRouter(FallBackToDefaultModel(gemini, settings), NoTwoStepPath, NoTwoStepPath),
+        grader = gemini,
+        consented = settings::isGiven,
+        answerRequest = { answer -> answerRequest(answer, GeminiModels.choose(settings.selectedModelId()).model) },
+        gradeRequest = { answers -> gradeRequest(answers, GeminiModels.choose(settings.selectedModelId()).model) },
+        wake = queue::wake,
+        clock = clock,
+    )
+}
 
 /**
  * 고른 모델이 내려가 분석이 [AnalysisError.ModelUnavailable] 로 끝나면 기본 모델을 저장하고 다시 보내게 한다(F5.8).
- * 다시 보낼 때 [answerAnalysisHandler] 가 저장된 모델을 읽어서 기본 모델로 간다. 설정 화면은 [AppSettings.takeFellBackFrom] 으로 알린다.
+ * 다시 보낼 때 [analysisJobs] 가 저장된 모델을 읽어서 기본 모델로 간다. 설정 화면은 [AppSettings.takeFellBackFrom] 으로 알린다.
  * 기본 모델마저 없으면 돌릴 곳이 없어 그대로 실패로 둔다.
  */
 private class FallBackToDefaultModel(private val analyzer: AudioAnswerAnalyzer, private val settings: AppSettings) : AudioAnswerAnalyzer {
@@ -465,23 +454,10 @@ private suspend fun gradeRequest(answers: List<Answer>, model: ModelInfo, record
 
 /** 답변의 조각을 같은 폴더의 `answer.m4a` 하나로 이어 붙여 읽는다. */
 private suspend fun recording(answer: Answer, recorder: Recorder): Recording {
-    // 조각이 없는 답변(마이크를 못 연 경우)은 빈 녹음으로 보낸다. 여기서 예외가 나면 대기열 사슬 전체가 멈춘다.
+    // 조각이 없는 답변(마이크를 못 연 경우)은 빈 녹음으로 보낸다. 모델이 평가할 수 없음으로 답한다.
     val output = answer.chunkPaths.firstOrNull()?.substringBeforeLast('/')?.plus("/answer.m4a")
     val resumedAt = output?.let { recorder.merge(answer.chunkPaths, it) }.orEmpty()
     return Recording(output?.let(::readFile) ?: ByteArray(0), "audio/mp4", resumedAt)
-}
-
-/** 대기열이 꺼낸 분석 작업 하나의 시작, 결과, 예외를 디버깅 로그에 남긴다. 예외는 그대로 대기열에 넘긴다. */
-private fun WorkHandler.logged() = WorkHandler { payload ->
-    DebugTools.log(DebugLevel.Info, "Analysis", "start $payload")
-    try {
-        handle(payload).also { DebugTools.log(if (it == WorkResult.Success) DebugLevel.Info else DebugLevel.Warn, "Analysis", "$it $payload") }
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        DebugTools.log(DebugLevel.Error, "Analysis", "failed $payload", e)
-        throw e
-    }
 }
 
 /** 녹음 파일 하나를 통째로 읽는다. 분석 요청 한 번에 답변 하나(길어야 몇 MB)만 싣는다. */
@@ -505,9 +481,3 @@ private object NoTwoStepPath : Transcriber, TranscriptAnalyzer {
 
     override suspend fun analyze(model: ModelInfo, prompt: Prompt, question: Question, transcript: Transcript): AnalysisResult<TextAnalysis> = AnalysisResult.Failed(AnalysisError.Rejected)
 }
-
-/**
- * 앱을 켤 때 앱 틀이 한 번 부른다. 기다림인데 대기열에 없는 답변과 등급 요청을 다시 넣어(#203) 리포트가 끝없이 기다리지 않게 한다.
- * 대기열이 그래프보다 먼저 만들어져 그래프에 없어서 앱 틀이 넘긴다.
- */
-suspend fun AppGraph.requeuePendingAnalysis(queue: WorkQueue) = requeuePending(opicStore, queue)

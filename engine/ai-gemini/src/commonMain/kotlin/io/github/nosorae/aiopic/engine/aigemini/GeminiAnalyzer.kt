@@ -14,6 +14,7 @@ import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording
+import io.github.nosorae.aiopic.engine.answer.port.SavedResponses
 import io.github.nosorae.aiopic.engine.answer.port.SessionGrader
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.session.model.AnalysisError
@@ -23,6 +24,7 @@ import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.llmgemini.api.AudioPart
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmRequest
 import io.github.nosorae.aiopic.libs.llmgemini.api.LlmResult
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -33,6 +35,7 @@ import kotlin.time.Duration.Companion.seconds
  * Gemini 한 번 호출 경로(ADR 0019). 녹음을 직접 들려주고 답변 피드백과 회차 등급을 받는다.
  * 받은 값은 출력 검사(F5.4)를 거치고, 통과 못하면 한 번 다시 요청한다.
  * [prompt] 본문은 부르는 쪽이 문항과 이어 녹음 위치를 채운 글이다.
+ * 분석 작업이 [SavedResponses] 를 문맥에 넣어 주면 받은 원문을 해석하기 전에 남기고, 남은 원문이 있으면 보내지 않고 그것을 해석한다(#205).
  */
 class GeminiAnalyzer(
     private val client: GeminiClient,
@@ -41,7 +44,7 @@ class GeminiAnalyzer(
 ) : AudioAnswerAnalyzer,
     SessionGrader {
     override suspend fun analyze(model: ModelInfo, prompt: Prompt, question: Question, recording: Recording): AnalysisResult<Feedback> = requestChecked(::checkFeedback) {
-        when (val result = generate(model, prompt, listOf(recording), AnswerWire.serializer())) {
+        when (val result = generate(ANSWER, model, prompt, listOf(recording), AnswerWire.serializer())) {
             is AnalysisResult.Success -> result.value.toResult()
             is AnalysisResult.Unscorable -> result
             is AnalysisResult.Failed -> result
@@ -49,29 +52,38 @@ class GeminiAnalyzer(
     }
 
     override suspend fun grade(model: ModelInfo, prompt: Prompt, scale: GradeScale, recordings: List<Recording>): AnalysisResult<SessionGrade> = requestChecked({ checkSessionGrade(it, scale, recordings.size) }) {
-        generate(model, prompt, recordings, SessionGrade.serializer())
+        generate(GRADE, model, prompt, recordings, SessionGrade.serializer())
     }
 
-    private suspend fun <T> generate(model: ModelInfo, prompt: Prompt, recordings: List<Recording>, serializer: KSerializer<T>): AnalysisResult<T> {
-        val key = apiKey() ?: return AnalysisResult.Failed(AnalysisError.InvalidKey)
-        val request = LlmRequest(
-            apiKey = key,
-            model = model.id,
-            prompt = prompt.text,
-            audio = recordings.map { AudioPart(it.bytes, it.mimeType) },
-            responseSchema = prompt.responseSchema,
-        )
+    private suspend fun <T> generate(stage: String, model: ModelInfo, prompt: Prompt, recordings: List<Recording>, serializer: KSerializer<T>): AnalysisResult<T> {
+        val saved = currentCoroutineContext()[SavedResponses]
         // 읽을 수 없는 JSON(출력 한도에 잘린 응답 등)은 출력 검사(F5.4)처럼 한 번 다시 요청하고, 두 번째도 못 읽으면 거절한다.
+        // 남은 원문은 첫 번째로 센다. 남은 원문을 못 읽으면 한 번만 새로 받는다.
         repeat(2) {
-            when (val result = client.generate(request)) {
-                is LlmResult.Success -> result.text.decodeOrNull(serializer)?.let { return AnalysisResult.Success(it) }
-                is LlmResult.Retryable -> return AnalysisResult.Failed(AnalysisError.Retryable)
+            val text = saved?.take(stage) ?: when (val result = send(model, prompt, recordings)) {
+                // 받자마자 해석하기 전에 남긴다. 해석하다 앱이 죽어도 토큰을 쓴 응답은 남는다.
+                is LlmResult.Success -> result.text.also { saved?.save(stage, it) }
+                is LlmResult.Retryable -> return AnalysisResult.Failed(if (result.httpStatus == null) AnalysisError.Offline else AnalysisError.Retryable)
                 LlmResult.InvalidKey -> return AnalysisResult.Failed(AnalysisError.InvalidKey)
                 LlmResult.ModelNotFound -> return AnalysisResult.Failed(AnalysisError.ModelUnavailable)
                 is LlmResult.Rejected -> return AnalysisResult.Failed(AnalysisError.Rejected)
             }
+            text.decodeOrNull(serializer)?.let { return AnalysisResult.Success(it) }
         }
         return AnalysisResult.Failed(AnalysisError.Rejected)
+    }
+
+    private suspend fun send(model: ModelInfo, prompt: Prompt, recordings: List<Recording>): LlmResult {
+        val key = apiKey() ?: return LlmResult.InvalidKey
+        return client.generate(
+            LlmRequest(
+                apiKey = key,
+                model = model.id,
+                prompt = prompt.text,
+                audio = recordings.map { AudioPart(it.bytes, it.mimeType) },
+                responseSchema = prompt.responseSchema,
+            ),
+        )
     }
 
     private fun <T> String.decodeOrNull(serializer: KSerializer<T>): T? = try {
@@ -84,6 +96,10 @@ class GeminiAnalyzer(
 
     private companion object {
         val json = Json { ignoreUnknownKeys = true }
+
+        /** [SavedResponses] 의 단계 이름. */
+        const val ANSWER = "answer"
+        const val GRADE = "grade"
     }
 }
 

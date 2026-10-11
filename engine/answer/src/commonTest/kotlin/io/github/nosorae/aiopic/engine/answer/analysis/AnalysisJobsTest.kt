@@ -260,21 +260,32 @@ class AnalysisJobsTest {
     @Test
     fun `205 앱이 진행 중에 죽으면 켤 때 대기로 되돌려 다시 처리한다`() = runTest {
         store.save(answer())
-        val dead = jobs()
-        dead.enqueueAnswer("a1")
-        answerResult = { awaitCancellation() }
-        val process = backgroundScope.launch { dead.drain() }
-        runCurrent()
-        assertEquals(JobState.Running, job()?.state)
-        process.cancel()
+        jobs().enqueueAnswer("a1")
+        // 프로세스가 죽으면 코드가 더 돌지 않아 진행 중이 그대로 남는다.
+        store.save(job()!!.copy(state = JobState.Running))
 
-        answerResult = { AnalysisResult.Success(feedback) }
         val restarted = jobs()
         restarted.recover()
 
         assertEquals(JobState.Queued, job()?.state)
         restarted.drain()
         assertEquals(JobState.Succeeded, job()?.state)
+    }
+
+    @Test
+    fun `205 보내는 중에 플랫폼이 멈추면 프로세스가 살아 있으니 바로 대기로 돌린다`() = runTest {
+        val jobs = jobs()
+        store.save(answer())
+        jobs.enqueueAnswer("a1")
+        answerResult = { awaitCancellation() }
+        val drain = backgroundScope.launch { jobs.drain() }
+        runCurrent()
+        assertEquals(JobState.Running, job()?.state)
+
+        drain.cancel()
+        runCurrent()
+
+        assertEquals(JobState.Queued, job()?.state)
     }
 
     @Test

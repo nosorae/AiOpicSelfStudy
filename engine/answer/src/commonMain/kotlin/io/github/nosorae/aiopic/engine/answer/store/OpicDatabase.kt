@@ -9,6 +9,9 @@ import androidx.room3.PrimaryKey
 import androidx.room3.Query
 import androidx.room3.RoomDatabase
 import androidx.room3.RoomDatabaseConstructor
+import androidx.room3.migration.Migration
+import androidx.sqlite.SQLiteConnection
+import androidx.sqlite.execSQL
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -17,9 +20,9 @@ import kotlinx.coroutines.flow.Flow
  * 행에는 찾을 때 쓰는 열만 두고 모델은 JSON 한 칸에 통째로 넣는다. 모델은 이미 직렬화 왕복이 테스트돼 있고(F3.1 통째 저장),
  * 필드가 늘어도 표를 고치지 않는다.
  */
-// ponytail: exportSchema 를 끈다. 표가 JSON 칸 하나라 바뀔 일이 드물다. 표를 바꾸는 이전이 생기면 room3 Gradle 플러그인으로 스키마를 내보낸다.
-// 틀림 표시 표를 더하면서도 version 1 로 둔다. 앱이 아직 이 DB 를 만든 적이 없어(배포 전) 이전할 파일이 없다.
-@Database(entities = [SessionRow::class, AnswerRow::class, FlagRow::class], version = 1, exportSchema = false)
+// ponytail: exportSchema 를 끈다. 이전은 표를 더하는 것뿐이라 손으로 쓴 SQL 하나([OPIC_MIGRATIONS])와 iOS 이전 테스트로 확인한다.
+// 표를 고치는 이전이 생기면 room3 Gradle 플러그인으로 스키마를 내보낸다.
+@Database(entities = [SessionRow::class, AnswerRow::class, FlagRow::class, JobRow::class, ResponseRow::class], version = 2, exportSchema = false)
 @ConstructedBy(OpicDatabaseConstructor::class)
 abstract class OpicDatabase : RoomDatabase() {
     internal abstract fun dao(): OpicDao
@@ -39,6 +42,41 @@ internal data class AnswerRow(@PrimaryKey val id: String, val examSessionId: Str
 /** 틀림 표시 하나(F8.1). 답변 id 와 교정 순서만 둔다. 교정 내용은 답변 JSON 에 있다. */
 @Entity(tableName = "correction_flag", primaryKeys = ["answerId", "index"])
 internal data class FlagRow(val answerId: String, val index: Int)
+
+/** 분석 작업 하나(#205). 시각은 epoch 밀리초다. */
+@Entity(tableName = "analysis_job", primaryKeys = ["kind", "targetId"])
+internal data class JobRow(
+    val kind: String,
+    val targetId: String,
+    val state: String,
+    val attempts: Int,
+    val nextAttemptAt: Long?,
+    val error: String?,
+    val updatedAt: Long,
+)
+
+/** 분석 작업이 받은 응답 원문, 단계마다 하나(#205). 해석하기 전에 저장해서 다시 부르지 않고 다시 해석한다. */
+@Entity(tableName = "analysis_response", primaryKeys = ["kind", "targetId", "stage"])
+internal data class ResponseRow(val kind: String, val targetId: String, val stage: String, val text: String)
+
+/**
+ * 앱 DB 빌더가 넣는 이전. version 2 는 분석 작업 표와 응답 원문 표를 더한다(#205).
+ * 기다리던 답변을 작업 표로 옮기는 일은 앱을 켤 때마다 도는 `AnalysisJobs.recover` 가 한다. 이전 뒤 첫 실행도 그 길을 탄다.
+ */
+val OPIC_MIGRATIONS: Array<Migration> = arrayOf(
+    object : Migration(1, 2) {
+        override suspend fun migrate(connection: SQLiteConnection) {
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `analysis_job` (`kind` TEXT NOT NULL, `targetId` TEXT NOT NULL, `state` TEXT NOT NULL, `attempts` INTEGER NOT NULL, " +
+                    "`nextAttemptAt` INTEGER, `error` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`kind`, `targetId`))",
+            )
+            connection.execSQL(
+                "CREATE TABLE IF NOT EXISTS `analysis_response` (`kind` TEXT NOT NULL, `targetId` TEXT NOT NULL, `stage` TEXT NOT NULL, `text` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`kind`, `targetId`, `stage`))",
+            )
+        }
+    },
+)
 
 @Dao
 internal interface OpicDao {
@@ -73,4 +111,20 @@ internal interface OpicDao {
 
     @Query("SELECT * FROM correction_flag")
     fun flags(): Flow<List<FlagRow>>
+
+    // 같은 행을 고쳐서 rowid 순서가 처음 넣은 순서로 남는다. 작업은 이 순서로 하나씩 보낸다.
+    @Query(
+        "INSERT INTO analysis_job (kind, targetId, state, attempts, nextAttemptAt, error, updatedAt) VALUES (:kind, :targetId, :state, :attempts, :nextAttemptAt, :error, :updatedAt) " +
+            "ON CONFLICT(kind, targetId) DO UPDATE SET state = excluded.state, attempts = excluded.attempts, nextAttemptAt = excluded.nextAttemptAt, error = excluded.error, updatedAt = excluded.updatedAt",
+    )
+    suspend fun saveJob(kind: String, targetId: String, state: String, attempts: Int, nextAttemptAt: Long?, error: String?, updatedAt: Long)
+
+    @Query("SELECT * FROM analysis_job ORDER BY rowid")
+    fun jobs(): Flow<List<JobRow>>
+
+    @Query("INSERT INTO analysis_response (kind, targetId, stage, text) VALUES (:kind, :targetId, :stage, :text) ON CONFLICT(kind, targetId, stage) DO UPDATE SET text = excluded.text")
+    suspend fun saveResponse(kind: String, targetId: String, stage: String, text: String)
+
+    @Query("SELECT text FROM analysis_response WHERE kind = :kind AND targetId = :targetId AND stage = :stage")
+    suspend fun response(kind: String, targetId: String, stage: String): String?
 }

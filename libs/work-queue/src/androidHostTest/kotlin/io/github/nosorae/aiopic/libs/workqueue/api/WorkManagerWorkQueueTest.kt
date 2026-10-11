@@ -2,14 +2,10 @@ package io.github.nosorae.aiopic.libs.workqueue.api
 
 import android.content.Context
 import androidx.work.Configuration
-import androidx.work.ListenableWorker
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.testing.SynchronousExecutor
-import androidx.work.testing.TestListenableWorkerBuilder
 import androidx.work.testing.WorkManagerTestInitHelper
-import androidx.work.workDataOf
-import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,16 +13,20 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class WorkManagerWorkQueueTest {
     private val context: Context = RuntimeEnvironment.getApplication()
-    private val handled = mutableListOf<String>()
-    private var result = WorkResult.Success
-    private val handler = WorkHandler { payload ->
-        handled += payload
-        result
+    private var drains = 0
+
+    /** 부를 때마다 차례로 돌려준다. 다 쓰면 null(남은 작업 없음)이다. */
+    private var answers = ArrayDeque<() -> Duration?>()
+    private val drain = Drain {
+        drains++
+        answers.removeFirstOrNull()?.invoke()
     }
 
     @Before
@@ -34,81 +34,65 @@ class WorkManagerWorkQueueTest {
         WorkManagerTestInitHelper.initializeTestWorkManager(context, Configuration.Builder().setExecutor(SynchronousExecutor()).build())
     }
 
-    private fun work(id: String): WorkInfo = WorkManager.getInstance(context).getWorkInfosByTag(id).get().single()
+    private fun works(): List<WorkInfo> = WorkManager.getInstance(context).getWorkInfosForUniqueWork(CHAIN).get().filterNot { it.state.isFinished }
 
-    private fun connect(id: String) = WorkManagerTestInitHelper.getTestDriver(context)!!.setAllConstraintsMet(work(id).id)
-
-    @Test
-    fun `F5_6 오프라인에서 넣은 작업은 기다리다 연결되면 넣은 순서대로 비워진다`() = runBlocking {
-        val queue = WorkManagerWorkQueue(context, handler)
-        queue.enqueue("a1", "first")
-        queue.enqueue("a2", "second")
-
-        assertEquals(emptyList(), handled)
-
-        connect("a1")
-        connect("a2")
-
-        assertEquals(listOf("first", "second"), handled)
-        assertEquals(WorkInfo.State.SUCCEEDED, work("a2").state)
+    /** 남은 작업의 네트워크 조건과 대기 시간을 채워 돌린다. */
+    private fun runPending() = works().forEach {
+        val driver = WorkManagerTestInitHelper.getTestDriver(context)!!
+        driver.setAllConstraintsMet(it.id)
+        driver.setInitialDelayMet(it.id)
     }
 
     @Test
-    fun `끝나지 않은 작업 id 를 읽고 끝난 작업은 빠진다`() = runBlocking {
-        val queue = WorkManagerWorkQueue(context, handler)
-        queue.enqueue("a1", "first")
-        queue.enqueue("a2", "second")
+    fun `205 깨워도 연결되기 전에는 비우지 않고 연결되면 DB 를 비운다`() {
+        val queue = WorkManagerWorkQueue(context, drain)
 
-        assertEquals(setOf("a1", "a2"), queue.pending().toSet())
+        queue.wake()
+        assertEquals(0, drains)
 
-        connect("a1")
-
-        assertEquals(listOf("a2"), queue.pending())
+        runPending()
+        assertEquals(1, drains)
+        assertEquals(emptyList(), works())
     }
 
     @Test
-    fun `F5_1 같은 id 를 다시 넣어도 한 번만 보낸다`() = runBlocking {
-        val queue = WorkManagerWorkQueue(context, handler)
-        queue.enqueue("a1", "first")
-        queue.enqueue("a1", "again")
+    fun `205 다시 보낼 작업이 남으면 그 시간 뒤에 다시 비운다`() {
+        WorkManagerWorkQueue(context, drain).wake()
+        answers += { 30.seconds }
 
-        connect("a1")
+        runPending()
+        assertEquals(1, drains)
+        assertEquals(1, works().size)
 
-        assertEquals(listOf("first"), handled)
+        runPending()
+        assertEquals(2, drains)
+        assertEquals(emptyList(), works())
     }
 
     @Test
-    fun `F1_3 모두 취소하면 연결돼도 보내지 않는다`() = runBlocking {
-        val queue = WorkManagerWorkQueue(context, handler)
-        queue.enqueue("a1", "first")
+    fun `205 비우다 예외가 나도 사슬을 끊지 않고 나중에 다시 비운다`() {
+        WorkManagerWorkQueue(context, drain).wake()
+        answers += { error("DB 를 못 열었다") }
 
-        queue.cancelAll()
+        runPending()
+        assertEquals(1, works().size)
 
-        assertEquals(WorkInfo.State.CANCELLED, work("a1").state)
-        assertEquals(emptyList(), handled)
+        runPending()
+        assertEquals(2, drains)
     }
 
     @Test
-    fun `F5_6 다시 보낼 실패는 3번까지 다시 시도하고 그 뒤에는 버려서 다음 작업을 막지 않는다`() = runBlocking {
-        WorkManagerWorkQueue(context, handler)
-        result = WorkResult.Retry
+    fun `205 여러 번 깨워도 뒤 작업이 이미 있으면 다시 비우기를 겹쳐 넣지 않는다`() {
+        val queue = WorkManagerWorkQueue(context, drain)
+        queue.wake()
+        queue.wake()
+        answers += { 30.seconds }
+        answers += { 30.seconds }
 
-        val outcomes = (0..3).map { attempt -> worker(attempt).doWork() }
+        runPending()
 
-        assertEquals(List(3) { ListenableWorker.Result.retry() } + ListenableWorker.Result.success(), outcomes)
-        assertEquals(4, handled.size)
+        // 깨운 두 번이 차례로 돌고, 뒤 작업이 있던 첫 번째는 다시 비우기를 넣지 않는다.
+        assertEquals(2, drains)
+        assertEquals(1, works().size)
     }
-
-    @Test
-    fun `다시 보내도 안 될 실패는 바로 버리고 다음 작업으로 넘어간다`() = runBlocking {
-        WorkManagerWorkQueue(context, handler)
-        result = WorkResult.Failure
-
-        assertEquals(ListenableWorker.Result.success(), worker(0).doWork())
-    }
-
-    private fun worker(attempt: Int) = TestListenableWorkerBuilder<QueueWorker>(context)
-        .setInputData(workDataOf(PAYLOAD to "first"))
-        .setRunAttemptCount(attempt)
-        .build()
 }

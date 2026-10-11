@@ -13,10 +13,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.http.content.TextContent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.io.IOException
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -29,10 +31,12 @@ internal object DebugSwitches {
     val recordFail = DebugTools.switch("record_fail", "Recording chunk write fails")
     val dropOnce = DebugTools.switch("drop_once", "Fake Gemini: first analysis drops, then succeeds")
     val offline = DebugTools.switch("offline", "Fake Gemini: every analysis drops")
+    val stall = DebugTools.switch("stall", "Every analysis request hangs past the time limit")
 }
 
 /**
  * 요청과 응답을 디버깅 화면에 남기는 Gemini 클라이언트. [slow] 가 켜져 있으면 요청마다 [slowDelay] 기다린 뒤 보낸다.
+ * [stall] 이 켜져 있으면 녹음을 실은 요청(분석, 등급)이 분석 작업의 시간 제한보다 오래 멈춘다(#205).
  * [fakeEngine] 이 있으면 보내지 않고 그 엔진의 응답("OK")을 돌려준다. 가짜 키가 키 확인을 넘고(F1.1), 출제와 분석은 응답을 못 읽어 내장 문항과 분석 실패로 간다.
  * 가짜 엔진은 실제 디버깅 모듈만 주고 릴리스의 빈 모듈은 null 이라, 릴리스 빌드에는 가짜 응답 코드가 실리지 않는다.
  */
@@ -41,13 +45,24 @@ fun debugGeminiClient(
     fakeEngine: HttpClientEngine? = if (DebugSwitches.fakeGemini.enabled) fakeHttpEngine(FakeGemini()::respond) else null,
     slow: () -> Boolean = { DebugSwitches.slowResponse.enabled },
     slowDelay: Duration = 3.seconds,
+    stall: () -> Boolean = { DebugSwitches.stall.enabled },
 ): GeminiClient {
     val config: HttpClientConfig<*>.() -> Unit = {
         installDebugTools()
-        install(createClientPlugin("SlowResponse") { onRequest { _, _ -> if (slow()) delay(slowDelay) } })
+        install(
+            createClientPlugin("SlowResponse") {
+                onRequest { _, content ->
+                    if (slow()) delay(slowDelay)
+                    if (stall() && "inlineData" in (content as? TextContent)?.text.orEmpty()) delay(STALL)
+                }
+            },
+        )
     }
     return GeminiClient(if (fakeEngine != null) HttpClient(fakeEngine, config) else HttpClient(config))
 }
+
+/** 분석 작업의 시간 제한(2분)보다 길다. */
+private val STALL = 10.minutes
 
 internal const val OK_RESPONSE = """{"candidates":[{"content":{"parts":[{"text":"OK"}]}}]}"""
 
@@ -99,11 +114,11 @@ fun Recorder.withDebugTools(fail: () -> Boolean = { DebugSwitches.recordFail.ena
 private const val TAG_RECORDER = "Recorder"
 
 /**
- * 디버깅 화면에 이 앱의 패널(대기열, 오디오 세션, 설정 값, DB)을 더한다. 대기열과 오디오는 플랫폼마다 읽는 법이 달라 앱 틀이 넘긴다.
+ * 디버깅 화면에 이 앱의 패널(분석 작업, 오디오 세션, 설정 값, DB)을 더한다. 오디오는 플랫폼마다 읽는 법이 달라 앱 틀이 넘긴다.
  * 패널은 화면을 열 때 읽는다.
  */
-fun AppGraph.registerDebugPanels(queue: suspend () -> List<String>, audio: suspend () -> List<Pair<String, String>>) {
-    DebugTools.panel("Queue") { queue().let { ids -> listOf("pending" to ids.size.toString()) + ids.mapIndexed { i, id -> "#${i + 1}" to id } } }
+fun AppGraph.registerDebugPanels(audio: suspend () -> List<Pair<String, String>>) {
+    DebugTools.panel("Queue") { opicStore.jobs().first().filter { it.state.active }.map { "${it.kind} ${it.targetId}" to "${it.state} (${it.attempts})" } }
     DebugTools.panel("Audio session", audio)
     DebugTools.panel("Settings") { settings.debugRows() }
     DebugTools.panel("DB") { dbRows(opicStore) }
@@ -117,5 +132,6 @@ internal suspend fun dbRows(store: OpicStore): List<Pair<String, String>> {
         "exam_session" to "${sessions.size} rows" + sessions.lastOrNull()?.let { ", last ${it.id} (step ${it.stepIndex})" }.orEmpty(),
         "answer" to "${answers.size} rows" + answers.lastOrNull()?.let { ", last ${it.id} (${it.analysis::class.simpleName})" }.orEmpty(),
         "correction_flag" to "${store.flags().first().size} rows",
+        "analysis_job" to store.jobs().first().groupingBy { it.state }.eachCount().entries.joinToString { "${it.key} ${it.value}" },
     )
 }

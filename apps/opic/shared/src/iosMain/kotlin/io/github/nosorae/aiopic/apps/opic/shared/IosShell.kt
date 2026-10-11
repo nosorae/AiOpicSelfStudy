@@ -14,7 +14,7 @@ import io.github.nosorae.aiopic.libs.haptics.api.iosHaptics
 import io.github.nosorae.aiopic.libs.keyvault.api.KeychainKeyVault
 import io.github.nosorae.aiopic.libs.recorder.api.IosRecorder
 import io.github.nosorae.aiopic.libs.tts.IosTts
-import io.github.nosorae.aiopic.libs.workqueue.api.ForegroundWorkQueue
+import io.github.nosorae.aiopic.libs.workqueue.api.IosWorkQueue
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
@@ -43,7 +43,9 @@ class IosShell {
 
     private val keyVault = KeychainKeyVault().also(UiTestLaunch::resetIfAsked)
 
-    private val workQueue = ForegroundWorkQueue(handler = { graph.analysisHandler.handle(it) }, scope = MainScope())
+    // 대기열이 그래프보다 먼저 만들어지므로 비우기는 부를 때 그래프에서 찾는다. 대기열은 DB 의 분석 작업 표를 비우기만 하고(#205),
+    // 앱이 뒤로 가면 백그라운드 처리 작업으로 이어서 비운다. 앱 틀(iOSApp)이 실행을 마치기 전에 만들어서 등록 시점을 지킨다.
+    private val workQueue = IosWorkQueue(drain = { graph.analysisJobs.drain() }, scope = MainScope(), backgroundTask = ANALYSIS_TASK)
 
     private val graph: AppGraph = createAppGraph(
         settings = AppSettings(
@@ -55,12 +57,12 @@ class IosShell {
         recordingsRoot = recordingsRoot(),
         recorder = IosRecorder().withDebugTools(),
         tts = IosTts(),
-        // 대기열이 그래프보다 먼저 만들어지므로 처리기는 꺼낼 때 그래프에서 찾는다. 앱이 떠 있는 동안만 보낸다(F5.1).
         workQueue = workQueue,
         gemini = debugGeminiClient(),
     ).apply {
-        registerDebugPanels(queue = workQueue::pending, audio = ::audioSessionRows)
-        MainScope().launch { requeuePendingAnalysis(workQueue) }
+        registerDebugPanels(audio = ::audioSessionRows)
+        // 앱이 보내는 중에 죽었으면 진행 중으로 남은 작업을 대기로 돌리고 대기열을 깨운다.
+        MainScope().launch { analysisJobs.recover() }
     }
 
     private val haptics = graph.settings.haptics(iosHaptics())
@@ -105,6 +107,9 @@ class IosShell {
             .forEach { it.overrideUserInterfaceStyle = style }
     }
 }
+
+/** 분석 작업을 이어 비우는 백그라운드 처리 작업의 식별자. Info.plist 의 `BGTaskSchedulerPermittedIdentifiers` 와 같아야 한다. */
+private const val ANALYSIS_TASK = "io.github.nosorae.aiopic.analysis"
 
 /** 앱 Swift 의 흔들기(`UIWindow.motionEnded`)가 부른다. 릴리스 빌드는 빈 모듈이라 아무 일도 안 한다. */
 fun openDebugTools() = DebugTools.open()
