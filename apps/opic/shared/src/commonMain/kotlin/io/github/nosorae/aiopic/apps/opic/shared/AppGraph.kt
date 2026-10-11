@@ -110,7 +110,7 @@ interface AppGraph {
     /** 첫 실행 화면(S1, S2)을 마친 뒤 다음 화면을 다시 정한다(F1.0). */
     val decideStartUseCase: DecideStartUseCase
 
-    /** 홈의 모의시험 버튼이 이어 볼 회차를 찾는다(F3). */
+    /** 홈의 모의고사 버튼이 이어 볼 회차를 찾는다(F3). */
     val examSessionSource: ExamSessionSource
 
     val keyEntryViewModelFactory: KeyEntryViewModel.Factory
@@ -121,7 +121,7 @@ interface AppGraph {
 
     val examViewModelFactory: ExamViewModel.Factory
 
-    /** 설정에서 여는 서베이. 모의시험 서베이와 같은 저장값을 바꾼다. */
+    /** 설정에서 여는 서베이. 모의고사 서베이와 같은 저장값을 바꾼다. */
     val surveyViewModel: SurveyViewModel
 
     val practiceViewModelFactory: PracticeViewModel.Factory
@@ -317,7 +317,7 @@ internal const val QUESTION_VOICE_MODEL = "gemini-3.8-flash-tts"
 internal const val QUESTION_VOICE_NAME = "Kore"
 
 /**
- * 모의시험 출제와 질문 음성에 쓰는 시험 팩 파일. 호스트 JVM 테스트는 Compose 리소스를 못 읽어서 바꿔 넣는다.
+ * 모의고사 출제와 질문 음성에 쓰는 시험 팩 파일. 호스트 JVM 테스트는 Compose 리소스를 못 읽어서 바꿔 넣는다.
  */
 class ExamPack(
     val pool: suspend () -> List<Question> = OpicEn::questionPool,
@@ -357,7 +357,7 @@ private suspend fun examQuestions(
 }
 
 /**
- * 한 문항 연습의 풀. 시험 팩의 내장 문항에 사용자가 설정에서 불러온 문항(F6.3)을 더하고, 저장한 서베이 주제의 질문을 먼저 낸다([preferTopics]). 모의시험 출제에는 넣지 않는다.
+ * 한 문항 연습의 풀. 시험 팩의 내장 문항에 사용자가 설정에서 불러온 문항(F6.3)을 더하고, 저장한 서베이 주제의 질문을 먼저 낸다([preferTopics]). 모의고사 출제에는 넣지 않는다.
  * 시험 팩의 문항 파일을 못 읽으면 불러온 문항만 쓰고, 둘 다 없으면 연습 화면이 죽지 않고 "낼 질문이 없습니다" 오류 화면을 보인다.
  */
 internal suspend fun practicePool(settings: AppSettings, builtIn: suspend () -> List<Question> = OpicEn::questionPool): List<Question> {

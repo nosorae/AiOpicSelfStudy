@@ -3,6 +3,9 @@
     <string name="home_title">모의고사</string>
     <string name="home_start_exam">시작</string>
     <string name="home_start_new_exam">새로 시작</string>
+    <string name="home_start_new_title">새 모의고사를 시작할까요?</string>
+    <string name="home_start_new_message">보던 회차는 미완료로 끝나 기록에 남고 더 이어 볼 수 없습니다. 답한 문항의 녹음과 분석은 그대로 남습니다.</string>
+    <string name="home_start_new_cancel">취소</string>
     <string name="home_resume_exam">이어 보기</string>
     <string name="home_resume_progress">%1$d문항 중 %2$d문항을 마쳤습니다</string>
     <string name="home_review">다시 보기</string>

@@ -64,7 +64,7 @@ class HistoryScreenshotTest {
         rule.onNodeWithText("72점").assertExists()
         rule.onNodeWithContentDescription("분석 중").assertExists()
         rule.onNodeWithText("분석 실패").assertExists()
-        rule.onNodeWithText("모의시험 3회차").assertExists()
+        rule.onNodeWithText("모의고사 3회차").assertExists()
 
         rule.onNodeWithText("과거 경험 연습").performClick()
         assertEquals("p2", opened)

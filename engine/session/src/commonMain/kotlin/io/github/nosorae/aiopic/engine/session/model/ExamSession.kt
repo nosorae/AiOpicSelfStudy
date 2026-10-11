@@ -4,7 +4,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
-/** 모의시험 한 회차의 진행 상태. 바뀔 때마다 통째로 저장하고 앱을 켜면 여기서 다시 시작한다(F3.1, ADR 0012). */
+/** 모의고사 한 회차의 진행 상태. 바뀔 때마다 통째로 저장하고 앱을 켜면 여기서 다시 시작한다(F3.1, ADR 0012). */
 @Serializable
 data class ExamSession(
     val id: String,
@@ -36,6 +36,10 @@ enum class ExamStatus {
     /** 시간이 다 됐다. 답한 문항까지만 채점하고 남은 문항은 "시간 부족"이다(F2.6). */
     @SerialName("time_up")
     TimeUp,
+
+    /** 진행 중에 새 회차를 시작해 끝냈다(#223). 시간 부족처럼 답한 문항까지만 채점하고 기록에 미완료로 남는다. */
+    @SerialName("abandoned")
+    Abandoned,
 }
 
 /** 난이도 재조정에서 고른 것. */

@@ -1,6 +1,6 @@
 # AiOpicSelfStudy
 
-오픽(OPIc) 영어 말하기 시험을 실제 순서대로 연습하는 Android, iOS 앱이다. 모의시험 15문항을 실제 시험 규칙(질문 글자 없음, 다시 듣기 한 번, 40분)으로 보고, 답변마다 AI 피드백을, 회차마다 예상 등급 범위를 받는다. 앱을 껐다 켜도 멈춘 문항에서 이어진다.
+오픽(OPIc) 영어 말하기 시험을 실제 순서대로 연습하는 Android, iOS 앱이다. 모의고사 15문항을 실제 시험 규칙(질문 글자 없음, 다시 듣기 한 번, 40분)으로 보고, 답변마다 AI 피드백을, 회차마다 예상 등급 범위를 받는다. 앱을 껐다 켜도 멈춘 문항에서 이어진다.
 
 서버는 없다. 사용자가 자기 Gemini API 키를 넣고, 녹음은 기기에만 남는다. Compose Multiplatform 으로 두 플랫폼을 같은 코드로 만든다.
 
@@ -8,7 +8,7 @@
 |---|---|---|---|---|---|---|
 | <img src="docs/images/screen-key.png" width="150"> | <img src="docs/images/screen-exam-tab.png" width="150"> | <img src="docs/images/screen-practice-tab.png" width="150"> | <img src="docs/images/screen-question.png" width="150"> | <img src="docs/images/screen-report-session.png" width="150"> | <img src="docs/images/screen-report-answer.png" width="150"> | <img src="docs/images/screen-history.png" width="150"> |
 
-## 모의시험 한 회
+## 모의고사 한 회
 
 점검과 1번은 내장 문항으로 바로 내고, 2~7번은 1번 Play 때, 8~15번은 6번 Play 때 재조정 선택지마다 Gemini 에 미리 요청해 고른 것을 쓴다. 40분은 1번 문항에 닿을 때부터 시험 화면에 있는 동안만 흐른다. 답변 분석은 시험이 끝나길 기다리지 않고 Next 마다 뒤에서 보낸다.
 
@@ -171,7 +171,7 @@ stateDiagram-v2
 - 초기 프로젝트를 만들고 Android, iOS 실행을 확인한다
 - 에이전트가 깐 작업 환경(규칙 파일, 스킬, 템플릿)을 한 번 확인한다
 - 막힌 노드를 판단한다
-- 완성 뒤 실기기(Android, iPhone)로 모의시험 한 회를 끝까지 보고, 중간에 앱을 강제 종료해 이어 보기를 확인한다
+- 완성 뒤 실기기(Android, iPhone)로 모의고사 한 회를 끝까지 보고, 중간에 앱을 강제 종료해 이어 보기를 확인한다
 
 **AI 출력 검사.** 앱 안의 검사는 위 「답변 하나가 분석되는 길」에 있다. 사용자는 틀린 교정을 표시해 내보낼 수 있다. 모인 표시와 품질 확인 도구(`tools/eval`)의 보고서는 `docs/error-analysis.md` 에서 종류별로 세어 다음 프롬프트 버전에 반영한다.
 

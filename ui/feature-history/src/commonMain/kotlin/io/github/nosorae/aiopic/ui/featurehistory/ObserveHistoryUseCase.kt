@@ -14,7 +14,7 @@ import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
-/** 기록 목록의 한 줄. 모의시험 회차([HistorySession])와 한 문항 연습 답변([HistoryPractice])이 한 목록에 섞인다(F7.4). */
+/** 기록 목록의 한 줄. 모의고사 회차([HistorySession])와 한 문항 연습 답변([HistoryPractice])이 한 목록에 섞인다(F7.4). */
 sealed interface HistoryEntry
 
 /**

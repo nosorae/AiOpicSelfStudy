@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 /** 모의고사 탭은 기록 화면이 아니라서 저장소 Flow 를 init 에서 구독해 update 로 옮긴다(ADR 0005). */
 @Inject
-class HomeViewModel(observeHomeUseCase: ObserveHomeUseCase) : ViewModel() {
+class HomeViewModel(observeHomeUseCase: ObserveHomeUseCase, private val startNewExamUseCase: StartNewExamUseCase) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -20,6 +20,12 @@ class HomeViewModel(observeHomeUseCase: ObserveHomeUseCase) : ViewModel() {
             observeHomeUseCase().collect { home ->
                 _uiState.update { home }
             }
+        }
+    }
+
+    fun onIntent(intent: HomeIntent) {
+        when (intent) {
+            HomeIntent.StartNewExam -> _uiState.value.resumeSessionId?.let { id -> viewModelScope.launch { startNewExamUseCase(id) } }
         }
     }
 }

@@ -25,6 +25,7 @@ internal object HistorySamples {
     val filled = HistoryUiState(
         loading = false,
         entries = listOf(
+            HistorySession(ExamSession(id = "s5", status = ExamStatus.Abandoned), emptyList(), number = 5),
             HistoryPractice("p3", "롤플레이 문제 해결", null, AnswerAnalysis.Pending, JobState.Running),
             HistorySession(ExamSession(id = "s4", status = ExamStatus.Finished), listOf(FLASH), answered = 7, analyzed = 4, number = 4),
             HistoryPractice("p2", "과거 경험", FLASH, scored(72)),

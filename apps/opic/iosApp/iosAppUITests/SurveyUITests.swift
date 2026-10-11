@@ -1,6 +1,6 @@
 import XCTest
 
-// 서베이를 화면 터치로 끝까지 넘긴다(#167). 모의시험 서베이를 내면 수준 고르기가 나오고,
+// 서베이를 화면 터치로 끝까지 넘긴다(#167). 모의고사 서베이를 내면 수준 고르기가 나오고,
 // 설정의 서베이는 같은 흐름에 방금 낸 답이 채워져 있어 바로 저장할 수 있다. 화면마다 스크린샷을 남긴다.
 final class SurveyUITests: XCTestCase {
     private let app = XCUIApplication()
@@ -23,7 +23,7 @@ final class SurveyUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["난이도 고르기"].waitForExistence(timeout: 30), "서베이를 내고 수준 고르기로 가지 않는다")
         // 나가기 X 는 바로 나가지 않고 확인 대화상자를 띄운다. 취소하면 머물고, 나가기를 눌러야 나간다.
         app.tapTag("exam-exit")
-        XCTAssertTrue(app.staticTexts["모의시험을 나갈까요?"].waitForExistence(timeout: 5), "나가기 확인 대화상자가 보이지 않는다")
+        XCTAssertTrue(app.staticTexts["모의고사을 나갈까요?"].waitForExistence(timeout: 5), "나가기 확인 대화상자가 보이지 않는다")
         shot("2a-나가기확인")
         app.tapTag("alert-cancel")
         XCTAssertTrue(app.staticTexts["난이도 고르기"].waitForExistence(timeout: 5), "취소했는데 시험에 머물지 않는다")

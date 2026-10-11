@@ -27,6 +27,12 @@ class StoreReads(private val store: OpicStore, private val jobs: AnalysisJobs) :
 
     override fun session(id: String): Flow<ExamSession?> = store.session(id)
 
+    /** 새로 시작해 미완료로 끝낸 회차(#223). 답변 분석이 이미 다 끝났으면 시간 부족처럼 답한 문항으로 등급을 요청한다. */
+    override suspend fun save(session: ExamSession) {
+        store.save(session)
+        jobs.requestGradeIfReady(session.id)
+    }
+
     override fun answers(examSessionId: String): Flow<List<Answer>> = store.answers(examSessionId)
 
     override fun answers(): Flow<List<Answer>> = store.answers()

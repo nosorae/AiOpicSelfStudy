@@ -22,7 +22,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-/** 시험 팩의 서베이가 앱 그래프를 거쳐 시험 화면과 설정의 서베이까지 오고, 설정에서 바꾼 답이 모의시험에 채워지는지 본다(F2.2). 한 문항 연습 주제는 AppSettingsTest 가 본다. */
+/** 시험 팩의 서베이가 앱 그래프를 거쳐 시험 화면과 설정의 서베이까지 오고, 설정에서 바꾼 답이 모의고사에 채워지는지 본다(F2.2). 한 문항 연습 주제는 AppSettingsTest 가 본다. */
 class SurveyPartsWiringTest {
     private val dispatcher = StandardTestDispatcher()
     private val store = ViewModelStore()
@@ -49,7 +49,7 @@ class SurveyPartsWiringTest {
     }
 
     @Test
-    fun `F2_2 설정에서 바꾼 서베이 답이 다음 모의시험 서베이에 채워진다`() = runTest(dispatcher) {
+    fun `F2_2 설정에서 바꾼 서베이 답이 다음 모의고사 서베이에 채워진다`() = runTest(dispatcher) {
         val survey = viewModel("survey") { graph.surveyViewModel }
         advanceUntilIdle()
         listOf("none", "no", "over-5-years", "family").forEach { survey.onIntent(SurveyIntent.ChooseOption(it)) }

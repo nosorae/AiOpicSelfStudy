@@ -7,7 +7,10 @@ import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-/** 전체 문항 수는 시험 화면처럼 고른 수준에서 묻는 문항만 센다. 수준을 고르기 전이면 수준 1 의 문항 수다. */
+/**
+ * 다시 보기는 끝까지 본 회차(시간 부족 포함)만 고른다. 미완료로 끝낸 회차는 기록 탭에만 있다.
+ * 전체 문항 수는 시험 화면처럼 고른 수준에서 묻는 문항만 센다. 수준을 고르기 전이면 수준 1 의 문항 수다.
+ */
 @Inject
 class ObserveHomeUseCase(private val examSessionSource: ExamSessionSource, private val spec: ExamSpec) {
     operator fun invoke(): Flow<HomeUiState> = examSessionSource.sessions().map { sessions ->
@@ -23,7 +26,7 @@ class ObserveHomeUseCase(private val examSessionSource: ExamSessionSource, priva
                         number = index + 1,
                         gradeRange = session.grade?.let { if (it.low == it.high) it.low else "${it.low}~${it.high}" },
                         timeUp = session.status == ExamStatus.TimeUp,
-                    ).takeIf { session.status != ExamStatus.InProgress }
+                    ).takeIf { session.status == ExamStatus.Finished || session.status == ExamStatus.TimeUp }
                 }
                 .filterNotNull()
                 .asReversed(),

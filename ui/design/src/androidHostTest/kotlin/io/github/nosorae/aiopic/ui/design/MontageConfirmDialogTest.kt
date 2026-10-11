@@ -30,7 +30,7 @@ class MontageConfirmDialogTest {
         CompositionLocalProvider(LocalHaptics provides Haptics { played += it }) {
             MontageTheme(reduceMotion = reduceMotion) {
                 MontageConfirmDialog(
-                    title = "모의시험을 나갈까요?",
+                    title = "모의고사을 나갈까요?",
                     message = "진행은 저장됩니다.",
                     confirm = "나가기",
                     cancel = "취소",
@@ -44,7 +44,7 @@ class MontageConfirmDialogTest {
     @Test
     fun `제목과 본문을 보이고 확인을 누르면 경고 진동을 내고 확인만 부른다`() {
         show()
-        rule.onNodeWithText("모의시험을 나갈까요?").assertIsDisplayed()
+        rule.onNodeWithText("모의고사을 나갈까요?").assertIsDisplayed()
         rule.onNodeWithText("진행은 저장됩니다.").assertIsDisplayed()
 
         rule.onNodeWithText("나가기").performClick()

@@ -34,7 +34,7 @@ sealed class AppRoute {
     /** 답변 하나의 리포트. 회차 리포트의 답변 줄과 한 문항 연습의 Next 가 연다. */
     @Serializable data class AnswerReport(val answerId: String) : AppRoute()
 
-    /** 모의시험. 모의고사 탭이 진행 중인 회차 id 를 넣으면 이어 보기, 새 id 면 새 회차다(F3). */
+    /** 모의고사. 모의고사 탭이 진행 중인 회차 id 를 넣으면 이어 보기, 새 id 면 새 회차다(F3). */
     @Serializable data class Exam(val sessionId: String) : AppRoute()
 
     /**
@@ -49,7 +49,7 @@ sealed class AppRoute {
     /** 설정의 무료 등급 안내. 음성 전송 동의 화면을 그대로 연다(F1.3). */
     @Serializable data object FreeTierNotice : AppRoute()
 
-    /** 설정의 서베이. 모의시험 서베이와 같은 흐름으로 저장한 답을 보고 바꾼다. 바꾼 답이 있으면 뒤로가기를 화면이 받아 나갈지 묻는다. */
+    /** 설정의 서베이. 모의고사 서베이와 같은 흐름으로 저장한 답을 보고 바꾼다. 바꾼 답이 있으면 뒤로가기를 화면이 받아 나갈지 묻는다. */
     @Serializable data object Survey : AppRoute()
 
     /** 설정의 틀림 표시 내보내기(F8.3). */
@@ -80,7 +80,7 @@ sealed class AppRoute {
             Settings -> "설정"
             is ReportDetail -> "회차 리포트"
             is AnswerReport -> "답변 리포트"
-            is Exam -> "모의시험"
+            is Exam -> "모의고사"
             is Practice -> "한 문항 연습"
             is KeyEntry, StartKeyEntry -> "API 키 넣기"
             FreeTierNotice, StartConsent -> "음성 전송 동의"

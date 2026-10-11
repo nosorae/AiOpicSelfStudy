@@ -36,7 +36,7 @@ fun SurveyRoute(viewModel: SurveyViewModel, onDone: () -> Unit, modifier: Modifi
 }
 
 /**
- * 모의시험 서베이와 같은 흐름이다. 마지막 묶음의 버튼만 "저장하기" 다.
+ * 모의고사 서베이와 같은 흐름이다. 마지막 묶음의 버튼만 "저장하기" 다.
  * 위쪽 X 와 시스템 뒤로가기는 바꾼 답이 있을 때만 버려진다고 묻고, 없으면 바로 [onClose] 한다.
  */
 @Composable
@@ -86,7 +86,7 @@ fun SurveyScreen(state: SurveyUiState, onIntent: (SurveyIntent) -> Unit, onClose
     }
 }
 
-/** 스크린샷과 화면 테스트가 쓰는 고정 상태. 서베이는 모의시험 서베이 견본을 그대로 쓴다. */
+/** 스크린샷과 화면 테스트가 쓰는 고정 상태. 서베이는 모의고사 서베이 견본을 그대로 쓴다. */
 internal object SurveySamples {
     private val survey = ExamSamples.survey.survey!!
     val unchanged = SurveyUiState(survey = survey, loaded = survey)

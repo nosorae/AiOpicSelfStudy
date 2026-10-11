@@ -25,7 +25,7 @@ final class RecordingFailureUITests: XCTestCase {
         tapWhenReady(app.buttons["다시 녹음"])
         XCTAssertTrue(waitUntil(60) { self.app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH '녹음 중'")).firstMatch.exists }, "연습: 다시 녹음이 시작되지 않았다")
 
-        // 모의시험 장비 점검: 같은 단계에 남아 이유와 다시 녹음이 보인다.
+        // 모의고사 장비 점검: 같은 단계에 남아 이유와 다시 녹음이 보인다.
         // 녹음 중이라 X 는 답변이 저장되지 않는다고 먼저 묻는다.
         app.tapTag("practice-exit")
         XCTAssertTrue(app.staticTexts["연습을 나갈까요?"].waitForExistence(timeout: 5), "녹음 중 나가기 확인 대화상자가 보이지 않는다")

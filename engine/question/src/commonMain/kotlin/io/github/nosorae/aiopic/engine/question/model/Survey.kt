@@ -33,6 +33,6 @@ data class TopicGroup(val id: String, val title: String, val min: Int, val topic
 /** 고를 수 있는 주제. [id] 는 내장 문항 풀의 주제 id 와 같은 값을 쓴다. */
 data class Topic(val id: String, val label: String)
 
-/** 저장한 서베이 답. 다음 모의시험 서베이를 미리 채우고 한 문항 연습 주제에 쓴다. */
+/** 저장한 서베이 답. 다음 모의고사 서베이를 미리 채우고 한 문항 연습 주제에 쓴다. */
 @Serializable
 data class SurveyAnswers(val choices: Map<String, String> = emptyMap(), val topics: List<String> = emptyList())

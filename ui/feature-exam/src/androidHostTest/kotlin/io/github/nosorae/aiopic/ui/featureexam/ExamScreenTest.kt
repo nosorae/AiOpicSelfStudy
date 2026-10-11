@@ -267,8 +267,8 @@ class ExamScreenTest {
 
         rule.onNodeWithContentDescription("나가기").performClick()
 
-        rule.onNodeWithText("모의시험을 나갈까요?").assertIsDisplayed()
-        rule.onNodeWithText("진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.").assertIsDisplayed()
+        rule.onNodeWithText("모의고사을 나갈까요?").assertIsDisplayed()
+        rule.onNodeWithText("진행과 녹음은 저장되고 나가 있는 동안 40분 타이머가 멈춥니다. 모의고사 탭의 이어 보기로 여기서부터 이어서 할 수 있습니다.").assertIsDisplayed()
         assertEquals(emptyList<ExamIntent>(), intents)
     }
 
@@ -279,7 +279,7 @@ class ExamScreenTest {
         rule.onNodeWithContentDescription("나가기").performClick()
         rule.onNodeWithText("취소").performClick()
 
-        rule.onNodeWithText("모의시험을 나갈까요?").assertDoesNotExist()
+        rule.onNodeWithText("모의고사을 나갈까요?").assertDoesNotExist()
         assertEquals(emptyList<ExamIntent>(), intents)
     }
 
@@ -299,7 +299,7 @@ class ExamScreenTest {
 
         rule.onNodeWithContentDescription("나가기").performClick()
 
-        rule.onNodeWithText("이번에 고른 서베이 답은 저장되지 않습니다. 홈의 이어 보기로 서베이부터 다시 할 수 있습니다.").assertIsDisplayed()
+        rule.onNodeWithText("이번에 고른 서베이 답은 저장되지 않습니다. 모의고사 탭의 이어 보기로 서베이부터 다시 할 수 있습니다.").assertIsDisplayed()
     }
 
     @Test
@@ -308,6 +308,6 @@ class ExamScreenTest {
 
         rule.onNodeWithContentDescription("나가기").performClick()
 
-        rule.onNodeWithText("진행은 저장됩니다. 홈의 이어 보기로 여기서부터 이어서 할 수 있습니다.").assertIsDisplayed()
+        rule.onNodeWithText("진행은 저장됩니다. 모의고사 탭의 이어 보기로 여기서부터 이어서 할 수 있습니다.").assertIsDisplayed()
     }
 }

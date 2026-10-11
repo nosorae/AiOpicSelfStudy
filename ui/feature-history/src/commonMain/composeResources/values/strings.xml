@@ -2,10 +2,11 @@
 <resources>
     <string name="history_title">기록</string>
     <string name="history_grades">회차별 예상 등급</string>
-    <string name="history_session">모의시험 %1$d회차</string>
-    <string name="history_list">모의시험과 연습</string>
+    <string name="history_session">모의고사 %1$d회차</string>
+    <string name="history_session_abandoned">모의고사 %1$d회차, 미완료</string>
+    <string name="history_list">모의고사과 연습</string>
     <string name="history_filter_all">전체</string>
-    <string name="history_filter_exam">모의시험</string>
+    <string name="history_filter_exam">모의고사</string>
     <string name="history_filter_practice">연습</string>
     <string name="history_practice">%1$s 연습</string>
     <string name="history_practice_pending">분석 중</string>
@@ -26,5 +27,5 @@
     <string name="history_weakness">문항 유형별 약점</string>
     <string name="history_weakness_help">점수가 낮을수록 약한 유형입니다. 한 문항 연습 답변도 함께 셉니다.</string>
     <string name="history_score">%1$d점</string>
-    <string name="history_empty">아직 기록이 없습니다. 홈에서 모의시험이나 한 문항 연습을 시작하세요.</string>
+    <string name="history_empty">아직 기록이 없습니다. 모의고사 탭이나 연습 탭에서 시작하세요.</string>
 </resources>

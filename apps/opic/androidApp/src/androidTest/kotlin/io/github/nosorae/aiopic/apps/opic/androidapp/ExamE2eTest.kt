@@ -27,7 +27,7 @@ import org.junit.runners.MethodSorters
 import java.io.File
 
 /**
- * 모의시험 한 회를 실제 앱으로 끝까지 돈다(완료 기준). Gemini 만 저장한 응답이고 녹음기, 기기 음성, Room, WorkManager 는 기기의 실제 것이다.
+ * 모의고사 한 회를 실제 앱으로 끝까지 돈다(완료 기준). Gemini 만 저장한 응답이고 녹음기, 기기 음성, Room, WorkManager 는 기기의 실제 것이다.
  *
  * 두 테스트는 순서대로 이어진다. Test Orchestrator 가 테스트마다 계측을 새로 띄우고, 계측이 끝나면 시스템이 앱 프로세스를 강제 종료한다.
  * 그래서 첫 테스트는 2번 문항을 녹음하는 도중에 끝나고, 둘째 테스트는 새 프로세스에서 앱을 다시 켜 이어 본다(F3).

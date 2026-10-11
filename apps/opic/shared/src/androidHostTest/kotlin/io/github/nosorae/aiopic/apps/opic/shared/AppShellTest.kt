@@ -158,7 +158,7 @@ class AppShellTest {
         rule.onNodeWithContentDescription("나가기").performClick()
         rule.onNodeWithText("취소").performClick()
 
-        rule.onNodeWithText("모의시험을 나갈까요?").assertDoesNotExist()
+        rule.onNodeWithText("모의고사을 나갈까요?").assertDoesNotExist()
         rule.onNodeWithText("지금 하는 일은 어느 쪽에", substring = true).assertExists()
     }
 

@@ -7,7 +7,7 @@
 targetSdk 를 36 으로 올린 순간 기기 버전에 따라 동작이 바뀐다. 아래 셋은 화면을 새로 만들지 않아도 걸린다.
 
 - **edge-to-edge 를 끌 수 없다.** Android 15 이상에서는 강제되고, Android 16 기기에서는 끄는 설정(`windowOptOutEdgeToEdgeEnforcement`)이 무시된다. 그래서 모든 버전에서 `enableEdgeToEdge()` 를 부르고 inset 을 직접 처리한다(R11). 버전마다 다르게 그리면 화면을 두 벌 확인해야 한다
-- **`onBackPressed` 가 불리지 않는다.** Android 16 기기에서는 `onBackPressed` 와 `KEYCODE_BACK` 이 전달되지 않는다. 뒤로가기를 가로채는 코드는 `BackHandler` 나 `PredictiveBackHandler` 만 쓴다(R14). 모의시험 중 뒤로가기 확인 다이얼로그가 여기 걸린다
+- **`onBackPressed` 가 불리지 않는다.** Android 16 기기에서는 `onBackPressed` 와 `KEYCODE_BACK` 이 전달되지 않는다. 뒤로가기를 가로채는 코드는 `BackHandler` 나 `PredictiveBackHandler` 만 쓴다(R14). 모의고사 중 뒤로가기 확인 다이얼로그가 여기 걸린다
 - **가장 짧은 변이 600dp 이상인 화면에서는 세로 고정이 무시된다.** 태블릿과 펼친 폴더블에서는 가로 화면이 그대로 나온다. 세로 고정에 기대지 말고 회전과 창 크기 변경에서 상태를 지킨다(R13)
 
 ## 2. Android 9~11 용 고정 색 구성
@@ -75,7 +75,7 @@ targetSdk 를 36 으로 올린 순간 기기 버전에 따라 동작이 바뀐�
 확인: 키 입력 도중, 녹음 도중에 회전한다. 태블릿 에뮬레이터 가로 모드로 전 화면을 연다.
 
 **R14. 뒤로가기는 `BackHandler` 나 `PredictiveBackHandler` 로만 가로챈다.** `onBackPressed` 재정의, `KEYCODE_BACK` 가로채기를 쓰지 않는다. 콜백은 필요한 동안만 `enabled = true` 로 둔다. 화면에 그린 뒤로가기 버튼이 시스템 뒤로가기를 대신하게 하지 않는다. `android:enableOnBackInvokedCallback="false"` 를 넣지 않는다.
-확인: Android 16 에뮬레이터에서 각 화면을 뒤로 스와이프해 미리보기 애니메이션이 나오는지, 모의시험 중에만 확인 다이얼로그가 뜨는지 본다.
+확인: Android 16 에뮬레이터에서 각 화면을 뒤로 스와이프해 미리보기 애니메이션이 나오는지, 모의고사 중에만 확인 다이얼로그가 뜨는지 본다.
 
 ### 컴포넌트
 

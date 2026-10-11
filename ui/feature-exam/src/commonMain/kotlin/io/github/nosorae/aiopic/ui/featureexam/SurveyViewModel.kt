@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * 설정에서 여는 서베이. 모의시험 서베이와 같은 흐름으로 저장한 답을 보고 바꾼다.
- * 낸 답은 다음 모의시험 서베이를 미리 채우고 한 문항 연습 주제에 쓴다.
+ * 설정에서 여는 서베이. 모의고사 서베이와 같은 흐름으로 저장한 답을 보고 바꾼다.
+ * 낸 답은 다음 모의고사 서베이를 미리 채우고 한 문항 연습 주제에 쓴다.
  */
 @Inject
 class SurveyViewModel(

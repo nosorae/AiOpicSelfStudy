@@ -6,12 +6,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.time.Duration
 
-/** 답변 하나. 모의시험과 한 문항 연습이 같은 모양으로 남기고, 리포트와 다음 출제는 이것을 쌓아 본다. */
+/** 답변 하나. 모의고사과 한 문항 연습이 같은 모양으로 남기고, 리포트와 다음 출제는 이것을 쌓아 본다. */
 @Serializable
 data class Answer(
     val id: String,
     val question: Question,
-    /** 어느 모의시험 회차에서 나왔는지. 한 문항 연습이면 null 이다. */
+    /** 어느 모의고사 회차에서 나왔는지. 한 문항 연습이면 null 이다. */
     val examSessionId: String?,
     /** 녹음 조각 파일 경로, 녹음한 순서대로(F3.2). 파일은 기기에만 둔다. */
     val chunkPaths: List<String>,
