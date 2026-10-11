@@ -128,6 +128,15 @@ class HistoryScreenshotTest {
         rule.onNodeWithText("분석 12/12").assertDoesNotExist()
     }
 
+    @Test
+    fun `#223 미완료로 끝난 회차는 미완료로 보이고 답이 없으면 등급을 기다리지 않는다`() {
+        val row = HistorySession(ExamSession(id = "s9", status = ExamStatus.Abandoned), emptyList(), number = 3)
+        show(HistoryUiState(loading = false, entries = listOf(row)))
+        rule.onNodeWithText("모의고사 3회차, 미완료").assertExists()
+        rule.onNodeWithText("등급 내는 중").assertDoesNotExist()
+        rule.onNodeWithText("분석 대기 중").assertDoesNotExist()
+    }
+
     private fun show(state: HistoryUiState, dark: Boolean = false, reduceMotion: Boolean = false, onOpenAnswer: (String) -> Unit = {}) {
         rule.mainClock.autoAdvance = false
         rule.setContent {

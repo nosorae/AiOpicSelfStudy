@@ -1,6 +1,9 @@
 package io.github.nosorae.aiopic.ui.featurehome
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -46,15 +49,33 @@ class HomeScreenTest {
     }
 
     @Test
-    fun `진행 중인 회차가 있어도 새로 시작은 id 없이 넘기고 이어 보기가 더 위에 있다`() {
+    fun `#223 진행 중인 회차가 있으면 새로 시작은 확인을 받고 나서 id 없이 넘기고 이어 보기가 더 위에 있다`() {
         show(HomeSamples.history)
 
         val resumeTop = rule.onNodeWithTag("exam-resume").fetchSemanticsNode().boundsInRoot.top
         val startTop = rule.onNodeWithTag("exam-start").fetchSemanticsNode().boundsInRoot.top
-        rule.onNodeWithText("새로 시작").performClick()
+        rule.onNodeWithTag("exam-start").performClick()
 
         assertTrue(resumeTop < startTop)
+        assertEquals(emptyList<String?>(), opened)
+        rule.onNodeWithText("새 모의고사를 시작할까요?").assertIsDisplayed()
+        rule.onNodeWithText("미완료", substring = true).assertIsDisplayed()
+
+        rule.onAllNodesWithText("새로 시작").onLast().performClick()
+
         assertEquals(listOf<String?>(null), opened)
+        rule.onNodeWithText("새 모의고사를 시작할까요?").assertDoesNotExist()
+    }
+
+    @Test
+    fun `#223 새로 시작 확인에서 취소하면 아무 데도 가지 않는다`() {
+        show(HomeSamples.history)
+
+        rule.onNodeWithTag("exam-start").performClick()
+        rule.onNodeWithText("취소").performClick()
+
+        assertEquals(emptyList<String?>(), opened)
+        rule.onNodeWithText("새 모의고사를 시작할까요?").assertDoesNotExist()
     }
 
     @Test
