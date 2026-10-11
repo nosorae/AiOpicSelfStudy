@@ -13,7 +13,7 @@ import kotlin.time.Duration
  */
 data class Checked<out T>(val value: T?, val problems: List<String>)
 
-/** 모델이 지어낸 교정을 사용자에게 보이지 않게 교정, 표현의 원문 구절이 전문에 그대로 있는지와 값 범위를 본다. */
+/** 모델이 지어낸 교정을 사용자에게 보이지 않게 교정, 내용 교정, 표현의 원문 구절이 전문에 그대로 있는지와 값 범위를 본다. */
 fun checkFeedback(feedback: Feedback): Checked<Feedback> {
     val transcript = feedback.transcript.squashSpaces()
     val problems = mutableListOf<String>()
@@ -27,6 +27,8 @@ fun checkFeedback(feedback: Feedback): Checked<Feedback> {
     val kept = feedback.copy(
         corrections = if (deductedOk) corrections else corrections.map { it.copy(deducted = null) },
         upgrades = feedback.upgrades.keep("전문에 없는 표현") { it.original.isNotBlank() && it.original.squashSpaces() in transcript },
+        contentFixes = feedback.contentFixes.keep("전문에 없는 내용 교정") { it.original.isNotBlank() && it.original.squashSpaces() in transcript },
+        finalScript = feedback.finalScript?.takeIf { it.isNotBlank() }.also { if (it == null && feedback.finalScript != null) problems += "빈 최종 스크립트" },
         pauses = feedback.pauses.keep("범위 밖 멈춤") { it.start >= Duration.ZERO && it.length > Duration.ZERO },
     )
     val inRange = feedback.score in 0..100 &&

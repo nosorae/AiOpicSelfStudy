@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.engine.answer.check
 
+import io.github.nosorae.aiopic.engine.answer.model.ContentFix
 import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.Pause
@@ -46,6 +47,21 @@ class OutputCheckTest {
     @Test
     fun `F5_4 전문에 없는 한 등급 위 표현을 버린다`() {
         assertEquals(clean.upgrades, checkFeedback(feedback).value?.upgrades)
+    }
+
+    @Test
+    fun `217 전문에 없는 내용 교정을 버린다`() {
+        val fixes = listOf(ContentFix("Last year I move to Seoul.", "앞 문장과 이어지지 않는다.", "Last year I moved to Seoul for work."), ContentFix("never said", "x", "y"))
+
+        val checked = checkFeedback(clean.copy(contentFixes = fixes))
+        assertEquals(fixes.take(1) to 1, checked.value?.contentFixes to checked.problems.size)
+    }
+
+    @Test
+    fun `217 비어 있는 최종 스크립트는 없는 것으로 보고 문제로 알린다`() {
+        val checked = checkFeedback(clean.copy(finalScript = " "))
+
+        assertEquals(null to 1, checked.value?.finalScript to checked.problems.size)
     }
 
     @Test

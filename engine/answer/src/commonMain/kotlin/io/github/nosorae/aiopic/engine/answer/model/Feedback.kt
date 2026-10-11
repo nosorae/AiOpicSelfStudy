@@ -22,6 +22,10 @@ data class Feedback(
     val pronunciation: Pronunciation,
     /** 0~100. 같은 문항 유형끼리 모아 약점 점수를 낸다. */
     val score: Int,
+    /** 표현은 맞아도 내용이 어색한 곳(#217). 이 항목을 받기 전에 분석한 답변은 빈 목록이고 화면이 칸을 숨긴다. */
+    val contentFixes: List<ContentFix> = emptyList(),
+    /** 사용자의 답을 살려 표현과 내용을 모두 고친 영어 답변(#217). 이 항목을 받기 전에 분석한 답변은 null 이다. */
+    val finalScript: String? = null,
 )
 
 /**
@@ -31,6 +35,13 @@ data class Feedback(
  */
 @Serializable
 data class Correction(val original: String, val corrected: String, val deducted: Int? = null)
+
+/**
+ * 내용 교정 하나(#217). 질문과 안 맞는 답, 이어지지 않는 흐름, 이유나 예시가 빠진 주장, 뒤섞인 시점처럼 문법으로는 못 잡는 것이다.
+ * [original] 은 전문에 그대로 있는 구절이고, [problem] 은 무엇이 어색한지 한국어 한 문장, [corrected] 는 고친 영어 문장이다.
+ */
+@Serializable
+data class ContentFix(val original: String, val problem: String, val corrected: String)
 
 @Serializable
 data class Upgrade(val original: String, val better: String)
