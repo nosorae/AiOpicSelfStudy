@@ -49,8 +49,7 @@ class SessionReportViewModelTest {
         CelebrateOnceUseCase(store),
     )
 
-    private fun graded(id: String, low: String, high: String = low) =
-        session(level = 3, answers = 1).copy(id = id, grade = SessionGrade(emptyList(), low, high, emptyList(), emptyList()))
+    private fun graded(id: String, low: String, high: String = low) = session(level = 3, answers = 1).copy(id = id, grade = SessionGrade(emptyList(), low, high, emptyList(), emptyList()))
 
     @Test
     fun `198 바로 앞 회차보다 등급이 오르면 크게 축하하고 다시 열면 축하하지 않는다`() = runTest(dispatcher) {
