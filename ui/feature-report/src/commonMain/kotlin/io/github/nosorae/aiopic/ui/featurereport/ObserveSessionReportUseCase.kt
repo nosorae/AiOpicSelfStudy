@@ -13,6 +13,7 @@ import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
+import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -23,7 +24,20 @@ data class SessionReport(
     val questionCount: Int,
     val names: ReportNames = ReportNames(),
     val jobs: List<AnalysisJob> = emptyList(),
+    /** 이 회차 바로 앞에 저장한 회차 중 등급이 나온 마지막 회차의 등급(#198). 없으면 null 이다. */
+    val previousGrade: SessionGrade? = null,
 ) {
+    /**
+     * 바로 앞 회차보다 등급이 올랐다(#198). 범위의 양 끝 순번을 더해 비교해서 범위 한쪽만 올라도 오른 것으로 본다.
+     * 등급 이름이 시험 팩 눈금에 없으면 비교할 수 없어 오르지 않은 것으로 본다.
+     */
+    val gradeUp: Boolean get() {
+        val grade = session.grade ?: return false
+        val previous = previousGrade ?: return false
+        val rank = { g: SessionGrade -> names.grades.indexOf(g.low).takeIf { it >= 0 }?.let { low -> names.grades.indexOf(g.high).takeIf { it >= 0 }?.plus(low) } }
+        return (rank(grade) ?: return false) > (rank(previous) ?: return false)
+    }
+
     /** 답변 하나의 분석 작업. 기다리는 답변 줄에 무엇을 기다리는지 쓴다. */
     fun job(answerId: String): AnalysisJob? = jobs.firstOrNull { it.kind == JobKind.Answer && it.targetId == answerId }
 
@@ -69,7 +83,7 @@ val AnswerAnalysis.analyzedBy: AnalyzedBy?
         is AnswerAnalysis.Unscorable -> analyzedBy
     }
 
-/** 회차와 그 답변을 구독해 리포트로 묶는다. 시험 모양([spec]), 유형 이름([typeNames]), 등급 눈금([gradeScale])은 앱 층이 시험 팩에서 넣는다. 회차가 없으면 null 이다. */
+/** 회차와 그 답변을 구독해 리포트로 묶는다. 바로 앞 회차 등급도 함께 싣는다(#198). 시험 모양([spec]), 유형 이름([typeNames]), 등급 눈금([gradeScale])은 앱 층이 시험 팩에서 넣는다. 회차가 없으면 null 이다. */
 @Inject
 class ObserveSessionReportUseCase(
     private val store: ReportStore,
@@ -78,8 +92,9 @@ class ObserveSessionReportUseCase(
     private val modelCatalog: ModelCatalog,
     private val gradeScale: GradeScale,
 ) {
-    operator fun invoke(sessionId: String): Flow<SessionReport?> = combine(store.session(sessionId), store.answers(sessionId), store.jobs()) { session, answers, jobs ->
-        session ?: return@combine null
+    operator fun invoke(sessionId: String): Flow<SessionReport?> = combine(store.sessions(), store.answers(sessionId), store.jobs()) { sessions, answers, jobs ->
+        val at = sessions.indexOfFirst { it.id == sessionId }
+        val session = sessions.getOrNull(at) ?: return@combine null
         val byId = answers.associateBy { it.id }
         val level = session.level ?: spec.levelCount
         SessionReport(
@@ -88,6 +103,7 @@ class ObserveSessionReportUseCase(
             questionCount = spec.steps.count { it is ExamStep.Ask && it.minLevel <= level },
             names = ReportNames(typeNames, modelCatalog.models, gradeScale.grades),
             jobs = jobs.filter { if (it.kind == JobKind.Grade) it.targetId == sessionId else it.targetId in byId },
+            previousGrade = sessions.subList(0, at).lastOrNull { it.grade != null }?.grade,
         )
     }
 }

@@ -121,6 +121,9 @@ internal object ReportSamples {
     val grading = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null)
 
     /** 첫 교정에 "틀림"을 누른 상태(F8.1). */
+    /** 바로 앞 회차보다 등급이 오른 회차를 처음 연 상태(#198). */
+    val gradeUp = mixedModels.copy(gradeUp = true)
+
     val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)), wrongCorrections = setOf(0), names = names)
 
     /** 프롬프트 v3 결과(#217). 내용 교정 하나와 최종 스크립트가 있고, 스크립트를 복사한 뒤다. */

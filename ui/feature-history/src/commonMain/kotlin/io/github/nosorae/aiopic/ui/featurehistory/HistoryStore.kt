@@ -17,4 +17,9 @@ interface HistoryStore {
 
     /** 분석 작업 표(#205). 기다리는 연습 답변이 지금 무엇을 기다리는지 보인다. */
     fun jobs(): Flow<List<AnalysisJob>>
+
+    /** 이미 본 것(#198). 약점 유형마다 지난번에 본 점수가 있다. 앱을 다시 켜도 남는다. */
+    fun seen(): Flow<Map<String, Int>>
+
+    suspend fun markSeen(key: String, value: Int)
 }

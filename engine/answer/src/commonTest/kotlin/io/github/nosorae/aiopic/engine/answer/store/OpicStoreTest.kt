@@ -120,4 +120,13 @@ class OpicStoreTest {
 
         assertEquals(setOf(CorrectionFlag("a1", 2)), store.flags().first())
     }
+
+    @Test
+    fun `198 본 표시는 덮어쓰고 저장소를 다시 열어도 남는다`() = runTest {
+        store.markSeen("first-analysis", 1)
+        store.markSeen("weakness:description", 60)
+        store.markSeen("weakness:description", 72)
+
+        assertEquals(mapOf("first-analysis" to 1, "weakness:description" to 72), OpicStore(db).seen().first())
+    }
 }

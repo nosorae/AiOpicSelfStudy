@@ -53,4 +53,10 @@ internal object HistorySamples {
     )
 
     val empty = HistoryUiState(loading = false)
+
+    /** 지난번에 본 것보다 "과거 경험" 점수가 오른 약점 목록(#198). 축하가 화면 안에서 보이게 기록 줄은 비운다. */
+    val weaknessRose = HistoryUiState(
+        loading = false,
+        weaknesses = listOf(HistoryWeakness("롤플레이 문제 해결", 48), HistoryWeakness("과거 경험", 61, rose = true), HistoryWeakness("습관", 77)),
+    )
 }

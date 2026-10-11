@@ -1,12 +1,15 @@
 package io.github.nosorae.aiopic.ui.featurehistory
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
@@ -27,6 +30,8 @@ import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
+import io.github.nosorae.aiopic.ui.design.MontageCelebration
+import io.github.nosorae.aiopic.ui.design.MontageCelebrationSize
 import io.github.nosorae.aiopic.ui.design.MontageChip
 import io.github.nosorae.aiopic.ui.design.MontageChipVariant
 import io.github.nosorae.aiopic.ui.design.MontageGatheringDots
@@ -59,7 +64,7 @@ internal enum class HistoryFilter { All, Exam, Practice }
  * 기록 탭(S13, F7.3, F7.4). 모의고사 회차와 한 문항 연습 답변을 한 목록에 최근 것부터 보인다. 회차는 등급과 분석 모델,
  * 연습은 문항 유형과 점수를 보이고 분석 중과 실패도 그 줄에 보인다. 모델이 섞인 회차는 표시한다(F5.7).
  * 회차를 누르면 [onOpenSession] 로 회차 리포트를, 연습을 누르면 [onOpenAnswer] 로 그 답변 리포트를 연다.
- * 아래에 문항 유형별 약점 점수를 약한 것부터 막대와 함께 둔다.
+ * 아래에 문항 유형별 약점 점수를 약한 것부터 막대와 함께 둔다. 지난번에 본 것보다 오른 점수는 처음 볼 때 점수 둘레에 작은 축하를 한다(#198).
  * 이 화면의 주인공 움직임은 하나다. 맨 위 등급 눈금에서 최근 회차 등급으로 구슬이 미끄러져 멈춘다. 분석 중인 연습 줄의 작은 물결만 기다리는 동안 계속 움직인다.
  */
 @Composable
@@ -114,11 +119,21 @@ fun HistoryScreen(
                 items(state.weaknesses, key = { it.typeName }) { weakness ->
                     MontageListCell(title = weakness.typeName, modifier = montageItemMotion()) {
                         MontageProgressBar(weakness.score / 100f, Modifier.width(96.dp).height(4.dp).align(Alignment.CenterVertically))
-                        Text(
-                            text = stringResource(Res.string.history_score, weakness.score),
-                            style = MontageTheme.typography.body2.bold,
-                            color = MontageTheme.colors.foregroundNeutralPrimary,
-                        )
+                        Box(Modifier.align(Alignment.CenterVertically)) {
+                            Text(
+                                text = stringResource(Res.string.history_score, weakness.score),
+                                style = MontageTheme.typography.body2.bold,
+                                color = MontageTheme.colors.foregroundNeutralPrimary,
+                            )
+                            // 지난번에 본 것보다 오른 점수를 처음 볼 때 점수 둘레에 작은 축하를 한다(#198). 줄이 화면에 들어올 때 터진다.
+                            if (weakness.rose) {
+                                MontageCelebration(
+                                    MontageCelebrationSize.Small,
+                                    Modifier.matchParentSize().wrapContentSize(unbounded = true).requiredSize(MontageSpacing.spacing48 * 2),
+                                    playOnceKey = "history-weakness:${weakness.typeName}:${weakness.score}",
+                                )
+                            }
+                        }
                     }
                 }
             }

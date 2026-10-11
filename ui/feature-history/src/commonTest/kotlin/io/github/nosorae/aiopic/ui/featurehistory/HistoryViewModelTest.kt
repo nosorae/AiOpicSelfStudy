@@ -199,6 +199,63 @@ class HistoryViewModelTest {
         assertEquals(listOf(HistoryWeakness("t", 80)), viewModel.uiState.value.weaknesses)
     }
 
+    /** 기록 탭을 한 번 열어 지금 약점 점수를 보고 떠난 저장소. */
+    private fun TestScope.seenOnce(vararg answers: Answer): FakeHistoryStore {
+        val store = FakeHistoryStore(answers = answers.toList())
+        val viewing = backgroundScope.launch { HistoryViewModel(useCase(store)).uiState.collect {} }
+        advanceUntilIdle()
+        viewing.cancel()
+        advanceUntilIdle()
+        return store
+    }
+
+    @Test
+    fun `198 처음 보는 약점 점수는 축하하지 않는다`() = runTest(dispatcher) {
+        val viewModel = subscribed(FakeHistoryStore(answers = listOf(answer("a1", "s1", score = 40))))
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.weaknesses.single().rose)
+    }
+
+    @Test
+    fun `198 지난번에 본 것보다 오른 약점 유형만 작은 축하를 하고 다시 열면 하지 않는다`() = runTest(dispatcher) {
+        val store = seenOnce(answer("a1", "s1", score = 40), answer("b1", "s1", score = 60, type = "routine"))
+        store.answers.value += listOf(answer("a2", "s2", score = 80), answer("b2", "s2", score = 40, type = "routine"))
+
+        val opened = subscribed(store)
+        advanceUntilIdle()
+        val again = subscribed(store)
+        advanceUntilIdle()
+
+        assertEquals(listOf("습관" to false, "t" to true), opened.uiState.value.weaknesses.map { it.typeName to it.rose })
+        assertEquals(listOf(false, false), again.uiState.value.weaknesses.map { it.rose })
+    }
+
+    @Test
+    fun `198 보는 중에 점수가 오르면 그때 축하한다`() = runTest(dispatcher) {
+        val store = FakeHistoryStore(answers = listOf(answer("a1", "s1", score = 40)))
+        val viewModel = subscribed(store)
+        advanceUntilIdle()
+
+        store.answers.value += answer("a2", "s2", score = 80)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.weaknesses.single().rose)
+    }
+
+    @Test
+    fun `198 오른 약점 축하는 앱을 다시 켜도 다시 터지지 않는다`() = runTest(dispatcher) {
+        val before = seenOnce(answer("a1", "s1", score = 40))
+        before.answers.value += answer("a2", "s2", score = 80)
+        subscribed(before)
+        advanceUntilIdle()
+
+        val restarted = subscribed(FakeHistoryStore(answers = before.answers.value, seen = before.seen.toMutableMap()))
+        advanceUntilIdle()
+
+        assertFalse(restarted.uiState.value.weaknesses.single().rose)
+    }
+
     @Test
     fun `불러오기 전에는 빈 기록 대신 불러오는 중이다`() = runTest(dispatcher) {
         val viewModel = HistoryViewModel(useCase(FakeHistoryStore()))

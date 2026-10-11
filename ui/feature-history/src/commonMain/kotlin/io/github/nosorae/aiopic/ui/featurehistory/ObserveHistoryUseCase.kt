@@ -13,6 +13,9 @@ import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 
 /** 기록 목록의 한 줄. 모의고사 회차([HistorySession])와 한 문항 연습 답변([HistoryPractice])이 한 목록에 섞인다(F7.4). */
 sealed interface HistoryEntry
@@ -37,8 +40,8 @@ data class HistorySession(
  */
 data class HistoryPractice(val answerId: String, val typeName: String, val model: String?, val analysis: AnswerAnalysis, val job: JobState? = null) : HistoryEntry
 
-/** 문항 유형별 약점 한 줄. [typeName] 은 사용자에게 보일 유형 이름이다. */
-data class HistoryWeakness(val typeName: String, val score: Int)
+/** 문항 유형별 약점 한 줄. [typeName] 은 사용자에게 보일 유형 이름이다. [rose] 는 지난번에 본 점수보다 오른 것을 처음 보는 중이다(#198). */
+data class HistoryWeakness(val typeName: String, val score: Int, val rose: Boolean = false)
 
 /** [entries] 는 최근 것부터다. [grades] 는 등급 눈금에 늘어놓을 시험 팩의 등급 이름(낮은 것부터)이다. */
 data class History(val entries: List<HistoryEntry>, val weaknesses: List<HistoryWeakness>, val grades: List<String> = emptyList())
@@ -46,6 +49,7 @@ data class History(val entries: List<HistoryEntry>, val weaknesses: List<History
 /**
  * 끝난 회차와 한 문항 연습 답변을 한 목록에 최근 것부터 놓는다(F7.4). 문항 유형별 약점은 한 문항 연습까지 모든 답변으로 낸다(F7.3).
  * 진행 중인 회차는 등급이 없어서 넣지 않는다. 틀림 표시가 붙은 답변은 약점에서 뺀다(F8.2).
+ * 약점 점수는 볼 때마다 저장소에 남기고, 지난번에 본 점수보다 오른 유형은 [HistoryWeakness.rose] 로 표시한다(#198).
  *
  * 유형 이름([typeNames])과 등급 눈금([gradeScale])은 시험 팩이 정해서 앱 층이 넣는다. 모델은 앱이 들고 있는 목록의 표시 이름을 쓴다.
  * 이름을 모르는 유형과 목록에서 빠진 모델은 id 를 그대로 보인다.
@@ -57,7 +61,14 @@ class ObserveHistoryUseCase(
     private val modelCatalog: ModelCatalog,
     private val gradeScale: GradeScale,
 ) {
-    operator fun invoke(): Flow<History> = combine(store.sessions(), store.answers(), store.flags(), store.jobs()) { sessions, answers, flags, jobs ->
+    operator fun invoke(): Flow<History> = flow {
+        // 이번에 기록을 열기 전에 본 점수. 구독하는 동안은 이 값과 비교해서, 본 표시를 새로 남겨도 축하가 중간에 사라지지 않는다.
+        val before = store.seen().first()
+        val marked = before.toMutableMap()
+        emitAll(history(before, marked))
+    }
+
+    private fun history(before: Map<String, Int>, marked: MutableMap<String, Int>) = combine(store.sessions(), store.answers(), store.flags(), store.jobs()) { sessions, answers, flags, jobs ->
         val answerJobs = jobs.filter { it.kind == JobKind.Answer }.associate { it.targetId to it.state }
         val bySession = answers.groupBy { it.examSessionId }
         val position = answers.withIndex().associate { (index, answer) -> answer.id to index }
@@ -85,9 +96,18 @@ class ObserveHistoryUseCase(
                 answerJobs[answer.id],
             )
         }
+        val scores = weaknessScores(answers, flags)
+        // 지금 본 점수를 남긴다. 다음에 열 때 이 값보다 오르면 축하한다. 처음 보는 유형은 비교할 값이 없어 남기기만 한다.
+        scores.forEach { (type, score) ->
+            val key = "weakness:${type.id}"
+            if (marked[key] != score) {
+                store.markSeen(key, score)
+                marked[key] = score
+            }
+        }
         History(
             entries = (exams + practices).sortedBy { it.first }.map { it.second }.asReversed(),
-            weaknesses = weaknessScores(answers, flags).map { HistoryWeakness(it.type.name(), it.score) },
+            weaknesses = scores.map { (type, score) -> HistoryWeakness(type.name(), score, rose = before["weakness:${type.id}"]?.let { score > it } == true) },
             grades = gradeScale.grades,
         )
     }

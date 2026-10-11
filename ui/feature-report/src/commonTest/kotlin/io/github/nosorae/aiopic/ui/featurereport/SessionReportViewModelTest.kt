@@ -11,6 +11,7 @@ import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
+import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -45,7 +46,57 @@ class SessionReportViewModelTest {
         sessionId,
         ObserveSessionReportUseCase(store, spec, typeNames, FakeCatalog, GradeScale(listOf("NL", "IM", "AL"))),
         RetrySessionAnalysisUseCase(store),
+        CelebrateOnceUseCase(store),
     )
+
+    private fun graded(id: String, low: String, high: String = low) =
+        session(level = 3, answers = 1).copy(id = id, grade = SessionGrade(emptyList(), low, high, emptyList(), emptyList()))
+
+    @Test
+    fun `198 바로 앞 회차보다 등급이 오르면 크게 축하하고 다시 열면 축하하지 않는다`() = runTest(dispatcher) {
+        val store = FakeReportStore(listOf(graded("s0", "NL"), graded("s1", "IM")), answers("s1", 1))
+
+        val first = viewModel(store)
+        advanceUntilIdle()
+        val again = viewModel(store)
+        advanceUntilIdle()
+
+        assertTrue(first.uiState.value.gradeUp)
+        assertFalse(again.uiState.value.gradeUp)
+    }
+
+    @Test
+    fun `198 등급이 오른 축하는 앱을 다시 켜도 다시 터지지 않는다`() = runTest(dispatcher) {
+        val sessions = listOf(graded("s0", "NL"), graded("s1", "IM", "AL"))
+        val before = FakeReportStore(sessions, answers("s1", 1))
+        viewModel(before)
+        advanceUntilIdle()
+
+        val restarted = viewModel(FakeReportStore(sessions, answers("s1", 1), seen = before.seen.toMutableMap()))
+        advanceUntilIdle()
+
+        assertFalse(restarted.uiState.value.gradeUp)
+    }
+
+    @Test
+    fun `198 앞 회차와 등급이 같거나 낮거나 앞 회차 등급이 없으면 축하하지 않는다`() = runTest(dispatcher) {
+        val same = viewModel(FakeReportStore(listOf(graded("s0", "IM"), graded("s1", "IM")), answers("s1", 1)))
+        val lower = viewModel(FakeReportStore(listOf(graded("s0", "AL"), graded("s1", "IM")), answers("s1", 1)))
+        val firstEver = viewModel(FakeReportStore(listOf(ExamSession(id = "s0"), graded("s1", "IM")), answers("s1", 1)))
+        advanceUntilIdle()
+
+        assertEquals(listOf(false, false, false), listOf(same, lower, firstEver).map { it.uiState.value.gradeUp })
+    }
+
+    @Test
+    fun `198 뒤 회차가 아니라 바로 앞 회차와 비교한다`() = runTest(dispatcher) {
+        val store = FakeReportStore(listOf(graded("s0", "AL"), graded("s1", "IM"), graded("s2", "NL")), answers("s1", 1))
+
+        val viewModel = viewModel(store)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.gradeUp)
+    }
 
     @Test
     fun `F2_6 시간이 다 된 회차는 답하지 못한 문항 수를 시간 부족으로 센다`() = runTest(dispatcher) {
