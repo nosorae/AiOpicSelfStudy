@@ -40,7 +40,7 @@ final class QuestionVoiceUITests: XCTestCase {
         app.tapTag("settings-voice-device")
         attach("설정 질문 음성")
         app.tabBars.buttons["모의고사"].tap()
-        app.tapTag("exam-start")
+        app.tapTag("exam-resume")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "문항 1 /")).firstMatch.waitForExistence(timeout: 30))
         app.tapTag("exam-play")
         app.waitRecording()
