@@ -397,13 +397,14 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `211 시간 제한 직전에 받은 응답은 저장하고 다시 보낼 때 다시 부르지 않는다`() = runTest(dispatcher) {
+    fun `211 원문을 저장한 뒤 시간 제한에 걸려도 다시 보낼 때 Gemini 를 다시 부르지 않는다`() = runTest(dispatcher) {
         store.save(answer())
         val jobs = jobs(AnswerRouter(savingAnalyzer, FakeDeafProvider(), FakeDeafProvider()))
         jobs.enqueueAnswer("a1")
-        // 원문을 저장한 뒤 해석이 시간 제한을 넘긴다.
-        parse = { AnalysisResult.Success(feedback) }
-        answerResult = { delay(2.minutes); AnalysisResult.Success(feedback) }
+        answerResult = {
+            delay(2.minutes)
+            AnalysisResult.Success(feedback)
+        }
 
         advanceTimeBy(jobs.drain()!!)
         assertEquals(JobState.RetryScheduled, job()?.state)

@@ -24,7 +24,7 @@ class IosWorkQueueTest {
             answers.removeFirstOrNull()?.invoke()
         },
         scope = backgroundScope,
-        online = online,
+        network = online,
     ).also { runCurrent() }
 
     @Test
