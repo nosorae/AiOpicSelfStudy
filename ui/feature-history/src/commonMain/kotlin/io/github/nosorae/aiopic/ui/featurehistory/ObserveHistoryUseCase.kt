@@ -62,13 +62,14 @@ class ObserveHistoryUseCase(
     private val gradeScale: GradeScale,
 ) {
     operator fun invoke(): Flow<History> = flow {
-        // 이번에 기록을 열기 전에 본 점수. 구독하는 동안은 이 값과 비교해서, 본 표시를 새로 남겨도 축하가 중간에 사라지지 않는다.
-        val before = store.seen().first()
-        val marked = before.toMutableMap()
-        emitAll(history(before, marked))
+        // 지난번에 본 점수. 구독하는 동안 본 점수로 계속 고친다.
+        val seen = store.seen().first().toMutableMap()
+        // 오른 것을 본 유형과 그때 점수. 본 표시를 새로 남겨도 그 점수인 동안은 축하 중이라 축하가 중간에 사라지지 않는다.
+        val rose = mutableMapOf<String, Int>()
+        emitAll(history(seen, rose))
     }
 
-    private fun history(before: Map<String, Int>, marked: MutableMap<String, Int>) = combine(store.sessions(), store.answers(), store.flags(), store.jobs()) { sessions, answers, flags, jobs ->
+    private fun history(seen: MutableMap<String, Int>, rose: MutableMap<String, Int>) = combine(store.sessions(), store.answers(), store.flags(), store.jobs()) { sessions, answers, flags, jobs ->
         val answerJobs = jobs.filter { it.kind == JobKind.Answer }.associate { it.targetId to it.state }
         val bySession = answers.groupBy { it.examSessionId }
         val position = answers.withIndex().associate { (index, answer) -> answer.id to index }
@@ -97,17 +98,18 @@ class ObserveHistoryUseCase(
             )
         }
         val scores = weaknessScores(answers, flags)
-        // 지금 본 점수를 남긴다. 다음에 열 때 이 값보다 오르면 축하한다. 처음 보는 유형은 비교할 값이 없어 남기기만 한다.
+        // 지난번에 본 점수보다 오르면 축하하고 지금 점수를 남긴다. 처음 보는 유형은 비교할 값이 없어 남기기만 한다.
         scores.forEach { (type, score) ->
             val key = "weakness:${type.id}"
-            if (marked[key] != score) {
-                store.markSeen(key, score)
-                marked[key] = score
-            }
+            val before = seen[key]
+            if (before == score) return@forEach
+            if (before != null && score > before) rose[key] = score
+            store.markSeen(key, score)
+            seen[key] = score
         }
         History(
             entries = (exams + practices).sortedBy { it.first }.map { it.second }.asReversed(),
-            weaknesses = scores.map { (type, score) -> HistoryWeakness(type.name(), score, rose = before["weakness:${type.id}"]?.let { score > it } == true) },
+            weaknesses = scores.map { (type, score) -> HistoryWeakness(type.name(), score, rose = rose["weakness:${type.id}"] == score) },
             grades = gradeScale.grades,
         )
     }

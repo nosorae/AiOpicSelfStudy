@@ -164,7 +164,7 @@ class ReportHapticsTest {
         val during = rule.onRoot().captureToImage().asAndroidBitmap()
         rule.mainClock.advanceTimeBy(2_000)
 
-        assertTrue("동작 줄이기인데 조각이 그려진다", during.sameAs(rule.onRoot().captureToImage().asAndroidBitmap()))
+        assertTrue(during.sameAs(rule.onRoot().captureToImage().asAndroidBitmap()), "동작 줄이기인데 조각이 그려진다")
         assertEquals(setOf(HapticEffect.Celebrate, HapticEffect.Success), played.toSet())
         assertEquals(2, played.size)
     }

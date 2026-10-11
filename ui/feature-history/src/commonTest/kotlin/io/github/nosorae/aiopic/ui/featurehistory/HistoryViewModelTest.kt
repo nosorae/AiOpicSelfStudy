@@ -20,6 +20,7 @@ import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -196,18 +197,11 @@ class HistoryViewModelTest {
         store.flags.value = setOf(CorrectionFlag("a1", 0))
         advanceUntilIdle()
 
-        assertEquals(listOf(HistoryWeakness("t", 80)), viewModel.uiState.value.weaknesses)
+        assertEquals(listOf("t" to 80), viewModel.uiState.value.weaknesses.map { it.typeName to it.score })
     }
 
-    /** 기록 탭을 한 번 열어 지금 약점 점수를 보고 떠난 저장소. */
-    private fun TestScope.seenOnce(vararg answers: Answer): FakeHistoryStore {
-        val store = FakeHistoryStore(answers = answers.toList())
-        val viewing = backgroundScope.launch { HistoryViewModel(useCase(store)).uiState.collect {} }
-        advanceUntilIdle()
-        viewing.cancel()
-        advanceUntilIdle()
-        return store
-    }
+    /** 기록을 한 번 열어 지금 약점 점수를 보고 떠난 저장소. */
+    private suspend fun seenOnce(vararg answers: Answer): FakeHistoryStore = FakeHistoryStore(answers = answers.toList()).also { useCase(it)().first() }
 
     @Test
     fun `198 처음 보는 약점 점수는 축하하지 않는다`() = runTest(dispatcher) {
