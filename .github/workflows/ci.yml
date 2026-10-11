@@ -32,7 +32,7 @@ jobs:
           python3 scripts/check-secrets.py "$range"
 
   linux:
-    name: 공통, Android, 스크린샷
+    name: 공통, Android
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,8 +42,9 @@ jobs:
           distribution: zulu
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - name: check (spotless, 테스트, 층 의존, Roborazzi verify)
-        run: ./gradlew check --continue
+      # 시뮬레이터 부팅은 macOS 에만 있다. 기준 이미지는 macOS 에서 찍어 Linux 글꼴 렌더링과 어긋나므로 비교는 iOS 잡에서 한다.
+      - name: check (spotless, 테스트, 층 의존)
+        run: ./gradlew check --continue -x :libs:keyvault:bootSimulator -x verifyRoborazziAndroidHostTest
       - name: 실패 리포트 올리기
         if: failure()
         uses: actions/upload-artifact@v4
@@ -56,7 +57,7 @@ jobs:
           if-no-files-found: ignore
 
   ios:
-    name: iOS
+    name: iOS, 스크린샷
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,8 +66,8 @@ jobs:
           distribution: zulu
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
-      - name: 시뮬레이터 프레임워크 링크와 iOS 테스트
-        run: ./gradlew :apps:opic:shared:linkDebugFrameworkIosSimulatorArm64 iosSimulatorArm64Test --continue
+      - name: 시뮬레이터 프레임워크 링크, iOS 테스트, Roborazzi verify
+        run: ./gradlew :apps:opic:shared:linkDebugFrameworkIosSimulatorArm64 iosSimulatorArm64Test verifyRoborazziAndroidHostTest --continue
       - name: 실패 리포트 올리기
         if: failure()
         uses: actions/upload-artifact@v4
@@ -75,4 +76,5 @@ jobs:
           path: |
             **/build/reports/
             **/build/test-results/
+            **/build/outputs/roborazzi/
           if-no-files-found: ignore
