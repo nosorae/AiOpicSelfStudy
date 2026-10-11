@@ -57,7 +57,8 @@ class E2eRunner : AndroidJUnitRunner() {
 }
 
 /**
- * 키 확인과 답변 분석 요청에 모두 같은 저장 응답을 돌려준다. 키 확인은 200 만 보고, 분석은 이 JSON 을 읽는다.
+ * 키 확인과 답변 분석 요청에 같은 저장 응답을 돌려준다. 키 확인은 200 만 보고, 분석은 이 JSON 을 읽는다.
+ * 회차 등급 요청은 등급 JSON 을 돌려준다. 답변 JSON 을 받으면 등급을 읽지 못해 회차가 등급 실패로 끝난다(#224).
  * 출제 요청은 [QUESTION_DELAY] 늦게 답하고 응답을 못 읽어 내장 문항으로 간다. Play 가 출제를 기다리지 않는지 볼 때 쓴다(#150).
  * 요청과 응답은 디버깅 화면의 Network 탭에 남는다([DebugToolsTest]).
  */
@@ -71,8 +72,9 @@ class E2eApplication : OpicApplication() {
     override fun gemini() = GeminiClient(
         HttpClient(
             MockEngine {
-                if (QUESTION_PROMPT in it.body.toByteArray().decodeToString()) delay(QUESTION_DELAY)
-                respond(ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                val body = it.body.toByteArray().decodeToString()
+                if (QUESTION_PROMPT in body) delay(QUESTION_DELAY)
+                respond(if (GRADE_PROMPT in body) GRADE_RESPONSE else ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             },
         ) { installDebugTools() },
     )
@@ -82,6 +84,9 @@ fun recordFailRequested() = InstrumentationRegistry.getArguments().getString("re
 
 /** 시험 팩 출제 프롬프트의 첫 문장 일부. */
 private const val QUESTION_PROMPT = "You write questions for an OPIc English speaking mock test"
+
+/** 회차 등급 프롬프트의 첫 문장 일부. */
+private const val GRADE_PROMPT = "You grade one full OPIc English speaking test session"
 
 private val QUESTION_DELAY = 3.seconds
 
@@ -93,3 +98,8 @@ const val FAKE_TRANSCRIPT = "I live in Seoul and I go jogging every morning."
 const val FAKE_SCORE = 80
 
 private const val ANSWER_RESPONSE = """{"candidates":[{"content":{"role":"model","parts":[{"text":"{\"transcript\":\"$FAKE_TRANSCRIPT\",\"corrections\":[],\"upgrades\":[],\"tenseConsistent\":true,\"sentenceCount\":2,\"wordsPerMinute\":120.0,\"pauses\":[],\"pronunciation\":\"Clear.\",\"score\":$FAKE_SCORE}"}]},"finishReason":"STOP"}]}"""
+
+/** 기록 화면에 보일 회차 등급. */
+const val FAKE_GRADE = "IM2"
+
+private const val GRADE_RESPONSE = """{"candidates":[{"content":{"role":"model","parts":[{"text":"{\"checks\":[{\"id\":\"C1\",\"met\":true}],\"low\":\"$FAKE_GRADE\",\"high\":\"$FAKE_GRADE\",\"reasons\":[\"Strings of sentences on every answer.\"],\"brokeAt\":[]}"}]},"finishReason":"STOP"}]}"""
