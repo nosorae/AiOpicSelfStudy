@@ -31,7 +31,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SessionGradeHandlerTest {
     private val db = inMemoryDatabase()
@@ -164,6 +166,50 @@ class SessionGradeHandlerTest {
             outcomes,
         )
         assertNull(session().grade)
+        assertTrue(session().gradeFailed)
+    }
+
+    @Test
+    fun `203 분석하지 못한 답변이 있으면 등급을 요청하지 않는다`() = runTest {
+        saveSession()
+        val handler = handler()
+        (1..14).forEach { handler.handle("a$it") }
+        store.save(store.answers("s1").first().last().copy(analysis = AnswerAnalysis.Failed(AnalysisError.Rejected)))
+
+        requestGradeIfReady(store, queue, "s1")
+
+        assertEquals(emptyList(), queue.ids)
+    }
+
+    @Test
+    fun `203 다시 분석하기는 실패한 답변과 등급을 기다림으로 돌려 대기열에 다시 넣는다`() = runTest {
+        saveSession()
+        val handler = handler()
+        (1..15).forEach { handler.handle("a$it") }
+        gradeResult = AnalysisResult.Failed(AnalysisError.Rejected)
+        handler.handle(gradePayload("s1"))
+        store.save(store.answers("s1").first().first().copy(analysis = AnswerAnalysis.Failed(AnalysisError.Retryable)))
+        queue.ids.clear()
+
+        retrySession(store, queue, "s1")
+
+        assertEquals(AnswerAnalysis.Pending, store.answers("s1").first().first().analysis)
+        assertFalse(session().gradeFailed)
+        assertEquals(listOf("a1"), queue.ids)
+
+        gradeResult = AnalysisResult.Success(grade)
+        handler.handle("a1")
+        assertEquals(listOf("a1", gradePayload("s1")), queue.ids)
+    }
+
+    @Test
+    fun `203 앱을 켜면 대기열에서 빠진 기다림을 다시 넣는다`() = runTest {
+        saveSession(count = 2)
+        store.save(store.answers("s1").first().last().copy(analysis = AnswerAnalysis.Failed(AnalysisError.Rejected)))
+
+        requeuePending(store, queue)
+
+        assertEquals(listOf("a1"), queue.ids)
     }
 
     @Test

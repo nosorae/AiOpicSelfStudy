@@ -54,25 +54,30 @@ class SessionGradeHandler(
         return when (val result = grader.grade(model, prompt, scale, recordings)) {
             is AnalysisResult.Success -> {
                 // 등급을 기다리는 동안 회차가 바뀌었을 수 있어 최신 값에 등급만 얹는다.
-                store.save((store.session(sessionId).first() ?: session).copy(grade = result.value))
+                store.save((store.session(sessionId).first() ?: session).copy(grade = result.value, gradeFailed = false))
                 WorkResult.Success
             }
 
             is AnalysisResult.Unscorable -> WorkResult.Failure
 
-            is AnalysisResult.Failed -> if (result.error == AnalysisError.Retryable) WorkResult.Retry else WorkResult.Failure
+            is AnalysisResult.Failed -> {
+                // 화면이 등급 기다림을 끝내고 다시 분석하기를 보이게 남긴다(#203). 다시 보내 받으면 등급이 덮는다.
+                store.save((store.session(sessionId).first() ?: session).copy(gradeFailed = true))
+                if (result.error == AnalysisError.Retryable) WorkResult.Retry else WorkResult.Failure
+            }
         }
     }
 }
 
 /**
  * 회차가 끝났고 답한 답변이 모두 분석됐으면(Done 또는 평가할 수 없음) 등급 요청을 대기열에 넣는다(F5.3).
+ * 등급을 내지 못한 회차는 사용자가 다시 분석하기를 누를 때까지 넣지 않는다([retrySession]).
  * 시간 부족으로 끝난 회차(F2.6)는 답한 문항만 본다. 마지막 답변 분석이 회차가 끝나기 전에 끝날 수 있어서
  * 답변 분석 뒤와 회차 저장 뒤 양쪽에서 부른다. 같은 id 는 대기열이 한 번만 넣는다.
  */
 suspend fun requestGradeIfReady(store: OpicStore, queue: WorkQueue, sessionId: String) {
     val session = store.session(sessionId).first() ?: return
-    if (session.grade != null || analyzedAnswers(store, session) == null) return
+    if (session.grade != null || session.gradeFailed || analyzedAnswers(store, session) == null) return
     queue.enqueue(gradePayload(sessionId), gradePayload(sessionId))
 }
 
@@ -81,5 +86,31 @@ private suspend fun analyzedAnswers(store: OpicStore, session: ExamSession): Lis
     if (session.status == ExamStatus.InProgress || session.answerIds.isEmpty()) return null
     val byId = store.answers(session.id).first().associateBy { it.id }
     val answers = session.answerIds.mapNotNull(byId::get)
-    return answers.takeIf { it.size == session.answerIds.size && it.none { answer -> answer.analysis == AnswerAnalysis.Pending } }
+    return answers.takeIf { it.size == session.answerIds.size && it.all { answer -> answer.analysis is AnswerAnalysis.Done || answer.analysis is AnswerAnalysis.Unscorable } }
+}
+
+/** 분석하지 못한 답변을 기다림으로 돌려 대기열에 다시 넣는다(#203). 실패가 아니면 아무것도 하지 않는다. */
+suspend fun retryAnalysis(store: OpicStore, queue: WorkQueue, answerId: String) {
+    val answer = store.answers().first().firstOrNull { it.id == answerId && it.analysis is AnswerAnalysis.Failed } ?: return
+    store.save(answer.copy(analysis = AnswerAnalysis.Pending))
+    queue.enqueue(answerId, answerId)
+}
+
+/** 회차에서 분석하지 못한 답변을 모두 다시 보내고, 등급을 내지 못했으면 등급도 다시 요청한다(#203). */
+suspend fun retrySession(store: OpicStore, queue: WorkQueue, sessionId: String) {
+    store.answers(sessionId).first().filter { it.analysis is AnswerAnalysis.Failed }.forEach { retryAnalysis(store, queue, it.id) }
+    val session = store.session(sessionId).first() ?: return
+    if (!session.gradeFailed) return
+    store.save(session.copy(gradeFailed = false))
+    requestGradeIfReady(store, queue, sessionId)
+}
+
+/**
+ * 앱을 켤 때 부른다. 기다림인데 대기열에 없는 답변과 등급 요청을 다시 넣는다(#203).
+ * 음성 전송 동의를 철회해 대기열을 비웠거나, 실패를 남기기 전 버전이 버린 답변이 화면에서 끝없이 기다리지 않게 한다.
+ * 같은 id 는 대기열이 한 번만 넣는다.
+ */
+suspend fun requeuePending(store: OpicStore, queue: WorkQueue) {
+    store.answers().first().filter { it.analysis == AnswerAnalysis.Pending }.forEach { queue.enqueue(it.id, it.id) }
+    store.sessions().first().forEach { requestGradeIfReady(store, queue, it.id) }
 }

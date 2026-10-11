@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.engine.answer.model
 
+import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
 import io.github.nosorae.aiopic.engine.question.model.Question
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -22,7 +23,7 @@ data class Answer(
 /** 답변 분석 결과. 분석이 끝나지 않은 답변도 녹음은 남는다(F5.6). */
 @Serializable
 sealed interface AnswerAnalysis {
-    /** 대기열에 있거나 다시 보낼 차례다. */
+    /** 대기열에 있거나 보내는 중이다. 대기열에 없는 기다림은 앱을 켤 때 다시 넣는다(`requeuePending`). */
     @Serializable
     @SerialName("pending")
     data object Pending : AnswerAnalysis
@@ -30,6 +31,14 @@ sealed interface AnswerAnalysis {
     @Serializable
     @SerialName("done")
     data class Done(val analyzedBy: AnalyzedBy, val feedback: Feedback) : AnswerAnalysis
+
+    /**
+     * 보냈지만 결과를 받지 못했다(#203). 화면은 기다림을 끝내고 [error] 에 맞는 이유와 다시 분석하기를 보인다.
+     * [AnalysisError.Retryable] 이면 대기열이 뒤에서 몇 번 더 보내고, 그 사이 결과가 오면 [Done] 으로 바뀐다.
+     */
+    @Serializable
+    @SerialName("failed")
+    data class Failed(val error: AnalysisError) : AnswerAnalysis
 
     /** 모델이 평가할 수 없다고 이유 코드를 돌려줬다. 화면에는 "평가할 수 없음"으로 보인다(F5.5). */
     @Serializable
