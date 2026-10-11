@@ -120,10 +120,10 @@ internal object ReportSamples {
     /** 답변 7개를 모두 분석했고 회차 등급만 기다린다(등급 요청이 대기열에 있거나 모델이 내는 중). */
     val grading = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null)
 
-    /** 첫 교정에 "틀림"을 누른 상태(F8.1). */
     /** 바로 앞 회차보다 등급이 오른 회차를 처음 연 상태(#198). */
     val gradeUp = mixedModels.copy(gradeUp = true)
 
+    /** 첫 교정에 "틀림"을 누른 상태(F8.1). */
     val answerEvaluated = AnswerReportUiState(loading = false, answer = answer(1, AnswerAnalysis.Done(flash, feedback)), wrongCorrections = setOf(0), names = names)
 
     /** 프롬프트 v3 결과(#217). 내용 교정 하나와 최종 스크립트가 있고, 스크립트를 복사한 뒤다. */
