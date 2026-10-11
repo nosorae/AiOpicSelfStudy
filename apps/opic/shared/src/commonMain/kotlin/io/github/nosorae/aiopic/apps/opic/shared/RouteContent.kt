@@ -62,6 +62,7 @@ internal fun RouteContent(
         AppRoute.History -> HistoryRoute(
             viewModel = viewModel { graph.historyViewModel },
             onOpenSession = { onOpen(AppRoute.ReportDetail(it)) },
+            onOpenAnswer = { onOpen(AppRoute.AnswerReport(it)) },
             modifier = modifier,
         )
 
