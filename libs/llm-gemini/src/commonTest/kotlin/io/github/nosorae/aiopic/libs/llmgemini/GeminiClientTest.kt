@@ -159,7 +159,15 @@ class GeminiClientTest {
             uploaded += Triple(url, apiKey, body)
             RawResponse(200, """{"candidates":[{"content":{"parts":[{"text":"done"}]}}]}""")
         }
-        val client = GeminiClient(HttpClient(MockEngine { request -> sent += request; respond("", HttpStatusCode.OK) }), upload)
+        val client = GeminiClient(
+            HttpClient(
+                MockEngine { request ->
+                    sent += request
+                    respond("", HttpStatusCode.OK)
+                },
+            ),
+            upload,
+        )
 
         val result = client.generate(request)
 
@@ -171,7 +179,15 @@ class GeminiClientTest {
 
     @Test
     fun `216 녹음이 없는 요청은 업로드를 쓰지 않는다`() = runTest {
-        val client = GeminiClient(HttpClient(MockEngine { request -> sent += request; respond("""{"candidates":[]}""", HttpStatusCode.OK) }), { _, _, _ -> error("업로드를 쓰면 안 된다") })
+        val client = GeminiClient(
+            HttpClient(
+                MockEngine { request ->
+                    sent += request
+                    respond("""{"candidates":[]}""", HttpStatusCode.OK)
+                },
+            ),
+            { _, _, _ -> error("업로드를 쓰면 안 된다") },
+        )
 
         client.generate(request.copy(audio = emptyList()))
 

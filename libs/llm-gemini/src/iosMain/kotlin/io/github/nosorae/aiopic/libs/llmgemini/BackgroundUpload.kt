@@ -34,8 +34,8 @@ import platform.Foundation.NSURLSessionTaskStateSuspended
 import platform.Foundation.NSUTF8StringEncoding
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.appendData
-import platform.Foundation.setValue
 import platform.Foundation.create
+import platform.Foundation.setValue
 import platform.Foundation.writeToFile
 import platform.darwin.NSObject
 import kotlin.coroutines.resume

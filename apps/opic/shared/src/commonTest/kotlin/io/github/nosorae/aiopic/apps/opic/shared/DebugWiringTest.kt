@@ -129,7 +129,10 @@ class DebugWiringTest {
 
     private val recordingRequest = request.copy(audio = listOf(AudioPart(byteArrayOf(1), "audio/mp4")))
     private val uploaded = mutableListOf<String>()
-    private val upload = GeminiUpload { url, _, _ -> uploaded += url; RawResponse(200, OK_RESPONSE) }
+    private val upload = GeminiUpload { url, _, _ ->
+        uploaded += url
+        RawResponse(200, OK_RESPONSE)
+    }
 
     @Test
     fun `216 실제 Gemini 를 쓰면 녹음 요청은 플랫폼 업로드로 보낸다`() = runTest {
