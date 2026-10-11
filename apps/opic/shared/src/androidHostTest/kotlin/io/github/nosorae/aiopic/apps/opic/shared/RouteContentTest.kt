@@ -18,7 +18,8 @@ class RouteContentTest {
 
     /** 경로를 더하면 이 when 이 컴파일되지 않아 기대 문구를 함께 적게 된다. */
     private fun screenText(route: AppRoute): String = when (route) {
-        AppRoute.Home -> "모의시험 시작"
+        AppRoute.ExamTab -> "아직 마친 회차가 없습니다"
+        AppRoute.PracticeTab -> "질문이 끝나면 바로 녹음돼요"
         AppRoute.History -> "아직 기록이 없습니다"
         AppRoute.Settings -> "분석 모델"
         is AppRoute.ReportDetail -> "이 회차를 찾을 수 없습니다."
@@ -39,7 +40,9 @@ class RouteContentTest {
         rule.waitUntil(5_000) { rule.onAllNodes(hasText(screenText(route), substring = true)).fetchSemanticsNodes().isNotEmpty() }
     }
 
-    @Test fun home() = assertDraws(AppRoute.Home)
+    @Test fun examTab() = assertDraws(AppRoute.ExamTab)
+
+    @Test fun practiceTab() = assertDraws(AppRoute.PracticeTab)
 
     @Test fun history() = assertDraws(AppRoute.History)
 
