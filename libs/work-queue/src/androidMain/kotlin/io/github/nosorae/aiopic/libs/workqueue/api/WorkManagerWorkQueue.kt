@@ -9,6 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlin.time.Duration
 import kotlin.time.toJavaDuration
 
@@ -46,8 +47,9 @@ internal class DrainWorker(context: Context, params: WorkerParameters) : Corouti
         } catch (_: Exception) {
             RETRY_AFTER_ERROR
         }
+        // 코루틴 안에서 막지 않게 Flow 로 읽는다. 블로킹 get() 은 같은 실행기를 기다리다 멈출 수 있다.
         // 뒤에 이미 비우기가 붙어 있으면 그것이 이어서 비운다. 붙이지 않아야 사슬이 깨운 횟수만큼 늘지 않는다.
-        val waiting = WorkManager.getInstance(applicationContext).getWorkInfosForUniqueWork(CHAIN).get().count { !it.state.isFinished && it.id != id }
+        val waiting = WorkManager.getInstance(applicationContext).getWorkInfosForUniqueWorkFlow(CHAIN).first().count { !it.state.isFinished && it.id != id }
         if (next != null && waiting == 0) schedule(applicationContext, next)
         // 실패로 끝내면 사슬 뒤 작업도 실패한다. 늘 성공으로 끝낸다.
         return Result.success()
