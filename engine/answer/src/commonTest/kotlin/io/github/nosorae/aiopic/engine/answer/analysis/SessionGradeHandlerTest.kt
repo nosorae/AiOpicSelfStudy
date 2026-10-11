@@ -168,7 +168,7 @@ class SessionGradeHandlerTest {
         )
         assertNull(session().grade)
         // 회차에 이유가 남아야 리포트가 키 오류와 연결 오류를 다르게 안내한다(#203).
-        assertEquals(AnalysisError.entries, saved)
+        assertEquals<List<AnalysisError?>>(AnalysisError.entries, saved)
     }
 
     @Test
