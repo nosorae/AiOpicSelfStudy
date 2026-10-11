@@ -6,6 +6,7 @@ import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.github.nosorae.aiopic.libs.debug.network.fakeHttpEngine
 import io.github.nosorae.aiopic.libs.debug.network.installDebugTools
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
+import io.github.nosorae.aiopic.libs.llmgemini.GeminiUpload
 import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.recorder.api.RecordingFailure
 import io.github.nosorae.aiopic.libs.recorder.api.StoppedRecording
@@ -32,6 +33,7 @@ internal object DebugSwitches {
     val dropOnce = DebugTools.switch("drop_once", "Fake Gemini: first analysis drops, then succeeds")
     val offline = DebugTools.switch("offline", "Fake Gemini: every analysis drops")
     val stall = DebugTools.switch("stall", "Every analysis request hangs past the time limit")
+    val localUpload = DebugTools.switch("local_upload", "Upload recordings to a test server on this Mac (127.0.0.1:8765)")
 }
 
 /**
@@ -39,6 +41,8 @@ internal object DebugSwitches {
  * [stall] 이 켜져 있으면 녹음을 실은 요청(분석, 등급)이 분석 작업의 시간 제한보다 오래 멈춘다(#205).
  * [fakeEngine] 이 있으면 보내지 않고 그 엔진의 응답("OK")을 돌려준다. 가짜 키가 키 확인을 넘고(F1.1), 출제와 분석은 응답을 못 읽어 내장 문항과 분석 실패로 간다.
  * 가짜 엔진은 실제 디버깅 모듈만 주고 릴리스의 빈 모듈은 null 이라, 릴리스 빌드에는 가짜 응답 코드가 실리지 않는다.
+ * [upload] 는 녹음 요청을 보내는 플랫폼 길(iOS 백그라운드 전송, #216)이다. 가짜 응답을 쓰면 녹음 요청도 가짜 엔진으로 보낸다.
+ * [localUpload] 가 켜져 있으면 녹음 요청만 [upload] 로 이 컴퓨터의 테스트 서버에 보낸다. 시뮬레이터에서 시스템 전송 길을 실제로 확인할 때 쓴다.
  */
 // ponytail: 가짜 여부는 클라이언트를 만들 때 한 번 읽는다. 스위치를 바꾸면 앱을 다시 시작해야 한다. 요청마다 바꿔야 하면 엔진을 감싼다.
 fun debugGeminiClient(
@@ -46,6 +50,8 @@ fun debugGeminiClient(
     slow: () -> Boolean = { DebugSwitches.slowResponse.enabled },
     slowDelay: Duration = 3.seconds,
     stall: () -> Boolean = { DebugSwitches.stall.enabled },
+    upload: GeminiUpload? = null,
+    localUpload: Boolean = DebugSwitches.localUpload.enabled,
 ): GeminiClient {
     val config: HttpClientConfig<*>.() -> Unit = {
         installDebugTools()
@@ -58,8 +64,16 @@ fun debugGeminiClient(
             },
         )
     }
-    return GeminiClient(if (fakeEngine != null) HttpClient(fakeEngine, config) else HttpClient(config))
+    val recordingUpload = when {
+        upload != null && localUpload -> GeminiUpload { url, key, body -> upload.post(LOCAL_SERVER + url.substringAfter("/v1beta"), key, body) }
+        fakeEngine != null -> null
+        else -> upload
+    }
+    return GeminiClient(if (fakeEngine != null) HttpClient(fakeEngine, config) else HttpClient(config), recordingUpload)
 }
+
+/** 로컬 업로드 스위치가 보내는 테스트 서버. 시뮬레이터는 이 Mac 의 네트워크를 같이 쓴다. */
+private const val LOCAL_SERVER = "http://127.0.0.1:8765/v1beta"
 
 /** 분석 작업의 시간 제한(2분)보다 길다. */
 private val STALL = 10.minutes

@@ -12,6 +12,7 @@ import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.github.nosorae.aiopic.libs.debug.install
 import io.github.nosorae.aiopic.libs.haptics.api.iosHaptics
 import io.github.nosorae.aiopic.libs.keyvault.api.KeychainKeyVault
+import io.github.nosorae.aiopic.libs.llmgemini.BackgroundUpload
 import io.github.nosorae.aiopic.libs.recorder.api.IosRecorder
 import io.github.nosorae.aiopic.libs.tts.IosTts
 import io.github.nosorae.aiopic.libs.workqueue.api.IosWorkQueue
@@ -47,6 +48,9 @@ class IosShell {
     // 앱이 뒤로 가면 백그라운드 처리 작업으로 이어서 비운다. 앱 틀(iOSApp)이 실행을 마치기 전에 만들어서 등록 시점을 지킨다.
     private val workQueue = IosWorkQueue(drain = { graph.analysisJobs.drain() }, scope = MainScope(), backgroundTask = ANALYSIS_TASK)
 
+    // 녹음 분석 요청은 시스템이 맡아 보내서 앱을 내려도 끊기지 않는다(#216). 앱이 꺼진 사이 끝난 전송의 결과는 여기서 다시 받는다.
+    private val upload = BackgroundUpload(UPLOAD_SESSION)
+
     private val graph: AppGraph = createAppGraph(
         settings = AppSettings(
             read = { NSUserDefaults.standardUserDefaults.stringForKey(it) },
@@ -58,7 +62,7 @@ class IosShell {
         recorder = IosRecorder().withDebugTools(),
         tts = IosTts(),
         workQueue = workQueue,
-        gemini = debugGeminiClient(),
+        gemini = debugGeminiClient(upload = upload),
     ).apply {
         registerDebugPanels(audio = ::audioSessionRows)
         // 앱이 보내는 중에 죽었으면 진행 중으로 남은 작업을 대기로 돌리고 대기열을 깨운다.
@@ -93,6 +97,9 @@ class IosShell {
         }
     }
 
+    /** 앱 틀이 시스템에서 받은 백그라운드 전송 완료 처리기. 앱이 꺼진 사이 끝난 전송의 결과를 다 받으면 부른다. */
+    fun whenUploadsDelivered(done: () -> Unit) = upload.whenEventsDelivered(done)
+
     fun showsTabBar(route: AppRoute): Boolean = route.showsTabBar(Platform.Ios)
 
     private fun applyToWindows(mode: ThemeMode) {
@@ -110,6 +117,9 @@ class IosShell {
 
 /** 분석 작업을 이어 비우는 백그라운드 처리 작업의 식별자. Info.plist 의 `BGTaskSchedulerPermittedIdentifiers` 와 같아야 한다. */
 private const val ANALYSIS_TASK = "io.github.nosorae.aiopic.analysis"
+
+/** 녹음 분석 요청을 보내는 백그라운드 전송 세션의 이름. 앱에 하나다. */
+private const val UPLOAD_SESSION = "io.github.nosorae.aiopic.upload"
 
 /** 앱 Swift 의 흔들기(`UIWindow.motionEnded`)가 부른다. 릴리스 빌드는 빈 모듈이라 아무 일도 안 한다. */
 fun openDebugTools() = DebugTools.open()
