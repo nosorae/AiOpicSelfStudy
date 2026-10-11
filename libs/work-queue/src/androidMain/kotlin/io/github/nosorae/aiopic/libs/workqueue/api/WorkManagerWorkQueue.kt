@@ -1,6 +1,8 @@
 package io.github.nosorae.aiopic.libs.workqueue.api
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
@@ -23,6 +25,10 @@ public class WorkManagerWorkQueue(private val context: Context, drain: Drain) : 
     }
 
     override fun wake(): Unit = schedule(context, Duration.ZERO)
+
+    // 시스템이 인터넷에 닿는 것까지 확인한 연결만 온라인으로 본다. 로그인 페이지에 막힌 Wi-Fi 는 오프라인으로 기다린다.
+    override val online: Boolean
+        get() = context.getSystemService(ConnectivityManager::class.java).let { it.getNetworkCapabilities(it.activeNetwork)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true }
 }
 
 internal const val CHAIN = "work-queue"

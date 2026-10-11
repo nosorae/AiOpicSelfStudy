@@ -30,7 +30,7 @@ import kotlin.time.DurationUnit
 
 /**
  * iOS 의 [WorkQueue]. 앱이 앞에 있고 연결돼 있는 동안 [Drain] 을 부르고, 다시 불러야 할 시간이 남으면 그만큼 기다렸다 다시 부른다.
- * [online] 이 false 인 동안은 부르지 않는다.
+ * [network] 가 false 인 동안은 부르지 않는다.
  *
  * iOS 는 앱이 뒤로 가면 곧 멈추게 한다. [backgroundTask] 를 주면 뒤로 갈 때 네트워크가 필요한 백그라운드 처리 작업(BGProcessingTask)을
  * 예약해 시스템이 정한 때에 이어서 비운다. 식별자는 Info.plist 의 `BGTaskSchedulerPermittedIdentifiers` 에 있어야 하고,
@@ -39,16 +39,17 @@ import kotlin.time.DurationUnit
 public class IosWorkQueue(
     private val drain: Drain,
     private val scope: CoroutineScope,
-    private val online: Flow<Boolean> = networkAvailability(),
+    private val network: Flow<Boolean> = networkAvailability(),
     private val backgroundTask: String? = null,
 ) : WorkQueue {
     private val wakes = Channel<Unit>(Channel.CONFLATED)
-    private var connected = false
+    override var online: Boolean = false
+        private set
 
     init {
         scope.launch {
-            online.collect {
-                connected = it
+            network.collect {
+                online = it
                 if (it) wakes.trySend(Unit)
             }
         }
@@ -57,7 +58,7 @@ public class IosWorkQueue(
             while (true) {
                 // 깨울 때까지, 다시 부를 시간이 있으면 그때까지 기다린다.
                 if (next == null) wakes.receive() else withTimeoutOrNull(next) { wakes.receive() }
-                next = if (connected) drainOnce() else null
+                next = if (online) drainOnce() else null
             }
         }
         backgroundTask?.let(::registerBackgroundTask)

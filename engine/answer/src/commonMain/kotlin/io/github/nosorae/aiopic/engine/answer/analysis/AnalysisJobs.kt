@@ -37,7 +37,7 @@ data class AnalysisRequest(val model: ModelInfo, val prompt: Prompt, val recordi
 /** 회차 등급을 보낼 때 앱이 채워 주는 것. 고른 모델, 답변 피드백을 채운 시험 팩의 등급 프롬프트, 등급 체계, 답한 순서의 녹음이다. */
 data class GradeRequest(val model: ModelInfo, val prompt: Prompt, val scale: GradeScale, val recordings: List<Recording>)
 
-/** 다시 보낼 실패(429, 408, 5xx, 시간 초과)는 처음 한 번 뒤로 이만큼 더 보낸다(F5.6). */
+/** 다시 보낼 실패(429, 408, 5xx, 시간 초과, 온라인인데 연결 실패)는 처음 한 번 뒤로 이만큼 더 보낸다(F5.6). */
 internal const val MAX_RETRIES = 3
 
 /** 첫 재시도 전 대기. 다음부터 두 배씩 늘린다. 무료 키의 분당 한도가 풀리기를 기다리는 시간이다. */
@@ -48,7 +48,7 @@ private val NETWORK_RECHECK = 30.seconds
 
 /**
  * 분석 작업 표(#205, ADR 0032). 답변 분석과 회차 등급(F5.3)을 DB 의 작업 한 줄로 두고, 이 표만 보고 하나씩 보낸다.
- * 어떤 작업도 성공이나 실패로 끝난다. 다시 보낼 실패는 [MAX_RETRIES] 번까지 다시 보내고 다 쓰면 실패, 오프라인은 횟수를 쓰지 않고
+ * 어떤 작업도 성공이나 실패로 끝난다. 다시 보낼 실패는 [MAX_RETRIES] 번까지 다시 보내고 다 쓰면 실패, 기기가 오프라인([online] 이 false)이면 횟수를 쓰지 않고
  * 네트워크를 기다리고, 한 번 보내기는 [timeout] 안에 끝나야 한다. 실패로 끝나면 답변([AnswerAnalysis.Failed])이나
  * 회차([ExamSession.gradeError])에도 이유를 남겨 화면이 다시 분석하기를 보인다.
  *
@@ -60,6 +60,8 @@ class AnalysisJobs(
     private val router: AnswerRouter,
     private val grader: SessionGrader,
     private val consented: suspend () -> Boolean,
+    /** 기기가 지금 연결돼 있는가. 연결 실패를 받았을 때 오프라인(횟수를 쓰지 않고 기다림)과 Gemini 만 닿지 않음(다시 보낼 실패)을 가른다. */
+    private val online: () -> Boolean,
     private val answerRequest: suspend (Answer) -> AnalysisRequest,
     private val gradeRequest: suspend (List<Answer>) -> GradeRequest,
     private val wake: () -> Unit,
@@ -181,9 +183,10 @@ class AnalysisJobs(
                 if (job.kind == JobKind.Answer) store.answers().first().firstOrNull { it.id == job.targetId }?.examSessionId?.let { requestGradeIfReady(it) }
             }
 
-            error == AnalysisError.Offline -> store.save(job.copy(state = JobState.WaitingNetwork, nextAttemptAt = now + NETWORK_RECHECK, updatedAt = now))
+            // 기기가 오프라인일 때만 횟수를 쓰지 않고 기다린다. 온라인인데 연결만 실패하면(TLS 오류 등) 다시 보낼 실패로 세어 끝없이 보내지 않는다(#211).
+            error == AnalysisError.Offline && !online() -> store.save(job.copy(state = JobState.WaitingNetwork, nextAttemptAt = now + NETWORK_RECHECK, updatedAt = now))
 
-            error == AnalysisError.Retryable && job.attempts < MAX_RETRIES -> store.save(
+            (error == AnalysisError.Retryable || error == AnalysisError.Offline) && job.attempts < MAX_RETRIES -> store.save(
                 job.copy(state = JobState.RetryScheduled, attempts = job.attempts + 1, nextAttemptAt = now + FIRST_BACKOFF * (1 shl job.attempts), updatedAt = now),
             )
 
@@ -208,7 +211,7 @@ class AnalysisJobs(
         val answer = store.answers().first().firstOrNull { it.id == answerId }
         if (answer == null || answer.analysis !is AnswerAnalysis.Pending) return null
         val (model, prompt, recording) = answerRequest(answer)
-        // ponytail: 시간 제한은 포트 호출만 감싼다. 앞뒤 DB 읽기, 쓰기가 제한에 걸려 중간에 끊기지 않게 한다. 포트 안의 원문 저장은 제한 안에 남는다.
+        // 시간 제한은 포트 호출만 감싼다. 앞뒤 DB 읽기, 쓰기가 제한에 걸려 중간에 끊기지 않게 한다. 포트 안의 원문 저장은 SavedResponses 가 제한 밖에서 끝낸다(#211).
         return when (val result = withTimeout(timeout) { router.analyze(answer, model, prompt, recording) }) {
             is AnalysisResult.Success -> null.also { store.save(result.value) }
 

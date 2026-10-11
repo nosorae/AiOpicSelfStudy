@@ -24,7 +24,7 @@ class IosWorkQueueTest {
             answers.removeFirstOrNull()?.invoke()
         },
         scope = backgroundScope,
-        online = online,
+        network = online,
     ).also { runCurrent() }
 
     @Test
@@ -52,6 +52,7 @@ class IosWorkQueueTest {
         queue.wake()
         runCurrent()
         assertEquals(emptyList(), drains)
+        assertEquals(false, queue.online)
 
         online.value = true
         runCurrent()

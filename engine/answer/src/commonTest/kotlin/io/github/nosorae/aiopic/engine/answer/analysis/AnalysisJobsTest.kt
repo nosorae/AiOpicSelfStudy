@@ -34,6 +34,7 @@ import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -98,6 +99,9 @@ class AnalysisJobsTest {
     }
 
     private var consented = true
+
+    /** 기기의 연결 상태. 연결 실패를 받았을 때 기기가 오프라인인지 Gemini 만 닿지 않는지 가른다. */
+    private var online = true
     private var wakes = 0
     private val recording = Recording(ByteArray(0), "audio/mp4", emptyList())
 
@@ -106,6 +110,7 @@ class AnalysisJobsTest {
         router = router,
         grader = grader,
         consented = { consented },
+        online = { online },
         answerRequest = request,
         gradeRequest = { answers -> GradeRequest(model, Prompt("grade-v1", "grade", "{}"), GradeScale(listOf("IM2", "IH")), answers.map { recording }) },
         wake = { wakes++ },
@@ -184,6 +189,7 @@ class AnalysisJobsTest {
 
     @Test
     fun `205 오프라인은 횟수를 쓰지 않고 네트워크 기다림으로 두었다가 연결되면 끝낸다`() = runTest(dispatcher) {
+        online = false
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -202,6 +208,7 @@ class AnalysisJobsTest {
 
     @Test
     fun `205 오프라인이면 그 차례에서 멈추고 뒤 작업을 보내지 않는다`() = runTest(dispatcher) {
+        online = false
         val jobs = jobs()
         store.save(answer("a1"))
         store.save(answer("a2"))
@@ -213,6 +220,24 @@ class AnalysisJobsTest {
 
         assertEquals(1, analyzed)
         assertEquals(JobState.Queued, job("a2")?.state)
+    }
+
+    @Test
+    fun `211 기기는 온라인인데 Gemini 연결만 실패하면 다시 보낼 실패로 세고 다 쓰면 연결 이유로 실패한다`() = runTest(dispatcher) {
+        val jobs = jobs()
+        store.save(answer())
+        jobs.enqueueAnswer("a1")
+        answerResult = { AnalysisResult.Failed(AnalysisError.Offline) }
+
+        val waits = mutableListOf<Duration?>()
+        repeat(4) {
+            waits += jobs.drain()
+            waits.last()?.let { advanceTimeBy(it) }
+        }
+
+        assertEquals(listOf(30.seconds, 60.seconds, 120.seconds, null), waits)
+        assertEquals(4, analyzed)
+        assertEquals(AnswerAnalysis.Failed(AnalysisError.Offline), analysis())
     }
 
     @Test
@@ -366,6 +391,25 @@ class AnalysisJobsTest {
         val restarted = jobs(AnswerRouter(savingAnalyzer, FakeDeafProvider(), FakeDeafProvider()))
         restarted.recover()
         restarted.drain()
+
+        assertEquals(1, called)
+        assertEquals(AnswerAnalysis.Done::class, analysis()::class)
+    }
+
+    @Test
+    fun `211 원문을 저장한 뒤 시간 제한에 걸려도 다시 보낼 때 Gemini 를 다시 부르지 않는다`() = runTest(dispatcher) {
+        store.save(answer())
+        val jobs = jobs(AnswerRouter(savingAnalyzer, FakeDeafProvider(), FakeDeafProvider()))
+        jobs.enqueueAnswer("a1")
+        answerResult = {
+            delay(2.minutes)
+            AnalysisResult.Success(feedback)
+        }
+
+        advanceTimeBy(jobs.drain()!!)
+        assertEquals(JobState.RetryScheduled, job()?.state)
+        answerResult = { AnalysisResult.Success(feedback) }
+        jobs.drain()
 
         assertEquals(1, called)
         assertEquals(AnswerAnalysis.Done::class, analysis()::class)
