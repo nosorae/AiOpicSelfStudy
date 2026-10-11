@@ -75,6 +75,7 @@ import io.github.nosorae.aiopic.ui.featurepractice.PracticeRepository
 import io.github.nosorae.aiopic.ui.featurepractice.PracticeViewModel
 import io.github.nosorae.aiopic.ui.featurereport.AnswerReportViewModel
 import io.github.nosorae.aiopic.ui.featurereport.ReportStore
+import io.github.nosorae.aiopic.ui.featurereport.ScriptVoice
 import io.github.nosorae.aiopic.ui.featurereport.SessionReportViewModel
 import io.github.nosorae.aiopic.ui.featurereport.flag.FlagStore
 import io.github.nosorae.aiopic.ui.featuresettings.SettingsViewModel
@@ -185,6 +186,21 @@ interface AppGraph {
     })
 
     @Provides fun tts(voice: QuestionVoice): Tts = voice
+
+    /** 답변 리포트의 최종 스크립트 음성(#217). 질문 음성과 같은 모델과 목소리로, 자연스러운 음성 설정이 켜졌을 때만 받는다. */
+    // ponytail: 마지막에 받은 스크립트 하나만 메모리에 둔다. 같은 답을 다시 들을 때 다시 받지 않으려는 것이다. 여러 답을 오가며 자주 들으면 파일로 남긴다.
+    @SingleIn(AppScope::class)
+    @Provides
+    fun scriptVoice(settings: AppSettings, keyVault: KeyVault, client: GeminiClient): ScriptVoice {
+        var last: Pair<String, ByteArray>? = null
+        return ScriptVoice { text ->
+            last?.takeIf { it.first == text }?.second ?: if (!settings.naturalVoiceOn) {
+                null
+            } else {
+                keyVault.get(GeminiModels.PROVIDER)?.let { client.speech(it, QUESTION_VOICE_MODEL, QUESTION_VOICE_NAME, text) }?.also { last = text to it }
+            }
+        }
+    }
 
     // ponytail: 첫 버전은 제공사가 Gemini 하나라 목록도 하나다.
     @Provides fun modelCatalog(): ModelCatalog = GeminiModels

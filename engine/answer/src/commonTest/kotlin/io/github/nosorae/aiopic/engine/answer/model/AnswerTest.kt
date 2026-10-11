@@ -52,6 +52,26 @@ class AnswerTest {
     }
 
     @Test
+    fun `217 내용 교정과 최종 스크립트도 저장했다 읽어도 같다`() {
+        val feedback = feedback(Pronunciation.Evaluated("Clear.")).copy(
+            contentFixes = listOf(ContentFix(original = "I live in a apartment.", problem = "질문은 집을 묘사하라는데 어디 사는지만 말했다.", corrected = "I live in a small apartment with a big window.")),
+            finalScript = "I live in a small apartment with a big window.",
+        )
+        val answer = answer(AnswerAnalysis.Done(analyzedBy, feedback))
+
+        assertEquals(answer, roundTrip(answer))
+    }
+
+    @Test
+    fun `217 내용 교정과 최종 스크립트가 없는 옛 결과는 빈 목록과 null 로 읽는다`() {
+        val old = Json.encodeToString(answer(AnswerAnalysis.Done(analyzedBy, feedback(Pronunciation.Evaluated("Clear.")))))
+            .replace(Regex(""","?(contentFixes|finalScript)":(\[]|null)"""), "")
+
+        val feedback = (Json.decodeFromString<Answer>(old).analysis as AnswerAnalysis.Done).feedback
+        assertEquals(emptyList<ContentFix>() to null, feedback.contentFixes to feedback.finalScript)
+    }
+
+    @Test
     fun `F5_9 발음을 평가하지 않은 피드백도 저장했다 읽어도 같다`() {
         val answer = answer(AnswerAnalysis.Done(analyzedBy, feedback(Pronunciation.NotEvaluated)))
 

@@ -3,6 +3,7 @@ package io.github.nosorae.aiopic.engine.aigemini
 import io.github.nosorae.aiopic.engine.answer.check.checkFeedback
 import io.github.nosorae.aiopic.engine.answer.check.checkSessionGrade
 import io.github.nosorae.aiopic.engine.answer.check.requestChecked
+import io.github.nosorae.aiopic.engine.answer.model.ContentFix
 import io.github.nosorae.aiopic.engine.answer.model.Correction
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
@@ -132,6 +133,9 @@ private class AnswerWire(
     val pronunciation: String,
     val score: Int,
     val unscorableReason: UnscorableReason? = null,
+    // 프롬프트 v3(#217) 전에 저장한 응답 원문에는 없다.
+    val contentFixes: List<ContentFix> = emptyList(),
+    val finalScript: String? = null,
 ) {
     fun toResult(): AnalysisResult<Feedback> = unscorableReason?.let { AnalysisResult.Unscorable(it) } ?: AnalysisResult.Success(
         Feedback(
@@ -145,6 +149,8 @@ private class AnswerWire(
             roleplayQuestionCount = roleplayQuestionCount,
             pronunciation = Pronunciation.Evaluated(pronunciation),
             score = score,
+            contentFixes = contentFixes,
+            finalScript = finalScript,
         ),
     )
 }

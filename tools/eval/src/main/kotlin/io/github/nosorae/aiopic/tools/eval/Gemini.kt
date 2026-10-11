@@ -75,8 +75,10 @@ val ANSWER_SCHEMA = """
  "roleplayQuestionCount":{"type":"integer"},
  "pronunciation":{"type":"string"},
  "score":{"type":"integer"},
- "unscorableReason":{"type":"string","enum":["silent","wrong_language","too_short"]}
-},"required":["transcript","corrections","upgrades","tenseConsistent","sentenceCount","wordsPerMinute","pauses","pronunciation","score"]}
+ "unscorableReason":{"type":"string","enum":["silent","wrong_language","too_short"]},
+ "contentFixes":{"type":"array","items":{"type":"object","properties":{"original":{"type":"string"},"problem":{"type":"string"},"corrected":{"type":"string"}},"required":["original","problem","corrected"]}},
+ "finalScript":{"type":"string"}
+},"required":["transcript","corrections","upgrades","tenseConsistent","sentenceCount","wordsPerMinute","pauses","pronunciation","score","contentFixes","finalScript"]}
 """.trim()
 
 val GRADE_SCHEMA = """
