@@ -14,6 +14,7 @@ import io.github.nosorae.aiopic.engine.session.model.Recalibration
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,8 +22,11 @@ import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
-/** 플랫폼마다 메모리 DB 를 만든다. Android 는 호스트 JVM, iOS 는 시뮬레이터에서 같은 테스트를 돈다. */
-expect fun inMemoryDatabase(): OpicDatabase
+/**
+ * 플랫폼마다 메모리 DB 를 만든다. Android 는 호스트 JVM, iOS 는 시뮬레이터에서 같은 테스트를 돈다.
+ * [context] 에 테스트 디스패처를 주면 쿼리가 테스트 시계 위에서 돈다. 쿼리가 다른 스레드에서 도는 동안 테스트 시계가 시간 제한을 넘겨 버리지 않게 한다.
+ */
+expect fun inMemoryDatabase(context: CoroutineContext? = null): OpicDatabase
 
 class OpicStoreTest {
     private val db = inMemoryDatabase()

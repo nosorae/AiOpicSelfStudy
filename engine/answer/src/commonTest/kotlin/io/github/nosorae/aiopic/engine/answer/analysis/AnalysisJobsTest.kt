@@ -36,6 +36,7 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -55,7 +56,8 @@ import kotlin.time.Instant
  * 실패 경로마다 Gemini 호출 수를 세어 받은 응답을 잃거나 같은 일을 다시 부르지 않는지도 본다.
  */
 class AnalysisJobsTest {
-    private val db = inMemoryDatabase()
+    private val dispatcher = StandardTestDispatcher()
+    private val db = inMemoryDatabase(dispatcher)
     private val store = OpicStore(db)
 
     @AfterTest
@@ -127,7 +129,7 @@ class AnalysisJobsTest {
     private suspend fun session() = store.session("s1").first()!!
 
     @Test
-    fun `205 넣은 답변은 대기로 남고 깨우면 분석해 성공으로 끝난다`() = runTest {
+    fun `205 넣은 답변은 대기로 남고 깨우면 분석해 성공으로 끝난다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
 
@@ -141,7 +143,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `F5_6 429 와 5xx 는 30초부터 두 배씩 기다려 3번 다시 보내고 다 쓰면 실패로 끝난다`() = runTest {
+    fun `F5_6 429 와 5xx 는 30초부터 두 배씩 기다려 3번 다시 보내고 다 쓰면 실패로 끝난다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -166,7 +168,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `F5_6 재시도 시각 전에는 다시 보내지 않는다`() = runTest {
+    fun `F5_6 재시도 시각 전에는 다시 보내지 않는다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -181,7 +183,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 오프라인은 횟수를 쓰지 않고 네트워크 기다림으로 두었다가 연결되면 끝낸다`() = runTest {
+    fun `205 오프라인은 횟수를 쓰지 않고 네트워크 기다림으로 두었다가 연결되면 끝낸다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -199,7 +201,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 오프라인이면 그 차례에서 멈추고 뒤 작업을 보내지 않는다`() = runTest {
+    fun `205 오프라인이면 그 차례에서 멈추고 뒤 작업을 보내지 않는다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer("a1"))
         store.save(answer("a2"))
@@ -214,7 +216,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 Gemini 가 시간 제한 안에 답하지 않으면 다시 보낼 실패로 센다`() = runTest {
+    fun `205 Gemini 가 시간 제한 안에 답하지 않으면 다시 보낼 실패로 센다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -228,7 +230,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 키 틀림 모델 없음 응답 이상은 다시 보내지 않고 이유를 남겨 실패로 끝낸다`() = runTest {
+    fun `205 키 틀림 모델 없음 응답 이상은 다시 보내지 않고 이유를 남겨 실패로 끝낸다`() = runTest(dispatcher) {
         val outcomes = listOf(AnalysisError.InvalidKey, AnalysisError.ModelUnavailable, AnalysisError.Rejected).associateWith { error ->
             val id = "a-$error"
             val jobs = jobs()
@@ -244,7 +246,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 요청을 만들다 예외가 나도 실패로 끝내고 다음 작업으로 넘어간다`() = runTest {
+    fun `205 요청을 만들다 예외가 나도 실패로 끝내고 다음 작업으로 넘어간다`() = runTest(dispatcher) {
         val jobs = jobs(request = { if (it.id == "a1") error("녹음 파일이 없다") else AnalysisRequest(model, Prompt("answer-v1", "analyze", "{}"), recording) })
         store.save(answer("a1"))
         store.save(answer("a2"))
@@ -258,7 +260,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 앱이 진행 중에 죽으면 켤 때 대기로 되돌려 다시 처리한다`() = runTest {
+    fun `205 앱이 진행 중에 죽으면 켤 때 대기로 되돌려 다시 처리한다`() = runTest(dispatcher) {
         store.save(answer())
         jobs().enqueueAnswer("a1")
         // 프로세스가 죽으면 코드가 더 돌지 않아 진행 중이 그대로 남는다.
@@ -273,7 +275,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 보내는 중에 플랫폼이 멈추면 프로세스가 살아 있으니 바로 대기로 돌린다`() = runTest {
+    fun `205 보내는 중에 플랫폼이 멈추면 프로세스가 살아 있으니 바로 대기로 돌린다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -289,7 +291,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 앱을 켜면 작업 표에 없는 기다림 답변을 대기로 옮긴다`() = runTest {
+    fun `205 앱을 켜면 작업 표에 없는 기다림 답변을 대기로 옮긴다`() = runTest(dispatcher) {
         // 작업 표가 없던 버전에서 쌓인 답변(DB 이전)과, 답변을 저장한 뒤 작업을 넣기 전에 앱이 죽은 경우다.
         store.save(answer("a1"))
         store.save(answer("a2").copy(analysis = AnswerAnalysis.Failed(AnalysisError.Rejected)))
@@ -301,7 +303,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 이미 결과가 있는 답변은 다시 부르지 않고 성공으로 끝낸다`() = runTest {
+    fun `205 이미 결과가 있는 답변은 다시 부르지 않고 성공으로 끝낸다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -315,7 +317,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 지워진 답변의 작업은 부르지 않고 성공으로 끝낸다`() = runTest {
+    fun `205 지워진 답변의 작업은 부르지 않고 성공으로 끝낸다`() = runTest(dispatcher) {
         val jobs = jobs()
         jobs.enqueueAnswer("none")
 
@@ -326,7 +328,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 같은 답변을 두 번 넣어도 한 번만 부른다`() = runTest {
+    fun `205 같은 답변을 두 번 넣어도 한 번만 부른다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -350,7 +352,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 응답을 받은 직후 앱이 죽어도 다시 켜면 저장한 원문으로 끝내고 다시 부르지 않는다`() = runTest {
+    fun `205 응답을 받은 직후 앱이 죽어도 다시 켜면 저장한 원문으로 끝내고 다시 부르지 않는다`() = runTest(dispatcher) {
         store.save(answer())
         answerResult = { awaitCancellation() }
         val dead = jobs(AnswerRouter(savingAnalyzer, FakeDeafProvider(), FakeDeafProvider()))
@@ -370,7 +372,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 해석에 실패해도 원문이 남아 다시 분석하기는 다시 부르지 않고 다시 해석만 한다`() = runTest {
+    fun `205 해석에 실패해도 원문이 남아 다시 분석하기는 다시 부르지 않고 다시 해석만 한다`() = runTest(dispatcher) {
         store.save(answer())
         val jobs = jobs(AnswerRouter(savingAnalyzer, FakeDeafProvider(), FakeDeafProvider()))
         jobs.enqueueAnswer("a1")
@@ -387,7 +389,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 두 단계 분석은 두 번째 단계가 실패해 다시 보내도 받아쓰기를 다시 부르지 않는다`() = runTest {
+    fun `205 두 단계 분석은 두 번째 단계가 실패해 다시 보내도 받아쓰기를 다시 부르지 않는다`() = runTest(dispatcher) {
         var transcribed = 0
         var textResult: AnalysisResult<TextAnalysis> = AnalysisResult.Failed(AnalysisError.Retryable)
         val deaf = FakeDeafProvider()
@@ -413,7 +415,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `F5_3 마지막 답변 분석이 끝난 뒤에만 등급 작업이 한 번 들어가고 등급을 회차에 남긴다`() = runTest {
+    fun `F5_3 마지막 답변 분석이 끝난 뒤에만 등급 작업이 한 번 들어가고 등급을 회차에 남긴다`() = runTest(dispatcher) {
         saveSession()
         val jobs = jobs()
         answerResult = { if (it.id == "q15") AnalysisResult.Unscorable(UnscorableReason.TooShort) else AnalysisResult.Success(feedback) }
@@ -434,7 +436,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `F2_6 시간이 다 돼 끝난 회차는 답한 문항만 다 분석되면 회차를 저장할 때 등급을 요청한다`() = runTest {
+    fun `F2_6 시간이 다 돼 끝난 회차는 답한 문항만 다 분석되면 회차를 저장할 때 등급을 요청한다`() = runTest(dispatcher) {
         saveSession(count = 12, status = ExamStatus.InProgress)
         val jobs = jobs()
         (1..12).forEach { jobs.enqueueAnswer("a$it") }
@@ -448,7 +450,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 등급이 평가할 수 없다고 오면 기다림으로 남기지 않고 실패로 끝낸다`() = runTest {
+    fun `205 등급이 평가할 수 없다고 오면 기다림으로 남기지 않고 실패로 끝낸다`() = runTest(dispatcher) {
         saveSession(count = 1)
         val jobs = jobs()
         gradeResult = AnalysisResult.Unscorable(UnscorableReason.Silent)
@@ -461,7 +463,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `205 등급이 다시 보내기를 다 쓰면 회차에 이유를 남긴다`() = runTest {
+    fun `205 등급이 다시 보내기를 다 쓰면 회차에 이유를 남긴다`() = runTest(dispatcher) {
         saveSession(count = 1)
         val jobs = jobs()
         gradeResult = AnalysisResult.Failed(AnalysisError.Retryable)
@@ -479,7 +481,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `203 분석하지 못한 답변이 있으면 등급을 요청하지 않는다`() = runTest {
+    fun `203 분석하지 못한 답변이 있으면 등급을 요청하지 않는다`() = runTest(dispatcher) {
         saveSession(count = 2)
         val jobs = jobs()
         answerResult = { if (it.id == "q2") AnalysisResult.Failed(AnalysisError.Rejected) else AnalysisResult.Success(feedback) }
@@ -492,7 +494,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `203 다시 분석하기는 실패한 답변과 등급을 대기로 돌리고 다 끝나면 등급을 다시 낸다`() = runTest {
+    fun `203 다시 분석하기는 실패한 답변과 등급을 대기로 돌리고 다 끝나면 등급을 다시 낸다`() = runTest(dispatcher) {
         saveSession(count = 2)
         val jobs = jobs()
         answerResult = { if (it.id == "q2") AnalysisResult.Failed(AnalysisError.Rejected) else AnalysisResult.Success(feedback) }
@@ -510,7 +512,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `203 등급만 실패한 회차는 다시 분석하기로 이유를 지우고 등급을 다시 낸다`() = runTest {
+    fun `203 등급만 실패한 회차는 다시 분석하기로 이유를 지우고 등급을 다시 낸다`() = runTest(dispatcher) {
         saveSession(count = 1)
         val jobs = jobs()
         gradeResult = AnalysisResult.Failed(AnalysisError.InvalidKey)
@@ -527,7 +529,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `F1_3 동의가 없으면 보내지 않고 동의 없음으로 실패한다`() = runTest {
+    fun `F1_3 동의가 없으면 보내지 않고 동의 없음으로 실패한다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer())
         jobs.enqueueAnswer("a1")
@@ -540,7 +542,7 @@ class AnalysisJobsTest {
     }
 
     @Test
-    fun `F1_3 동의를 철회하면 남은 작업을 바로 동의 없음 실패로 끝낸다`() = runTest {
+    fun `F1_3 동의를 철회하면 남은 작업을 바로 동의 없음 실패로 끝낸다`() = runTest(dispatcher) {
         val jobs = jobs()
         store.save(answer("a1"))
         store.save(answer("a2"))
