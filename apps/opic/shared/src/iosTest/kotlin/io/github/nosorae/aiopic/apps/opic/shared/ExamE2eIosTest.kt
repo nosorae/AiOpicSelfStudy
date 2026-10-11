@@ -101,7 +101,8 @@ class ExamE2eIosTest {
     }
 
     private fun launch(): App {
-        val database = Room.databaseBuilder<OpicDatabase>(name = dbPath).setDriver(BundledSQLiteDriver()).build()
+        // 쿼리를 테스트 시계 위에서 돌린다. 다른 스레드에서 도는 동안 테스트 시계가 분석 시간 제한(2분)을 넘겨 버리지 않게 한다.
+        val database = Room.databaseBuilder<OpicDatabase>(name = dbPath).setDriver(BundledSQLiteDriver()).setQueryCoroutineContext(dispatcher).build()
         val graph = createAppGraph(
             settings = AppSettings(read = { prefs[it] }, write = { key, value -> prefs[key] = value }),
             keyVault = keyVault,
