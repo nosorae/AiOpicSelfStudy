@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="home_title">홈</string>
-    <string name="home_start_exam">모의시험 시작</string>
+    <string name="home_title">모의고사</string>
+    <string name="home_start_exam">시작</string>
+    <string name="home_start_new_exam">새로 시작</string>
     <string name="home_resume_exam">이어 보기</string>
     <string name="home_resume_progress">%1$d문항 중 %2$d문항을 마쳤습니다</string>
-    <string name="home_practice">한 문항 풀기</string>
-    <string name="home_past_sessions">지난 회차</string>
-    <string name="home_past_sessions_empty">아직 지난 회차가 없습니다. 모의시험을 마치면 여기에 쌓입니다.</string>
-    <string name="home_session_number">%1$d회차</string>
+    <string name="home_review">다시 보기</string>
+    <string name="home_review_session">%1$d회차 리포트, %2$s</string>
+    <string name="home_past_sessions_empty">아직 마친 회차가 없습니다. 모의고사를 마치면 여기서 리포트를 다시 볼 수 있습니다.</string>
     <string name="home_grade_pending">분석 중</string>
     <string name="home_time_up">시간 부족</string>
 </resources>

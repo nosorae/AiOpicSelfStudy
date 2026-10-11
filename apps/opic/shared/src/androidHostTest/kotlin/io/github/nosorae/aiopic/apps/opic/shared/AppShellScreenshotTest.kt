@@ -14,19 +14,25 @@ import org.robolectric.annotation.GraphicsMode
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
 class AppShellScreenshotTest {
-    @Test fun home() = shot(AppRoute.Home)
+    @Test fun home() = shot(AppRoute.ExamTab)
 
     @Config(qualifiers = "+night")
     @Test
-    fun home_dark() = shot(AppRoute.Home)
+    fun home_dark() = shot(AppRoute.ExamTab)
 
-    @Test fun reportDetail() = shot(AppRoute.Home, AppRoute.ReportDetail("s"))
+    @Test fun practiceTab() = shot(AppRoute.ExamTab, AppRoute.PracticeTab)
 
-    @Test fun exam() = shot(AppRoute.Home, AppRoute.Exam("s"))
+    @Config(fontScale = 2f)
+    @Test
+    fun home_fontScale200() = shot(AppRoute.ExamTab)
 
-    @Test fun history() = shot(AppRoute.Home, AppRoute.History)
+    @Test fun reportDetail() = shot(AppRoute.ExamTab, AppRoute.ReportDetail("s"))
 
-    @Test fun flagExport() = shot(AppRoute.Home, AppRoute.Settings, AppRoute.FlagExport)
+    @Test fun exam() = shot(AppRoute.ExamTab, AppRoute.Exam("s"))
+
+    @Test fun history() = shot(AppRoute.ExamTab, AppRoute.History)
+
+    @Test fun flagExport() = shot(AppRoute.ExamTab, AppRoute.Settings, AppRoute.FlagExport)
 
     /** 첫 실행(S1, S2)은 탭 없이 혼자 뜬다. */
     @Test fun startKeyEntry() = shot(AppRoute.StartKeyEntry)
@@ -35,7 +41,7 @@ class AppShellScreenshotTest {
 
     /** 시스템은 라이트인데 설정에서 다크를 골랐다. 하단 탭까지 앱 전체가 다크로 그려져야 한다(F9.1). */
     @Test
-    fun settings_appDarkOnLightSystem() = shot(AppRoute.Home, AppRoute.Settings, settings = darkSettings())
+    fun settings_appDarkOnLightSystem() = shot(AppRoute.ExamTab, AppRoute.Settings, settings = darkSettings())
 
     private fun darkSettings() = AppSettings.inMemory().also { runBlocking { it.setThemeMode(ThemeMode.Dark) } }
 

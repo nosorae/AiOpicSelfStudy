@@ -11,8 +11,9 @@ class AppRouteTest {
     private fun tabBar(platform: Platform) = everyRoute.filter { it.showsTabBar(platform) }
 
     @Test
-    fun `하단 탭은 홈 기록 설정 셋이다`() {
-        assertEquals(listOf(AppRoute.Home, AppRoute.History, AppRoute.Settings), AppRoute.tabs)
+    fun `하단 탭은 모의고사 연습 기록 설정 넷이다`() {
+        assertEquals(listOf(AppRoute.ExamTab, AppRoute.PracticeTab, AppRoute.History, AppRoute.Settings), AppRoute.tabs)
+        assertEquals(listOf("모의고사", "연습", "기록", "설정"), AppRoute.tabs.map { it.title })
     }
 
     @Test
@@ -45,7 +46,7 @@ class AppRouteTest {
     @Test
     fun `F1_0 시작 분기 결과마다 첫 화면이 정해진다`() {
         assertEquals(
-            listOf(AppRoute.StartKeyEntry, AppRoute.StartConsent, AppRoute.Home),
+            listOf(AppRoute.StartKeyEntry, AppRoute.StartConsent, AppRoute.ExamTab),
             listOf(StartDestination.KeyEntry, StartDestination.Consent, StartDestination.Home).map(AppRoute::start),
         )
     }

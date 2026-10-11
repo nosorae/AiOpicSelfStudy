@@ -14,7 +14,7 @@ final class ExamMotionUITests: XCTestCase {
 
     func testRecordingShowsVoiceAndNextFill() {
         app.passFirstLaunch()
-        app.tapTag("home-exam")
+        app.tapTag("exam-start")
         app.finishSurvey()
         app.tapTag("exam-choice-4")
         app.tapTag("exam-choice-1")

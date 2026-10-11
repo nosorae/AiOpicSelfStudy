@@ -38,7 +38,7 @@ class RecordingFailureTest {
         click("키 확인하고 저장")
         click("동의하고 계속하기")
 
-        click("한 문항 풀기")
+        click("연습")
         click("Play")
         waitFor(hasText("Next") and isEnabled(), QUESTION_TIMEOUT)
         compose.onNode(hasText("Next") and isEnabled()).performClick()

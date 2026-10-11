@@ -38,7 +38,7 @@ class DebugToolsTest {
         }
         ActivityScenario.launch(MainActivity::class.java)
 
-        // 첫 실행이면 키 입력 화면, 아니면 탭이 있는 홈이 뜬다.
+        // 첫 실행이면 키 입력 화면, 아니면 탭이 있는 모의고사 탭이 뜬다.
         waitFor(hasSetTextAction() or hasText("설정"))
         if (compose.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()) {
             click("Gemini")

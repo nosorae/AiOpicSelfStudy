@@ -1,6 +1,6 @@
 import XCTest
 
-// 모의시험 앞부분을 화면 터치로 돌고, 첫 문항 녹음 중에 앱을 끝낸 뒤 다시 켜서 홈의 이어 보기로 같은 문항에 돌아오는지 본다
+// 모의시험 앞부분을 화면 터치로 돌고, 첫 문항 녹음 중에 앱을 끝낸 뒤 다시 켜서 모의고사 탭의 이어 보기로 같은 문항에 돌아오는지 본다
 // (F1.0, F1.1, F1.3, F2.1, F2.3, F3.3). 첫 실행은 저장된 것을 비우고 가짜 Gemini 로 띄워서 가짜 키로 키 확인을 넘기고 출제는 내장 문항으로 간다.
 // 녹음 내용은 보지 않는다. 시뮬레이터 마이크는 스킴의 테스트 사전 작업이 미리 허용한다.
 final class ExamResumeUITests: XCTestCase {
@@ -15,7 +15,7 @@ final class ExamResumeUITests: XCTestCase {
         app.launch()
         app.passFirstLaunch()
 
-        app.tapTag("home-exam")
+        app.tapTag("exam-start")
         app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")
@@ -38,10 +38,10 @@ final class ExamResumeUITests: XCTestCase {
         app.launchArguments = UITestLaunch.fakeGemini
         app.launch()
 
-        let resume = app.tag("home-exam")
-        XCTAssertTrue(resume.waitForExistence(timeout: 30), "다시 켠 뒤 홈이 보이지 않는다")
+        let resume = app.tag("exam-resume")
+        XCTAssertTrue(resume.waitForExistence(timeout: 30), "다시 켠 뒤 모의고사 탭에 이어 보기가 보이지 않는다")
         XCTAssertEqual(resume.label, "이어 보기")
-        app.tapTag("home-exam")
+        app.tapTag("exam-resume")
         XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 30), "이어 본 문항이 \(title) 이 아니다")
         app.tapTag("exam-play")
         app.waitRecording()

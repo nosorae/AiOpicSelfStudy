@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -59,21 +60,21 @@ class AppShellTest {
 
     @Test
     fun `최상위 탭 화면에서는 하단 탭이 보인다`() {
-        start(AppRoute.Home)
+        start(AppRoute.ExamTab)
 
         rule.onNodeWithText("기록").assertIsDisplayed()
     }
 
     @Test
     fun `Android 하위 화면에서는 하단 탭을 숨긴다`() {
-        start(AppRoute.Home, AppRoute.ReportDetail("s"))
+        start(AppRoute.ExamTab, AppRoute.ReportDetail("s"))
 
         rule.onNodeWithText("기록").assertDoesNotExist()
     }
 
     @Test
-    fun `하위 화면에서 뒤로가기를 누르면 홈으로 돌아가고 탭이 다시 보인다`() {
-        start(AppRoute.Home, AppRoute.ReportDetail("s"))
+    fun `하위 화면에서 뒤로가기를 누르면 모의고사 탭으로 돌아가고 탭이 다시 보인다`() {
+        start(AppRoute.ExamTab, AppRoute.ReportDetail("s"))
 
         pressBack()
 
@@ -81,21 +82,47 @@ class AppShellTest {
     }
 
     @Test
-    fun `탭을 누르면 그 탭 화면으로 가고 뒤로가기로 홈에 돌아온다`() {
-        start(AppRoute.Home)
+    fun `탭을 누르면 그 탭 화면으로 가고 뒤로가기로 모의고사 탭에 돌아온다`() {
+        start(AppRoute.ExamTab)
         rule.onNodeWithText("설정").performClick()
-        rule.onNodeWithText("모의시험 시작").assertDoesNotExist()
+        rule.onNodeWithTag("exam-start").assertDoesNotExist()
 
         pressBack()
 
-        rule.onNodeWithText("모의시험 시작").assertIsDisplayed()
+        rule.onNodeWithTag("exam-start").assertIsDisplayed()
     }
 
     @Test
-    fun `홈에서 모의시험 시작을 누르면 탭 없는 시험 화면이 열린다`() {
-        start(AppRoute.Home)
+    fun `네 탭을 차례로 누르면 탭마다 제 화면이 보인다`() {
+        start(AppRoute.ExamTab)
 
-        rule.onNodeWithText("모의시험 시작").performClick()
+        rule.onNodeWithText("연습").performClick()
+        rule.onNodeWithText("Play").assertIsDisplayed()
+        rule.onNodeWithText("기록").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasText("아직 기록이 없습니다", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText("설정").performClick()
+        rule.onNodeWithText("분석 모델").assertIsDisplayed()
+        rule.onNodeWithText("모의고사").performClick()
+        rule.onNodeWithTag("exam-start").assertIsDisplayed()
+    }
+
+    @Test
+    fun `연습 탭의 Play 를 누르면 탭 없는 한 문항 연습이 열리고 뒤로가기로 연습 탭에 돌아온다`() {
+        start(AppRoute.ExamTab, AppRoute.PracticeTab)
+
+        rule.onNodeWithText("Play").performClick()
+        rule.waitUntil(5_000) { rule.onAllNodes(hasText("한 문항 연습")).fetchSemanticsNodes().isNotEmpty() }
+
+        rule.onNodeWithText("기록").assertDoesNotExist()
+        pressBack()
+        rule.onNodeWithText("기록").assertIsDisplayed()
+    }
+
+    @Test
+    fun `모의고사 탭에서 시작을 누르면 탭 없는 시험 화면이 열린다`() {
+        start(AppRoute.ExamTab)
+
+        rule.onNodeWithTag("exam-start").performClick()
         waitForExam()
 
         rule.onNodeWithText("기록").assertDoesNotExist()
@@ -104,7 +131,7 @@ class AppShellTest {
 
     @Test
     fun `시험 중 뒤로가기를 누르면 시험 화면에 머문다`() {
-        start(AppRoute.Home, AppRoute.Exam("s"))
+        start(AppRoute.ExamTab, AppRoute.Exam("s"))
         waitForExam()
 
         pressBack()
@@ -113,19 +140,19 @@ class AppShellTest {
     }
 
     @Test
-    fun `시험 화면의 나가기 X 를 누르고 확인하면 홈으로 돌아간다`() {
-        start(AppRoute.Home, AppRoute.Exam("s"))
+    fun `시험 화면의 나가기 X 를 누르고 확인하면 모의고사 탭으로 돌아간다`() {
+        start(AppRoute.ExamTab, AppRoute.Exam("s"))
         waitForExam()
 
         exitExam()
 
-        // 저장하고 나간 회차가 남아 있어 홈의 시작 버튼이 이어 보기가 된다.
+        // 저장하고 나간 회차가 남아 있어 모의고사 탭에 이어 보기가 생긴다.
         rule.waitUntil(5_000) { rule.onAllNodes(hasText("이어 보기")).fetchSemanticsNodes().isNotEmpty() }
     }
 
     @Test
     fun `시험 화면의 나가기 확인에서 취소를 누르면 시험에 머문다`() {
-        start(AppRoute.Home, AppRoute.Exam("s"))
+        start(AppRoute.ExamTab, AppRoute.Exam("s"))
         waitForExam()
 
         rule.onNodeWithContentDescription("나가기").performClick()
@@ -136,8 +163,8 @@ class AppShellTest {
     }
 
     @Test
-    fun `F3 나갔던 시험이 있으면 홈의 이어 보기가 같은 회차를 연다`() {
-        start(AppRoute.Home, AppRoute.Exam("s"))
+    fun `F3 나갔던 시험이 있으면 모의고사 탭의 이어 보기가 같은 회차를 연다`() {
+        start(AppRoute.ExamTab, AppRoute.Exam("s"))
         waitForExam()
         rule.onNodeWithText("지금 하는 일은 어느 쪽에", substring = true).performScrollTo().assertIsDisplayed()
         exitExam()
@@ -152,7 +179,7 @@ class AppShellTest {
 
     @Test
     fun `F8_3 설정의 틀림 표시 내보내기 줄을 누르면 내보내기 화면이 열린다`() {
-        start(AppRoute.Home, AppRoute.Settings)
+        start(AppRoute.ExamTab, AppRoute.Settings)
 
         rule.onNodeWithText("틀림 표시 내보내기").performScrollTo().performClick()
 
@@ -161,7 +188,7 @@ class AppShellTest {
 
     @Test
     fun `F9_1 설정에서 다크를 고르면 앱 틀이 보는 화면 모드가 바로 다크가 된다`() {
-        start(AppRoute.Home, AppRoute.Settings)
+        start(AppRoute.ExamTab, AppRoute.Settings)
 
         rule.onNodeWithText("다크").performScrollTo().performClick()
         rule.waitForIdle()
@@ -171,7 +198,7 @@ class AppShellTest {
 
     @Test
     fun `F1_2 설정의 제공사 키 줄을 누르면 키 입력 화면이 열리고 뒤로가기로 설정에 돌아온다`() {
-        start(AppRoute.Home, AppRoute.Settings)
+        start(AppRoute.ExamTab, AppRoute.Settings)
 
         rule.onNodeWithText("Gemini").performScrollTo().performClick()
         rule.onNodeWithText("API 키 넣기").assertIsDisplayed()
@@ -182,7 +209,7 @@ class AppShellTest {
 
     @Test
     fun `F1_3 설정의 무료 등급 안내 보기는 음성 전송 동의 화면으로 연결한다`() {
-        start(AppRoute.Home, AppRoute.Settings)
+        start(AppRoute.ExamTab, AppRoute.Settings)
 
         rule.onNodeWithText("무료 등급 안내 보기").performScrollTo().performClick()
 
@@ -199,7 +226,7 @@ class AppShellTest {
         }
         rule.setContent {
             CompositionLocalProvider(LocalUriHandler provides uriHandler) {
-                AppShell(testAppGraph(settings), startStack = listOf(AppRoute.Home, AppRoute.Settings))
+                AppShell(testAppGraph(settings), startStack = listOf(AppRoute.ExamTab, AppRoute.Settings))
             }
         }
 

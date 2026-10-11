@@ -27,7 +27,7 @@ final class CelebrationUITests: XCTestCase {
 
     func testFinishingExamShowsFanfare() {
         app.passFirstLaunch()
-        app.tapTag("home-exam")
+        app.tapTag("exam-start")
         app.finishSurvey()
         // 수준 1 이 문항이 가장 적다.
         app.tapTag("exam-choice-0")

@@ -13,7 +13,7 @@ final class SurveyUITests: XCTestCase {
 
     func testExamSurveyThenSettingsSurveyKeepsAnswers() {
         app.passFirstLaunch()
-        app.tapTag("home-exam")
+        app.tapTag("exam-start")
         shot("1-질문")
         app.tapTag("survey-option-work-0")
         XCTAssertTrue(app.tag("survey-option-employed-0").waitForExistence(timeout: 5), "고른 보기의 하위 질문이 바로 다음 화면에 나오지 않는다")

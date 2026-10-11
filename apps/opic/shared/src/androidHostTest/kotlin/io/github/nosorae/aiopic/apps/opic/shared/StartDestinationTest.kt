@@ -51,22 +51,22 @@ class StartDestinationTest {
     }
 
     @Test
-    fun `F1_0 키와 동의가 모두 있으면 홈에서 시작한다`() {
+    fun `F1_0 키와 동의가 모두 있으면 모의고사 탭에서 시작한다`() {
         runBlocking { settings.give() }
 
         start(savedKey())
 
-        rule.onNodeWithText("모의시험 시작").assertIsDisplayed()
+        rule.onNodeWithText("시작").assertIsDisplayed()
         rule.onNodeWithText("기록").assertIsDisplayed()
     }
 
     @Test
-    fun `F1_0 동의 화면에서 동의하면 홈으로 간다`() {
+    fun `F1_0 동의 화면에서 동의하면 모의고사 탭으로 간다`() {
         start(savedKey())
 
         rule.onNodeWithText("동의하고 계속하기").performClick()
 
-        rule.waitUntil(5_000) { rule.onAllNodes(hasText("모의시험 시작")).fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { rule.onAllNodes(hasText("시작")).fetchSemanticsNodes().isNotEmpty() }
     }
 
     @Test
@@ -84,7 +84,7 @@ class StartDestinationTest {
 
         assertTrue(startViewModel.uiState.value.keepSplash)
         rule.onNodeWithText("키 확인하고 저장").assertDoesNotExist()
-        rule.onNodeWithText("모의시험 시작").assertDoesNotExist()
+        rule.onNodeWithText("시작").assertDoesNotExist()
 
         opened.complete(Unit)
         rule.waitForIdle()

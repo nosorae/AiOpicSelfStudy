@@ -17,6 +17,8 @@ class HomeScreenshotTest {
 
     @Test fun empty() = shot(HomeSamples.empty)
 
+    @Test fun finished() = shot(HomeSamples.finished)
+
     @Test fun history() = shot(HomeSamples.history)
 
     @Test fun history_dark() = shot(HomeSamples.history, dark = true)
@@ -26,6 +28,6 @@ class HomeScreenshotTest {
     fun history_fontScale200() = shot(HomeSamples.history)
 
     private fun shot(state: HomeUiState, dark: Boolean = false) = captureRoboImage {
-        MontageTheme(darkTheme = dark) { HomeScreen(state = state, onExamClick = {}, onPracticeClick = {}, onSessionClick = {}) }
+        MontageTheme(darkTheme = dark) { HomeScreen(state = state, onExamClick = {}, onSessionClick = {}) }
     }
 }

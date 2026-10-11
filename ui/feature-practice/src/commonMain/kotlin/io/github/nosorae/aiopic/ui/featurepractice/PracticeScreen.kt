@@ -69,7 +69,7 @@ import kotlin.time.Duration.Companion.seconds
 import io.github.nosorae.aiopic.ui.design.Res as DesignRes
 
 /**
- * ViewModel 을 관측해 이동을 처리하는 바깥 겹. Play 를 누르면 마이크 권한부터 받는다.
+ * ViewModel 을 관측해 이동을 처리하는 바깥 겹. 질문을 고르면 바로 읽기 시작하고, 읽기 전에 마이크 권한부터 받는다.
  * 나간 뒤와 답변을 낸 뒤 어디로 갈지는 화면을 등록한 쪽이 [onExit], [onFeedback] 으로 정한다. [onFeedback] 은 답변 리포트를 연다.
  */
 @Composable
@@ -88,18 +88,22 @@ fun PracticeRoute(viewModel: PracticeViewModel, onExit: () -> Unit, onFeedback: 
     val requestMic = rememberMicPermission()
     val openSettings = rememberOpenAppSettings()
     val scope = rememberCoroutineScope()
-    PracticeScreen(
-        state = state,
-        onOpenSettings = openSettings,
-        onIntent = { intent ->
-            if (intent == PracticeIntent.PlayQuestion) {
-                scope.launch { viewModel.onIntent(if (requestMic()) intent else PracticeIntent.MicDenied) }
-            } else {
-                viewModel.onIntent(intent)
-            }
-        },
-        modifier = modifier,
-    )
+    val onIntent: (PracticeIntent) -> Unit = { intent ->
+        if (intent == PracticeIntent.PlayQuestion) {
+            scope.launch { viewModel.onIntent(if (requestMic()) intent else PracticeIntent.MicDenied) }
+        } else {
+            viewModel.onIntent(intent)
+        }
+    }
+    // 연습 탭에서 Play 를 누르고 들어왔으니 질문을 고르는 대로 한 번 읽는다. 화면을 돌리거나 되살려도 다시 읽지 않는다.
+    var autoPlayed by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(state.canPlay) {
+        if (state.canPlay && !autoPlayed) {
+            autoPlayed = true
+            onIntent(PracticeIntent.PlayQuestion)
+        }
+    }
+    PracticeScreen(state = state, onOpenSettings = openSettings, onIntent = onIntent, modifier = modifier)
 }
 
 /**
@@ -238,7 +242,7 @@ fun PracticeScreen(state: PracticeUiState, onIntent: (PracticeIntent) -> Unit, m
 
 /** 왜 이 질문인지. 약한 유형 이름과 점수, 점수 막대를 한 줄로 보인다. 분석한 답변이 없으면 모든 유형에서 골랐다고만 쓴다. */
 @Composable
-private fun WhyThisQuestion(weakness: PracticeWeakness?) {
+internal fun WhyThisQuestion(weakness: PracticeWeakness?) {
     val colors = MontageTheme.colors
     Row(
         modifier = Modifier
@@ -270,7 +274,7 @@ private fun WhyThisQuestion(weakness: PracticeWeakness?) {
     }
 }
 
-private val Gutter = MontageSpacing.spacing20
+internal val Gutter = MontageSpacing.spacing20
 
 /** 분:초. 녹음 시간에 쓴다. */
 private fun Duration.clockText(): String {

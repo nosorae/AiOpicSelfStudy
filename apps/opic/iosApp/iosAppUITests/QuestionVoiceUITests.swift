@@ -18,9 +18,9 @@ final class QuestionVoiceUITests: XCTestCase {
 
         app.tabBars.buttons["설정"].tap()
         XCTAssertTrue(app.tag("settings-voice-natural").waitForExistence(timeout: 10), "설정에 질문 음성이 보이지 않는다")
-        app.tabBars.buttons["홈"].tap()
+        app.tabBars.buttons["모의고사"].tap()
 
-        app.tapTag("home-exam")
+        app.tapTag("exam-start")
         app.finishSurvey()
         app.tapTag("exam-choice-0")
         app.tapTag("exam-next-step")
@@ -39,8 +39,8 @@ final class QuestionVoiceUITests: XCTestCase {
         app.tabBars.buttons["설정"].tap()
         app.tapTag("settings-voice-device")
         attach("설정 질문 음성")
-        app.tabBars.buttons["홈"].tap()
-        app.tapTag("home-exam")
+        app.tabBars.buttons["모의고사"].tap()
+        app.tapTag("exam-resume")
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "문항 1 /")).firstMatch.waitForExistence(timeout: 30))
         app.tapTag("exam-play")
         app.waitRecording()
