@@ -49,10 +49,11 @@ fun MontagePlayButton(
     // 원과 글자 어디를 눌러도 된다. 눌림 물결은 원에만 그린다.
     val interaction = remember { MutableInteractionSource() }
     Column(
-        modifier = modifier.then(
+        // 너비를 상태와 상관없이 같게 둔다. 처리 중일 때만 넓어지면 Crossfade 가 원을 왼쪽에 그렸다가 가운데로 옮긴다(#201).
+        modifier = modifier.fillMaxWidth().then(
             if (busy) {
                 // ponytail: 앱이 한국어 하나라 문구를 여기 둔다. 언어를 더하면 리소스로 옮긴다.
-                Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = "처리 중" }
+                Modifier.clearAndSetSemantics { contentDescription = "처리 중" }
             } else {
                 Modifier.clickable(enabled = enabled, role = Role.Button, interactionSource = interaction, indication = null, onClick = onClick)
             },
@@ -60,21 +61,23 @@ fun MontagePlayButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8),
     ) {
-        Crossfade(busy, animationSpec = MontageMotion.spec(MontageMotion.MEDIUM_MILLIS), label = "play") { waiting ->
+        Crossfade(busy, Modifier.fillMaxWidth(), animationSpec = MontageMotion.spec(MontageMotion.MEDIUM_MILLIS), label = "play") { waiting ->
             if (waiting) {
                 Box(Modifier.fillMaxWidth().height(CIRCLE).padding(horizontal = MontageSpacing.spacing20), contentAlignment = Alignment.Center) {
                     MontageGatheringDots("처리 중")
                 }
             } else {
-                Box(
-                    modifier = Modifier
-                        .size(CIRCLE)
-                        .clip(CircleShape)
-                        .background(if (enabled) colors.surfaceBrandPrimary else colors.surfaceDisablePrimary)
-                        .indication(interaction, ripple(color = colors.onBrand)),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(painterResource(icon), contentDescription = null, tint = if (enabled) colors.onBrand else colors.foregroundDisablePrimary, modifier = Modifier.size(36.dp))
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(CIRCLE)
+                            .clip(CircleShape)
+                            .background(if (enabled) colors.surfaceBrandPrimary else colors.surfaceDisablePrimary)
+                            .indication(interaction, ripple(color = colors.onBrand)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(painterResource(icon), contentDescription = null, tint = if (enabled) colors.onBrand else colors.foregroundDisablePrimary, modifier = Modifier.size(36.dp))
+                    }
                 }
             }
         }
