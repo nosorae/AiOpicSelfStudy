@@ -14,13 +14,16 @@ import kotlinx.serialization.json.Json
 class OpicStore(db: OpicDatabase) {
     private val dao = db.dao()
 
-    suspend fun save(session: ExamSession) = dao.saveSession(session.id, Json.encodeToString(session))
+    // 저장한 뒤 지운 필드(예: #203 의 gradeFailed)가 남은 행도 읽는다. 모르는 필드 하나로 홈, 기록, 리포트가 모두 멈추지 않게 한다.
+    private val json = Json { ignoreUnknownKeys = true }
 
-    fun session(id: String): Flow<ExamSession?> = dao.session(id).map { it?.let { row -> Json.decodeFromString<ExamSession>(row.json) } }
+    suspend fun save(session: ExamSession) = dao.saveSession(session.id, json.encodeToString(session))
 
-    fun sessions(): Flow<List<ExamSession>> = dao.sessions().map { rows -> rows.map { Json.decodeFromString<ExamSession>(it.json) } }
+    fun session(id: String): Flow<ExamSession?> = dao.session(id).map { it?.let { row -> json.decodeFromString<ExamSession>(row.json) } }
 
-    suspend fun save(answer: Answer) = dao.saveAnswer(answer.id, answer.examSessionId, Json.encodeToString(answer))
+    fun sessions(): Flow<List<ExamSession>> = dao.sessions().map { rows -> rows.map { json.decodeFromString<ExamSession>(it.json) } }
+
+    suspend fun save(answer: Answer) = dao.saveAnswer(answer.id, answer.examSessionId, json.encodeToString(answer))
 
     fun answers(examSessionId: String): Flow<List<Answer>> = dao.answers(examSessionId).map(::decodeAnswers)
 
@@ -31,5 +34,5 @@ class OpicStore(db: OpicDatabase) {
     /** [wrong] 이면 표시를 남기고 아니면 지운다. 같은 표시를 두 번 남겨도 하나다. */
     suspend fun mark(flag: CorrectionFlag, wrong: Boolean) = if (wrong) dao.addFlag(flag.answerId, flag.index) else dao.removeFlag(flag.answerId, flag.index)
 
-    private fun decodeAnswers(rows: List<AnswerRow>) = rows.map { Json.decodeFromString<Answer>(it.json) }
+    private fun decodeAnswers(rows: List<AnswerRow>) = rows.map { json.decodeFromString<Answer>(it.json) }
 }

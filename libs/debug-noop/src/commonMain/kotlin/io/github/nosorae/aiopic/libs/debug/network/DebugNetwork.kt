@@ -7,4 +7,4 @@ import io.ktor.client.engine.HttpClientEngine
 public fun HttpClientConfig<*>.installDebugTools() {}
 
 /** 릴리스 빌드용 빈 몸. 가짜 응답 엔진이 없어서 늘 null 이고 앱은 실제 엔진을 쓴다. */
-public fun fakeHttpEngine(json: String): HttpClientEngine? = null
+public fun fakeHttpEngine(json: (requestBody: String) -> String): HttpClientEngine? = null

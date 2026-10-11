@@ -46,7 +46,7 @@ class ObserveHistoryUseCase(
             sessions = sessions.filter { it.status != ExamStatus.InProgress }.map { session ->
                 val own = bySession[session.id].orEmpty()
                 val models = own.mapNotNull { it.analysis.analyzedBy }.distinctBy { it.provider to it.modelId }
-                HistorySession(session, models.map { it.displayName() }, answered = own.size, analyzed = own.count { it.analysis != AnswerAnalysis.Pending })
+                HistorySession(session, models.map { it.displayName() }, answered = own.size, analyzed = own.count { it.analysis is AnswerAnalysis.Done || it.analysis is AnswerAnalysis.Unscorable })
             },
             weaknesses = weaknessScores(answers, flags).map { HistoryWeakness(typeNames[it.type] ?: it.type.id, it.score) },
             grades = gradeScale.grades,
@@ -58,7 +58,7 @@ class ObserveHistoryUseCase(
 
 private val AnswerAnalysis.analyzedBy: AnalyzedBy?
     get() = when (this) {
-        AnswerAnalysis.Pending -> null
+        AnswerAnalysis.Pending, is AnswerAnalysis.Failed -> null
         is AnswerAnalysis.Done -> analyzedBy
         is AnswerAnalysis.Unscorable -> analyzedBy
     }

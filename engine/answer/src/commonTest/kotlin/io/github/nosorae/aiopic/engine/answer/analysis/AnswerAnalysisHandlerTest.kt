@@ -7,7 +7,6 @@ import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.FakeDeafProvider
@@ -18,6 +17,7 @@ import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.engine.answer.store.inMemoryDatabase
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkResult
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -110,7 +110,27 @@ class AnswerAnalysisHandlerTest {
             ),
             outcomes,
         )
-        assertEquals(AnswerAnalysis.Pending, stored().analysis)
+    }
+
+    @Test
+    fun `203 분석이 실패하면 이유를 답변에 남겨 화면이 끝없이 기다리지 않는다`() = runTest {
+        store.save(answer)
+        val stored = AnalysisError.entries.associateWith {
+            result = AnalysisResult.Failed(it)
+            handler().handle("a1")
+            stored().analysis
+        }
+
+        assertEquals(AnalysisError.entries.associateWith { AnswerAnalysis.Failed(it) }, stored)
+    }
+
+    @Test
+    fun `203 실패로 남은 답변도 대기열이 다시 꺼내면 다시 보낸다`() = runTest {
+        store.save(answer.copy(analysis = AnswerAnalysis.Failed(AnalysisError.Retryable)))
+
+        assertEquals(WorkResult.Success, handler().handle("a1"))
+
+        assertIs<AnswerAnalysis.Done>(stored().analysis)
     }
 
     @Test

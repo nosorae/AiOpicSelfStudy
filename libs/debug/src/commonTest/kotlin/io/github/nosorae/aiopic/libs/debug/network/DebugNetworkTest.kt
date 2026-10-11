@@ -119,7 +119,7 @@ class DebugNetworkTest {
 
     @Test
     fun fakeEngineAnswersWithoutSending() = runTest {
-        val response = HttpClient(fakeHttpEngine("""{"a":1}""")!!).get("https://x.dev/ping")
+        val response = HttpClient(fakeHttpEngine { """{"a":1}""" }!!).get("https://x.dev/ping")
 
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals("""{"a":1}""", response.bodyAsText())

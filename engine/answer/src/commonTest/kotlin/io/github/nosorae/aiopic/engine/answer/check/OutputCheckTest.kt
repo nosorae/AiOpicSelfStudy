@@ -5,8 +5,8 @@ import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.Pause
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Upgrade
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.GradeCheck
 import io.github.nosorae.aiopic.engine.session.model.GradeScale
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade

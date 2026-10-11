@@ -13,6 +13,10 @@ enum UITestLaunch {
     static let slowGemini = ["-debug_tools.slow_response", "YES"]
     /** 녹음은 실제로 하되 멈출 때마다 조각 쓰기에 실패했다고 알린다. */
     static let recordFail = ["-debug_tools.record_fail", "YES"]
+    /** 가짜 Gemini 가 첫 분석 요청만 연결 오류로 끊고 그 뒤로는 분석 결과를 준다. 연결이 잠깐 끊겼다 돌아온 경우다. */
+    static let dropOnce = ["-debug_tools.drop_once", "YES"]
+    /** 가짜 Gemini 가 분석 요청을 모두 연결 오류로 끊는다. 다시 보내기를 다 써도 연결되지 않은 경우다. */
+    static let offline = ["-debug_tools.offline", "YES"]
 }
 
 extension XCUIApplication {

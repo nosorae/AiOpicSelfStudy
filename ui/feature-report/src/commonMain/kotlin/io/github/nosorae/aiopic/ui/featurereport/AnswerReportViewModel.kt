@@ -25,6 +25,9 @@ data class AnswerReportUiState(
 sealed interface AnswerReportIntent {
     /** 교정 하나의 "틀림" 표시를 붙이거나 뗀다. */
     data class ToggleCorrectionWrong(val index: Int) : AnswerReportIntent
+
+    /** 분석하지 못한 답변을 다시 보낸다(#203). */
+    data object RetryAnalysis : AnswerReportIntent
 }
 
 /** 답변 리포트 화면(S11). 분석 대기 중에 열어도 분석이 끝나면 바로 피드백으로 바뀐다. */
@@ -33,6 +36,7 @@ class AnswerReportViewModel(
     @Assisted private val answerId: String,
     observeAnswerReportUseCase: ObserveAnswerReportUseCase,
     private val markCorrectionWrongUseCase: MarkCorrectionWrongUseCase,
+    private val retryAnswerAnalysisUseCase: RetryAnswerAnalysisUseCase,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AnswerReportUiState())
     val uiState: StateFlow<AnswerReportUiState> = _uiState.asStateFlow()
@@ -50,6 +54,8 @@ class AnswerReportViewModel(
             is AnswerReportIntent.ToggleCorrectionWrong -> viewModelScope.launch {
                 markCorrectionWrongUseCase(answerId, intent.index, wrong = intent.index !in _uiState.value.wrongCorrections)
             }
+
+            AnswerReportIntent.RetryAnalysis -> viewModelScope.launch { retryAnswerAnalysisUseCase(answerId) }
         }
     }
 

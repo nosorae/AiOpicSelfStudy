@@ -9,6 +9,7 @@ import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
 import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
 import io.github.nosorae.aiopic.apps.opic.shared.debugGeminiClient
 import io.github.nosorae.aiopic.apps.opic.shared.registerDebugPanels
+import io.github.nosorae.aiopic.apps.opic.shared.requeuePendingAnalysis
 import io.github.nosorae.aiopic.apps.opic.shared.withDebugTools
 import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.github.nosorae.aiopic.libs.debug.install
@@ -17,6 +18,8 @@ import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.recorder.api.AndroidRecorder
 import io.github.nosorae.aiopic.libs.tts.AndroidTts
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkManagerWorkQueue
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 /**
  * 앱 프로세스에 그래프 하나를 둔다. 화면이 없을 때 WorkManager 가 프로세스를 깨워도 분석 대기열이 처리기를 찾게
@@ -44,6 +47,7 @@ open class OpicApplication : Application() {
             gemini = gemini(),
         )
         graph.registerDebugPanels(queue = workQueue::pending, audio = ::audioRows)
+        MainScope().launch { graph.requeuePendingAnalysis(workQueue) }
     }
 
     /** 시나리오 테스트가 저장해 둔 응답을 돌려주는 클라이언트로 바꾼다. */

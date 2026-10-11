@@ -43,7 +43,7 @@ public final class io/github/nosorae/aiopic/libs/debug/DebugTools {
 }
 
 public final class io/github/nosorae/aiopic/libs/debug/network/DebugNetworkKt {
-	public static final fun fakeHttpEngine (Ljava/lang/String;)Lio/ktor/client/engine/HttpClientEngine;
+	public static final fun fakeHttpEngine (Lkotlin/jvm/functions/Function1;)Lio/ktor/client/engine/HttpClientEngine;
 	public static final fun installDebugTools (Lio/ktor/client/HttpClientConfig;)V
 }
 

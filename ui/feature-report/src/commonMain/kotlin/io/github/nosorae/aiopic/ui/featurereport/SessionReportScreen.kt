@@ -44,32 +44,33 @@ val SessionGrade.range: String get() = if (low == high) low else "$low ~ $high"
 @Composable
 fun SessionReportRoute(viewModel: SessionReportViewModel, onOpenAnswer: (answerId: String) -> Unit, modifier: Modifier = Modifier) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    SessionReportScreen(state = state, onOpenAnswer = onOpenAnswer, modifier = modifier)
+    SessionReportScreen(state = state, onOpenAnswer = onOpenAnswer, onIntent = viewModel::onIntent, modifier = modifier)
 }
 
 /**
  * 등급 범위와 근거, 무너진 문항, 답변 목록 순으로 그린다(F7.2). 시간이 다 된 회차는 답하지 못한 문항을 끝에 "시간 부족"으로 붙인다.
  * 이 화면의 움직임은 하나다. 등급이 나왔으면 등급 눈금의 구슬, 분석을 기다리는 중이면 분석한 답변 수만큼 차는 진행 점,
- * 분석은 다 끝나고 등급만 기다리면 모이는 점이다. 등급 구슬은 회차와 등급마다 한 번만 움직인다.
+ * 분석은 다 끝나고 등급만 기다리면 모이는 점이다. 분석이나 등급이 실패하면 기다림 문구 대신 실패 문구와 다시 분석하기를 보인다(#203). 등급 구슬은 회차와 등급마다 한 번만 움직인다.
  * 보는 중에 등급이 나오면 구슬이 멈춘 뒤 큰 축하가 한 번 터진다.
  */
 @Composable
-fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, modifier: Modifier = Modifier) {
+fun SessionReportScreen(state: SessionReportUiState, onOpenAnswer: (answerId: String) -> Unit, onIntent: (SessionReportIntent) -> Unit, modifier: Modifier = Modifier) {
     MontageScreen(modifier = modifier, topBar = { MontageTopBar(title = stringResource(Res.string.session_title)) }) {
         val report = state.report
         when {
             state.loading -> Unit
             report == null -> Paragraph(stringResource(Res.string.session_not_found), secondary = true)
-            else -> SessionReportContent(report, onOpenAnswer)
+            else -> SessionReportContent(report, onOpenAnswer) { onIntent(SessionReportIntent.RetryAnalysis) }
         }
     }
 }
 
 @Composable
-private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -> Unit) {
+private fun SessionReportContent(report: SessionReport, onOpenAnswer: (String) -> Unit, onRetryClick: () -> Unit) {
     val grade = report.session.grade
     LazyColumn(Modifier.fillMaxWidth()) {
         item { GradeHeader(report) }
+        if (report.canRetry) item { RetryButton(onRetryClick, tag = "session-retry") }
         if (grade != null && grade.reasons.isNotEmpty()) {
             item { SectionTitle(stringResource(Res.string.session_reasons)) }
             items(grade.reasons.size) { Paragraph(grade.reasons[it]) }
@@ -132,7 +133,12 @@ private fun GradeHeader(report: SessionReport) {
             if (grade != null) {
                 Text(grade.range, style = typography.title1.bold, color = colors.foregroundNeutralStrong)
             } else {
-                val waiting = if (report.grading) {
+                val gradeError = report.session.gradeError
+                val waiting = if (report.failedCount > 0) {
+                    stringResource(Res.string.session_failed, report.failedCount)
+                } else if (gradeError != null) {
+                    stringResource(Res.string.session_grade_failed, stringResource(gradeError.text))
+                } else if (report.grading) {
                     stringResource(Res.string.session_grade_grading)
                 } else {
                     stringResource(Res.string.session_grade_waiting, report.answers.size, report.analyzedCount)
@@ -165,6 +171,7 @@ private fun GradeHeader(report: SessionReport) {
 private fun AnswerRow(number: Int, answer: Answer, names: ReportNames, broke: Boolean, onClick: () -> Unit) {
     val status = when (val analysis = answer.analysis) {
         AnswerAnalysis.Pending -> stringResource(Res.string.status_pending)
+        is AnswerAnalysis.Failed -> stringResource(Res.string.status_failed)
         is AnswerAnalysis.Done -> stringResource(Res.string.status_score, analysis.feedback.score, names.model(analysis.analyzedBy))
         is AnswerAnalysis.Unscorable -> stringResource(Res.string.status_unscorable, stringResource(analysis.reason.text), names.model(analysis.analyzedBy))
     }
@@ -180,7 +187,7 @@ private fun AnswerRow(number: Int, answer: Answer, names: ReportNames, broke: Bo
 @Preview
 @Composable
 private fun SessionReportScreenPreview() {
-    MontageTheme { SessionReportScreen(state = ReportSamples.mixedModels, onOpenAnswer = {}) }
+    MontageTheme { SessionReportScreen(state = ReportSamples.mixedModels, onOpenAnswer = {}, onIntent = {}) }
 }
 
 /** 등급 구슬이 스프링으로 미끄러져 멈추는 데 걸리는 시간. 축하는 그 뒤에 터진다. */

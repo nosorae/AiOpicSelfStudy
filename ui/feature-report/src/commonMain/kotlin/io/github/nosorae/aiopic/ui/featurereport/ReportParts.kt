@@ -5,15 +5,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
+import io.github.nosorae.aiopic.ui.design.MontageButton
+import io.github.nosorae.aiopic.ui.design.MontageButtonVariant
 import io.github.nosorae.aiopic.ui.design.MontageSpacing
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 /** 리포트 두 화면이 같은 모양으로 쓰는 절 제목. 화면 읽기 프로그램이 절 단위로 건너뛸 수 있게 제목으로 표시한다. */
 @Composable
@@ -55,3 +60,23 @@ internal val UnscorableReason.text: StringResource
         UnscorableReason.WrongLanguage -> Res.string.reason_wrong_language
         UnscorableReason.TooShort -> Res.string.reason_too_short
     }
+
+/** 분석하지 못한 이유와 사용자가 할 일(#203). */
+internal val AnalysisError.text: StringResource
+    get() = when (this) {
+        AnalysisError.Retryable -> Res.string.failed_retryable
+        AnalysisError.InvalidKey -> Res.string.failed_invalid_key
+        AnalysisError.ModelUnavailable -> Res.string.failed_model_unavailable
+        AnalysisError.Rejected -> Res.string.failed_rejected
+    }
+
+/** 리포트 두 화면의 다시 분석하기. 누르면 바로 기다림으로 바뀌어 처리 중 표시는 두지 않는다. */
+@Composable
+internal fun RetryButton(onClick: () -> Unit, tag: String) {
+    MontageButton(
+        text = stringResource(Res.string.retry_analysis),
+        onClick = onClick,
+        variant = MontageButtonVariant.Outlined,
+        modifier = Modifier.padding(horizontal = MontageSpacing.spacing20, vertical = MontageSpacing.spacing8).testTag(tag),
+    )
+}

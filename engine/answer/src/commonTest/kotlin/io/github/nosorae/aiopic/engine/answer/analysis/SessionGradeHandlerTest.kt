@@ -7,7 +7,6 @@ import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
 import io.github.nosorae.aiopic.engine.answer.model.Stability
 import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
-import io.github.nosorae.aiopic.engine.answer.port.AnalysisError
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.AudioAnswerAnalyzer
 import io.github.nosorae.aiopic.engine.answer.port.FakeDeafProvider
@@ -19,6 +18,7 @@ import io.github.nosorae.aiopic.engine.answer.store.OpicStore
 import io.github.nosorae.aiopic.engine.answer.store.inMemoryDatabase
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.GradeCheck
@@ -31,7 +31,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class SessionGradeHandlerTest {
     private val db = inMemoryDatabase()
@@ -149,9 +151,10 @@ class SessionGradeHandlerTest {
         val handler = handler()
         (1..15).forEach { handler.handle("a$it") }
 
+        val saved = mutableListOf<AnalysisError?>()
         val outcomes = AnalysisError.entries.associateWith {
             gradeResult = AnalysisResult.Failed(it)
-            handler.handle(gradePayload("s1"))
+            handler.handle(gradePayload("s1")).also { saved += session().gradeError }
         }
 
         assertEquals(
@@ -164,6 +167,51 @@ class SessionGradeHandlerTest {
             outcomes,
         )
         assertNull(session().grade)
+        // 회차에 이유가 남아야 리포트가 키 오류와 연결 오류를 다르게 안내한다(#203).
+        assertEquals<List<AnalysisError?>>(AnalysisError.entries, saved)
+    }
+
+    @Test
+    fun `203 분석하지 못한 답변이 있으면 등급을 요청하지 않는다`() = runTest {
+        saveSession()
+        val handler = handler()
+        (1..14).forEach { handler.handle("a$it") }
+        store.save(store.answers("s1").first().last().copy(analysis = AnswerAnalysis.Failed(AnalysisError.Rejected)))
+
+        requestGradeIfReady(store, queue, "s1")
+
+        assertEquals(emptyList(), queue.ids)
+    }
+
+    @Test
+    fun `203 다시 분석하기는 실패한 답변과 등급을 기다림으로 돌려 대기열에 다시 넣는다`() = runTest {
+        saveSession()
+        val handler = handler()
+        (1..15).forEach { handler.handle("a$it") }
+        gradeResult = AnalysisResult.Failed(AnalysisError.Rejected)
+        handler.handle(gradePayload("s1"))
+        store.save(store.answers("s1").first().first().copy(analysis = AnswerAnalysis.Failed(AnalysisError.Retryable)))
+        queue.ids.clear()
+
+        retrySession(store, queue, "s1")
+
+        assertEquals(AnswerAnalysis.Pending, store.answers("s1").first().first().analysis)
+        assertNull(session().gradeError)
+        assertEquals(listOf("a1"), queue.ids)
+
+        gradeResult = AnalysisResult.Success(grade)
+        handler.handle("a1")
+        assertEquals(listOf("a1", gradePayload("s1")), queue.ids)
+    }
+
+    @Test
+    fun `203 앱을 켜면 대기열에서 빠진 기다림을 다시 넣는다`() = runTest {
+        saveSession(count = 2)
+        store.save(store.answers("s1").first().last().copy(analysis = AnswerAnalysis.Failed(AnalysisError.Rejected)))
+
+        requeuePending(store, queue)
+
+        assertEquals(listOf("a1"), queue.ids)
     }
 
     @Test

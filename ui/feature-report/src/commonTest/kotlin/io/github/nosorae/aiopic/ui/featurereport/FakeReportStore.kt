@@ -16,4 +16,15 @@ class FakeReportStore(sessions: List<ExamSession> = emptyList(), answers: List<A
     override fun answers(examSessionId: String): Flow<List<Answer>> = answers.map { list -> list.filter { it.examSessionId == examSessionId } }
 
     override fun answers(): Flow<List<Answer>> = answers
+
+    /** 다시 보내 달라고 받은 답변 id 와 `session:` 을 붙인 회차 id. */
+    val retried = mutableListOf<String>()
+
+    override suspend fun retryAnswer(answerId: String) {
+        retried += answerId
+    }
+
+    override suspend fun retrySession(sessionId: String) {
+        retried += "session:$sessionId"
+    }
 }

@@ -6,6 +6,7 @@ import io.github.nosorae.aiopic.engine.answer.weakness.CorrectionFlag
 import io.github.nosorae.aiopic.engine.answer.weakness.TypeWeakness
 import io.github.nosorae.aiopic.engine.answer.weakness.weaknessScores
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.ui.featurereport.flag.FakeFlagStore
 import io.github.nosorae.aiopic.ui.featurereport.flag.MarkCorrectionWrongUseCase
 import io.github.nosorae.aiopic.ui.featurereport.flag.ObserveAnswerReportUseCase
@@ -36,6 +37,7 @@ class AnswerReportViewModelTest {
         answerId,
         ObserveAnswerReportUseCase(ObserveAnswerUseCase(store), flagStore, FakeCatalog),
         MarkCorrectionWrongUseCase(flagStore),
+        RetryAnswerAnalysisUseCase(store),
     )
 
     /** a0 은 40점에 교정 둘, a1 은 80점에 교정 하나. 문항 유형이 같다. */
@@ -75,6 +77,18 @@ class AnswerReportViewModelTest {
         advanceUntilIdle()
 
         assertIs<AnswerAnalysis.Done>(viewModel.uiState.value.answer?.analysis)
+    }
+
+    @Test
+    fun `203 분석하지 못한 답변에서 다시 분석하기를 누르면 그 답변을 다시 보낸다`() = runTest(dispatcher) {
+        val store = FakeReportStore(answers = answers("s1", 1).map { it.copy(analysis = AnswerAnalysis.Failed(AnalysisError.Retryable)) })
+        val viewModel = viewModel("a0", store)
+        advanceUntilIdle()
+
+        viewModel.onIntent(AnswerReportIntent.RetryAnalysis)
+        advanceUntilIdle()
+
+        assertEquals(listOf("a0"), store.retried)
     }
 
     @Test

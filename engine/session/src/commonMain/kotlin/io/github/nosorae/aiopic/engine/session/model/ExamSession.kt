@@ -21,6 +21,8 @@ data class ExamSession(
     val replayUsed: Boolean = false,
     val status: ExamStatus = ExamStatus.InProgress,
     val grade: SessionGrade? = null,
+    /** 등급을 요청했지만 받지 못한 이유(#203). 있으면 리포트가 등급 기다림을 끝내고 이유와 다시 분석하기를 보인다. */
+    val gradeError: AnalysisError? = null,
 )
 
 @Serializable

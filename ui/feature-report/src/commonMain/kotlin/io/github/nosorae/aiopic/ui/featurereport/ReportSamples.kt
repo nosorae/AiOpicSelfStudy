@@ -13,6 +13,7 @@ import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.answer.model.Upgrade
 import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.SessionGrade
@@ -70,10 +71,15 @@ internal object ReportSamples {
         brokeAt = listOf(3),
     )
 
-    private fun report(answers: List<Answer>, status: ExamStatus = ExamStatus.Finished, grade: SessionGrade? = this.grade) = SessionReportUiState(
+    private fun report(
+        answers: List<Answer>,
+        status: ExamStatus = ExamStatus.Finished,
+        grade: SessionGrade? = this.grade,
+        gradeError: AnalysisError? = null,
+    ) = SessionReportUiState(
         loading = false,
         report = SessionReport(
-            session = ExamSession(id = "s1", level = 4, answerIds = answers.map { it.id }, status = status, grade = grade),
+            session = ExamSession(id = "s1", level = 4, answerIds = answers.map { it.id }, status = status, grade = grade, gradeError = gradeError),
             answers = answers,
             questionCount = 7,
             names = names,
@@ -120,4 +126,16 @@ internal object ReportSamples {
     val answerUnscorable = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(flash, UnscorableReason.WrongLanguage)), names = names)
 
     val answerPending = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Pending), names = names)
+
+    /** 연결이 끊겨 결과를 받지 못했다(#203). */
+    val answerFailed = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Failed(AnalysisError.Retryable)), names = names)
+
+    /** 답변 7개 중 하나를 분석하지 못해 등급을 요청하지 않았다(#203). */
+    val analysisFailed = report(
+        List(7) { answer(it, if (it == 6) AnswerAnalysis.Failed(AnalysisError.Rejected) else AnswerAnalysis.Done(flash, feedback)) },
+        grade = null,
+    )
+
+    /** 답변은 다 분석했지만 키가 틀려 등급을 받지 못했다(#203). */
+    val gradeFailed = report(List(7) { answer(it, AnswerAnalysis.Done(flash, feedback)) }, grade = null, gradeError = AnalysisError.InvalidKey)
 }

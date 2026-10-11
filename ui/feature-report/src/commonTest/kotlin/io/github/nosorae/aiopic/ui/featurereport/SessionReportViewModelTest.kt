@@ -2,6 +2,7 @@ package io.github.nosorae.aiopic.ui.featurereport
 
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
 import io.github.nosorae.aiopic.engine.session.model.ExamStep
@@ -35,7 +36,11 @@ class SessionReportViewModelTest {
 
     @AfterTest fun tearDown() = Dispatchers.resetMain()
 
-    private fun viewModel(store: FakeReportStore) = SessionReportViewModel("s1", ObserveSessionReportUseCase(store, spec, typeNames, FakeCatalog, GradeScale(listOf("NL", "IM", "AL"))))
+    private fun viewModel(store: FakeReportStore) = SessionReportViewModel(
+        "s1",
+        ObserveSessionReportUseCase(store, spec, typeNames, FakeCatalog, GradeScale(listOf("NL", "IM", "AL"))),
+        RetrySessionAnalysisUseCase(store),
+    )
 
     @Test
     fun `F2_6 시간이 다 된 회차는 답하지 못한 문항 수를 시간 부족으로 센다`() = runTest(dispatcher) {
@@ -158,5 +163,40 @@ class SessionReportViewModelTest {
         advanceUntilIdle()
 
         assertEquals(2, viewModel.uiState.value.report!!.analyzedCount)
+    }
+
+    @Test
+    fun `203 분석하지 못한 답변은 분석한 수에 넣지 않고 등급 기다림 대신 다시 분석하기를 보인다`() = runTest(dispatcher) {
+        val list = answers("s1", 3).mapIndexed { i, a -> if (i == 2) a.copy(analysis = AnswerAnalysis.Failed(AnalysisError.Rejected)) else a }
+        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 3)), list))
+        advanceUntilIdle()
+
+        val report = viewModel.uiState.value.report!!
+        assertEquals(2, report.analyzedCount)
+        assertEquals(1, report.failedCount)
+        assertFalse(report.grading)
+        assertTrue(report.canRetry)
+    }
+
+    @Test
+    fun `203 등급을 내지 못했으면 등급 기다림을 끝내고 다시 분석하기를 보인다`() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeReportStore(listOf(session(level = 3, answers = 2).copy(gradeError = AnalysisError.InvalidKey)), answers("s1", 2)))
+        advanceUntilIdle()
+
+        val report = viewModel.uiState.value.report!!
+        assertFalse(report.grading)
+        assertTrue(report.canRetry)
+    }
+
+    @Test
+    fun `203 다시 분석하기를 누르면 회차의 실패한 분석을 다시 보낸다`() = runTest(dispatcher) {
+        val store = FakeReportStore(listOf(session(level = 3, answers = 1).copy(gradeError = AnalysisError.InvalidKey)), answers("s1", 1))
+        val viewModel = viewModel(store)
+        advanceUntilIdle()
+
+        viewModel.onIntent(SessionReportIntent.RetryAnalysis)
+        advanceUntilIdle()
+
+        assertEquals(listOf("session:s1"), store.retried)
     }
 }
