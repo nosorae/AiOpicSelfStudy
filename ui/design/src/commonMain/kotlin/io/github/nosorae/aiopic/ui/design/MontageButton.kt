@@ -86,7 +86,7 @@ fun MontageButton(
         variant != MontageButtonVariant.Solid -> Color.Transparent
         !enabled -> colors.surfaceDisablePrimary
         type == MontageButtonType.Assistive -> colors.surfaceNeutralSecondary
-        type == MontageButtonType.Negative -> colors.foregroundNegativePrimaryOpacity12
+        type == MontageButtonType.Negative -> colors.foregroundNegativePrimary
         else -> colors.surfaceBrandPrimary
     }
     val isText = variant == MontageButtonVariant.Text
@@ -204,7 +204,7 @@ private fun buttonContentColor(variant: MontageButtonVariant, type: MontageButto
         variant == MontageButtonVariant.Solid -> when (type) {
             MontageButtonType.Primary -> colors.onBrand
             MontageButtonType.Assistive -> colors.foregroundNeutralSecondary
-            MontageButtonType.Negative -> colors.foregroundNegativeStrong
+            MontageButtonType.Negative -> colors.onBrand
         }
 
         variant == MontageButtonVariant.Outlined && type == MontageButtonType.Assistive -> colors.foregroundNeutralPrimary
