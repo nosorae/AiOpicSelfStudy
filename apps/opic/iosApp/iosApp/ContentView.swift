@@ -62,7 +62,7 @@ struct ContentView: View {
     @State private var startPath: [AppRoute] = []
 
     var body: some View {
-        if let first = start, first == AppRoute.Home.shared {
+        if let first = start, first == AppRoute.ExamTab.shared {
             Tabs(shell: shell)
         } else if let first = start {
             TabRoot(shell: shell, root: first, path: $startPath, onRestart: { next in
@@ -81,7 +81,7 @@ struct ContentView: View {
 
 struct Tabs: View {
     let shell: IosShell
-    @State private var tab: AppRoute = AppRoute.Home.shared
+    @State private var tab: AppRoute = AppRoute.ExamTab.shared
     @State private var paths: [AppRoute: [AppRoute]] = [:]
     /** 키 확인처럼 처리 중인 화면이 있다. 그동안 탭 바를 눌러도 탭이 바뀌지 않는다. */
     @State private var busy = false
@@ -116,9 +116,10 @@ struct Tabs: View {
 
     private func icon(_ tab: AppRoute) -> String {
         switch tab {
+        case AppRoute.PracticeTab.shared: "mic"
         case AppRoute.History.shared: "calendar"
         case AppRoute.Settings.shared: "gearshape"
-        default: "house"
+        default: "doc.text"
         }
     }
 }

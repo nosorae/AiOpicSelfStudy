@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** 홈은 기록 화면이 아니라서 저장소 Flow 를 init 에서 구독해 update 로 옮긴다(ADR 0005). */
+/** 모의고사 탭은 기록 화면이 아니라서 저장소 Flow 를 init 에서 구독해 update 로 옮긴다(ADR 0005). */
 @Inject
 class HomeViewModel(observeHomeUseCase: ObserveHomeUseCase) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())

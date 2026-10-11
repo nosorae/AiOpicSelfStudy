@@ -18,6 +18,7 @@ import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyEntryRoute
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyEntryViewModel
 import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyProvider
 import io.github.nosorae.aiopic.ui.featurepractice.PracticeRoute
+import io.github.nosorae.aiopic.ui.featurepractice.PracticeTabRoute
 import io.github.nosorae.aiopic.ui.featurereport.AnswerReportRoute
 import io.github.nosorae.aiopic.ui.featurereport.SessionReportRoute
 import io.github.nosorae.aiopic.ui.featuresettings.SettingsRoute
@@ -50,12 +51,17 @@ internal fun RouteContent(
     val scope = rememberCoroutineScope()
     val restart: () -> Unit = { scope.launch { onRestart(AppRoute.start(graph.decideStartUseCase())) } }
     when (route) {
-        AppRoute.Home -> HomeRoute(
+        AppRoute.ExamTab -> HomeRoute(
             viewModel = viewModel { graph.homeViewModel },
-            // 진행 중인 회차가 있으면 그 회차를 잇고, 없으면 새 회차를 연다(F3).
+            // 이어 보기는 진행 중인 회차 id 를 넘기고, 시작은 null 이라 새 회차를 연다(F3).
             onExamClick = { onOpen(AppRoute.Exam(it ?: newId())) },
-            onPracticeClick = { onOpen(AppRoute.Practice(newId())) },
             onSessionClick = { onOpen(AppRoute.ReportDetail(it)) },
+            modifier = modifier,
+        )
+
+        AppRoute.PracticeTab -> PracticeTabRoute(
+            viewModel = viewModel { graph.practiceTabViewModel },
+            onStart = { onOpen(AppRoute.Practice(newId())) },
             modifier = modifier,
         )
 

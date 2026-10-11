@@ -72,6 +72,7 @@ import io.github.nosorae.aiopic.ui.featureonboarding.key.KeyEntryViewModel
 import io.github.nosorae.aiopic.ui.featureonboarding.start.DecideStartUseCase
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartViewModel
 import io.github.nosorae.aiopic.ui.featurepractice.PracticeRepository
+import io.github.nosorae.aiopic.ui.featurepractice.PracticeTabViewModel
 import io.github.nosorae.aiopic.ui.featurepractice.PracticeViewModel
 import io.github.nosorae.aiopic.ui.featurereport.AnswerReportViewModel
 import io.github.nosorae.aiopic.ui.featurereport.ReportStore
@@ -124,6 +125,8 @@ interface AppGraph {
     val surveyViewModel: SurveyViewModel
 
     val practiceViewModelFactory: PracticeViewModel.Factory
+
+    val practiceTabViewModel: PracticeTabViewModel
 
     val sessionReportViewModelFactory: SessionReportViewModel.Factory
 

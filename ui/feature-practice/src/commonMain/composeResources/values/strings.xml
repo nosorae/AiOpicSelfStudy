@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="practice_title">한 문항 연습</string>
+    <string name="practice_tab_title">연습</string>
     <string name="practice_exit">나가기</string>
     <string name="practice_exit_cancel">취소</string>
     <string name="practice_exit_title">연습을 나갈까요?</string>

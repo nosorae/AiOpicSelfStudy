@@ -19,7 +19,11 @@ private enum class Chrome { TopLevel, Sub, FullScreen, Start }
  */
 @Serializable
 sealed class AppRoute {
-    @Serializable data object Home : AppRoute()
+    /** 모의고사 탭(S3). 이어 보기, 시작, 다시 보기. 앱을 켜면 처음 보이는 탭이다. */
+    @Serializable data object ExamTab : AppRoute()
+
+    /** 연습 탭. Play 한 번으로 [Practice] 를 열어 바로 질문을 읽는다. */
+    @Serializable data object PracticeTab : AppRoute()
 
     @Serializable data object History : AppRoute()
 
@@ -30,12 +34,12 @@ sealed class AppRoute {
     /** 답변 하나의 리포트. 회차 리포트의 답변 줄과 한 문항 연습의 Next 가 연다. */
     @Serializable data class AnswerReport(val answerId: String) : AppRoute()
 
-    /** 모의시험. 홈이 진행 중인 회차 id 를 넣으면 이어 보기, 새 id 면 새 회차다(F3). */
+    /** 모의시험. 모의고사 탭이 진행 중인 회차 id 를 넣으면 이어 보기, 새 id 면 새 회차다(F3). */
     @Serializable data class Exam(val sessionId: String) : AppRoute()
 
     /**
      * 한 문항 연습. 녹음하는 화면이라 탭이 없지만 시험이 아니라서 뒤로가기는 막지 않는다. 녹음 중 뒤로가기는 화면이 받아 나갈지 묻는다.
-     * [answerId] 는 들어올 때마다 새로 만든다.
+     * 연습 탭의 Play 로 열리고 열리자마자 질문을 읽는다. [answerId] 는 들어올 때마다 새로 만든다.
      */
     @Serializable data class Practice(val answerId: String) : AppRoute()
 
@@ -54,15 +58,15 @@ sealed class AppRoute {
     /** 설정의 앱 정보와 라이선스 고지(ADR 0018). */
     @Serializable data object AppInfo : AppRoute()
 
-    /** 첫 실행의 키 입력(S1). 설정에서 여는 [KeyEntry] 와 달리 홈 위에 쌓지 않고 혼자 뜨며, 끝나면 시작 분기를 다시 한다. */
+    /** 첫 실행의 키 입력(S1). 설정에서 여는 [KeyEntry] 와 달리 탭 위에 쌓지 않고 혼자 뜨며, 끝나면 시작 분기를 다시 한다. */
     @Serializable data object StartKeyEntry : AppRoute()
 
-    /** 첫 실행의 음성 전송 동의(S2). 동의해야 홈으로 간다(F1.3). */
+    /** 첫 실행의 음성 전송 동의(S2). 동의해야 모의고사 탭으로 간다(F1.3). */
     @Serializable data object StartConsent : AppRoute()
 
     private val chrome: Chrome
         get() = when (this) {
-            Home, History, Settings -> Chrome.TopLevel
+            ExamTab, PracticeTab, History, Settings -> Chrome.TopLevel
             is ReportDetail, is AnswerReport, is KeyEntry, FreeTierNotice, Survey, FlagExport, AppInfo -> Chrome.Sub
             is Exam, is Practice -> Chrome.FullScreen
             StartKeyEntry, StartConsent -> Chrome.Start
@@ -70,7 +74,8 @@ sealed class AppRoute {
 
     val title: String
         get() = when (this) {
-            Home -> "홈"
+            ExamTab -> "모의고사"
+            PracticeTab -> "연습"
             History -> "기록"
             Settings -> "설정"
             is ReportDetail -> "회차 리포트"
@@ -102,13 +107,13 @@ sealed class AppRoute {
 
     companion object {
         /** 하단 탭 순서. 값으로 두면 하위 object 초기화와 순환해 null 이 들어가므로 읽을 때 만든다. */
-        val tabs: List<AppRoute> get() = listOf(Home, History, Settings)
+        val tabs: List<AppRoute> get() = listOf(ExamTab, PracticeTab, History, Settings)
 
-        /** 시작 분기(S0, F1.0) 결과의 첫 화면. 키 입력과 동의는 홈 위가 아니라 백스택 맨 아래에 혼자 둔다. */
+        /** 시작 분기(S0, F1.0) 결과의 첫 화면. 키 입력과 동의는 탭 위가 아니라 백스택 맨 아래에 혼자 둔다. */
         fun start(destination: StartDestination): AppRoute = when (destination) {
             StartDestination.KeyEntry -> StartKeyEntry
             StartDestination.Consent -> StartConsent
-            StartDestination.Home -> Home
+            StartDestination.Home -> ExamTab
         }
     }
 }

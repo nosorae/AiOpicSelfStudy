@@ -43,7 +43,8 @@ import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.design.Res
 import io.github.nosorae.aiopic.ui.design.icon_normal_calendar
-import io.github.nosorae.aiopic.ui.design.icon_normal_home
+import io.github.nosorae.aiopic.ui.design.icon_normal_document_text
+import io.github.nosorae.aiopic.ui.design.icon_normal_microphone
 import io.github.nosorae.aiopic.ui.design.icon_normal_setting
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartUiState
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartViewModel
@@ -70,11 +71,11 @@ fun OpicApp(graph: AppGraph, start: StartViewModel) {
  * 탭을 보일지와 뒤로가기를 막을지는 [AppRoute] 표가 정하고, Android 플랫폼 코드는 이 파일 하나다(ADR 0018).
  *
  * 백스택은 하나다. Android 는 하위 화면에서 탭을 숨겨서 탭을 옮기는 건 늘 탭 화면에 있을 때뿐이라 탭마다 스택을 둘 일이 없다.
- * 홈이 아닌 탭은 홈 위에 쌓아 뒤로가기로 홈에 돌아오게 한다. [startStack] 은 테스트가 시작 화면을 정할 때만 쓴다.
+ * 모의고사가 아닌 탭은 모의고사 탭 위에 쌓아 뒤로가기로 모의고사 탭에 돌아오게 한다. [startStack] 은 테스트가 시작 화면을 정할 때만 쓴다.
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<AppRoute> = listOf(AppRoute.Home)) {
+fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<AppRoute> = listOf(AppRoute.ExamTab)) {
     val backStack = rememberSaveable(saver = backStackSaver) { startStack.toMutableStateList() }
     val top = backStack.last()
     val themeMode by graph.themeModeStore.themeMode.collectAsState()
@@ -122,7 +123,7 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
                             route = route,
                             graph = graph,
                             onOpen = { backStack.add(it) },
-                            onExit = { backStack.retainAll { it == AppRoute.Home } },
+                            onExit = { backStack.retainAll { it == AppRoute.ExamTab } },
                             onBack = { backStack.removeAt(backStack.lastIndex) },
                             onRestart = { first -> backStack.replaceAll(listOf(first)) },
                             onBlockBack = { busy = it },
@@ -137,7 +138,7 @@ fun AppShell(graph: AppGraph, modifier: Modifier = Modifier, startStack: List<Ap
 /** 개발자 옵션이나 접근성 설정에서 애니메이션을 끄면 애니메이터 배율이 0 이 된다. 이때 움직임 부품은 끝 장면을 바로 보인다. */
 internal fun Context.animationsOff(): Boolean = Settings.Global.getFloat(contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
 
-private fun SnapshotStateList<AppRoute>.selectTab(tab: AppRoute) = replaceAll(listOfNotNull(AppRoute.Home, tab.takeIf { it != AppRoute.Home }))
+private fun SnapshotStateList<AppRoute>.selectTab(tab: AppRoute) = replaceAll(listOfNotNull(AppRoute.ExamTab, tab.takeIf { it != AppRoute.ExamTab }))
 
 /** 비우기와 채우기를 한 번에 반영한다. 시작 분기를 다시 하는 코루틴이 다른 스레드에서 이어지면 그 사이 화면이 빈 백스택을 읽는다(#194). */
 private fun SnapshotStateList<AppRoute>.replaceAll(next: List<AppRoute>) = Snapshot.withMutableSnapshot {
@@ -146,9 +147,10 @@ private fun SnapshotStateList<AppRoute>.replaceAll(next: List<AppRoute>) = Snaps
 }
 
 private fun tabIcon(tab: AppRoute) = when (tab) {
+    AppRoute.PracticeTab -> Res.drawable.icon_normal_microphone
     AppRoute.History -> Res.drawable.icon_normal_calendar
     AppRoute.Settings -> Res.drawable.icon_normal_setting
-    else -> Res.drawable.icon_normal_home
+    else -> Res.drawable.icon_normal_document_text
 }
 
 private val backStackSaver = listSaver<SnapshotStateList<AppRoute>, String>(
