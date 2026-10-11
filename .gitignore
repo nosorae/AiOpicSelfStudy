@@ -24,3 +24,6 @@ apps/opic/iosApp/Configuration/Local.xcconfig
 # Roborazzi 비교 실패 산출물. 기준 이미지만 커밋한다.
 *_compare.png
 *_actual.png
+
+# 파이썬 바이트코드
+__pycache__/
