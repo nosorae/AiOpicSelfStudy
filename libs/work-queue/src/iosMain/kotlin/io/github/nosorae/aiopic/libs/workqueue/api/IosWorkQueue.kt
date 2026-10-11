@@ -45,6 +45,8 @@ public class IosWorkQueue(
     private val wakes = Channel<Unit>(Channel.CONFLATED)
     private var connected = false
 
+    override val online: Boolean get() = connected
+
     init {
         scope.launch {
             online.collect {

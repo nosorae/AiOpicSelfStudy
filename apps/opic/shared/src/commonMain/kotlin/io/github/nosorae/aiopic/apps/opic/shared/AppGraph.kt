@@ -403,6 +403,7 @@ internal fun analysisJobs(
         router = AnswerRouter(FallBackToDefaultModel(gemini, settings), NoTwoStepPath, NoTwoStepPath),
         grader = gemini,
         consented = settings::isGiven,
+        online = { queue.online },
         answerRequest = { answer -> answerRequest(answer, GeminiModels.choose(settings.selectedModelId()).model) },
         gradeRequest = { answers -> gradeRequest(answers, GeminiModels.choose(settings.selectedModelId()).model) },
         wake = queue::wake,

@@ -10,6 +10,9 @@ import kotlin.time.Duration.Companion.seconds
 public interface WorkQueue {
     /** DB 에 보낼 일이 생겼다. 연결돼 있으면 곧 [Drain.drain] 을 부른다. */
     public fun wake()
+
+    /** 기기가 지금 연결돼 있는가. 비우는 중 연결 실패가 기기 탓인지 받는 쪽 탓인지 가를 때 읽는다. */
+    public val online: Boolean
 }
 
 /** 앱이 넘기는 일. DB 에서 보낼 때가 된 일을 비우고, 다시 불러야 할 때까지 남은 시간을 돌려준다. 남은 일이 없으면 null 이다. */

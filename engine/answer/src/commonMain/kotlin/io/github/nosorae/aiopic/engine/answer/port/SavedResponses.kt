@@ -1,5 +1,7 @@
 package io.github.nosorae.aiopic.engine.answer.port
 
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
 
@@ -22,7 +24,8 @@ class SavedResponses(
      */
     suspend fun take(stage: String): String? = if (served.add(stage)) read(stage) else null
 
-    suspend fun save(stage: String, text: String) = write(stage, text)
+    /** 시간 제한이나 취소가 와도 저장은 끝까지 한다. 토큰을 쓴 응답을 잃지 않고 DB 연결도 중간에 놓지 않는다(#211). 취소는 저장 뒤에 이어진다. */
+    suspend fun save(stage: String, text: String) = withContext(NonCancellable) { write(stage, text) }
 
     companion object Key : CoroutineContext.Key<SavedResponses>
 }

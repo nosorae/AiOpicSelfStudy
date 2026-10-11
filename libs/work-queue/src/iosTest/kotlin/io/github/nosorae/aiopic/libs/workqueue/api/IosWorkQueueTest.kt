@@ -52,6 +52,7 @@ class IosWorkQueueTest {
         queue.wake()
         runCurrent()
         assertEquals(emptyList(), drains)
+        assertEquals(false, queue.online)
 
         online.value = true
         runCurrent()

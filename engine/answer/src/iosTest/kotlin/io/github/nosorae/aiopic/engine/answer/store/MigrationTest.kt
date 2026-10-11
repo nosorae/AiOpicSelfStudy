@@ -89,6 +89,7 @@ class MigrationTest {
                 override suspend fun grade(model: ModelInfo, prompt: Prompt, scale: GradeScale, recordings: List<Recording>) = AnalysisResult.Failed(AnalysisError.Rejected)
             },
             consented = { true },
+            online = { true },
             answerRequest = { AnalysisRequest(deaf.defaultModel, Prompt("v1", "analyze", "{}"), Recording(ByteArray(0), "audio/mp4", emptyList())) },
             gradeRequest = { GradeRequest(deaf.defaultModel, Prompt("v1", "grade", "{}"), GradeScale(emptyList()), emptyList()) },
             wake = {},

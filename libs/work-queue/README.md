@@ -15,7 +15,7 @@ val queue = WorkManagerWorkQueue(context) {
 queue.wake() // DB 에 일을 넣은 뒤 부른다
 ```
 
-`drain` 이 시간을 돌려주면 그만큼 뒤에 다시 부른다. 예외를 내면 30초 뒤에 다시 부른다. 재시도 횟수, 실패, 오프라인 판단은 앱이 DB 에서 한다.
+`drain` 이 시간을 돌려주면 그만큼 뒤에 다시 부른다. 예외를 내면 30초 뒤에 다시 부른다. 재시도 횟수와 실패는 앱이 DB 에서 정한다. `queue.online` 은 기기가 지금 연결돼 있는지 알려 준다. 앱은 연결 실패가 기기 탓인지 받는 쪽 탓인지 가를 때 읽는다.
 
 iOS 백그라운드 작업은 식별자를 `Info.plist` 의 `BGTaskSchedulerPermittedIdentifiers` 에 넣고 `UIBackgroundModes` 에 `processing` 을 더해야 한다. `IosWorkQueue` 는 앱이 실행을 마치기 전에 만든다.
 

@@ -31,6 +31,7 @@ expect fun inMemoryDatabase(): OpicDatabase
 /** 깨운 횟수만 센다. 일은 DB 의 분석 작업 표에 있어서 테스트는 [io.github.nosorae.aiopic.engine.answer.analysis.AnalysisJobs.drain] 을 직접 부른다. */
 class FakeWorkQueue : WorkQueue {
     var wakes = 0
+    override var online = true
 
     override fun wake() {
         wakes++
