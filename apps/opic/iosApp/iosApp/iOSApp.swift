@@ -65,7 +65,10 @@ final class RouteOpener {
 @available(iOS 26.0, *)
 final class ContinuedAnalysis {
     private let shell: IosShell
-    private var task: BGContinuedProcessingTask?
+    private var task: BGContinuedProcessingTask? {
+        // 진행 표시가 떠 있는 동안은 뒤로 간 앱의 30초가 끝나도 비우기를 끊지 않는다.
+        didSet { shell.continuing = task != nil }
+    }
     private var latest: AnalysisProgress?
     private var submitted = false
 

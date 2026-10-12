@@ -60,7 +60,14 @@ class IosShell {
         drain = { graph.opicStore.drainAndNotify(graph.analysisJobs::drain, visible = { UIApplication.sharedApplication.applicationState == UIApplicationState.UIApplicationStateActive }, notify = ::postOutcome) },
         scope = MainScope(),
         backgroundTask = ANALYSIS_TASK,
+        keepDraining = { continuing },
     )
+
+    /**
+     * 시스템 진행 표시(iOS 26 이상)가 떠 있는가. 앱 틀(Swift)이 진행 작업을 받으면 true, 닫으면 false 로 둔다(#229).
+     * 그동안은 앱이 깨어 있어서 뒤로 간 앱이 받는 30초 안팎이 끝나도 비우기를 이어 간다.
+     */
+    var continuing: Boolean = false
 
     // 녹음 분석 요청은 시스템이 맡아 보내서 앱을 내려도 끊기지 않는다(#216). 앱이 꺼진 사이 끝난 전송의 결과는 여기서 다시 받는다.
     private val upload = BackgroundUpload(UPLOAD_SESSION)

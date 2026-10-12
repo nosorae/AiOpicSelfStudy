@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.libs.workqueue.api
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -22,6 +23,7 @@ class IosWorkQueueTest {
     /** 받은 뒤로 시간 순서. 앱이 뒤로 가도 끝낼 시간을 받고(begin) 돌려준(end) 기록이다. */
     private val extraTime = mutableListOf<String>()
     private var expire: (() -> Unit)? = null
+    private var keepDraining = false
 
     private fun TestScope.queue() = IosWorkQueue(
         drain = {
@@ -36,6 +38,7 @@ class IosWorkQueueTest {
             expire = onExpire
             { extraTime += "end" }
         },
+        keepDraining = { keepDraining },
     ).also { runCurrent() }
 
     @Test
@@ -123,5 +126,22 @@ class IosWorkQueueTest {
 
         assertEquals(listOf(0L, 30_000L), drains)
         assertEquals(listOf("begin", "drain", "end", "begin", "drain", "end"), extraTime)
+    }
+
+    @Test
+    fun `229 시스템 진행 표시가 깨워 두는 동안은 받은 시간이 끝나도 비우기를 멈추지 않는다`() = runTest {
+        val finish = CompletableDeferred<Duration?>()
+        answers += { finish.await() }
+        keepDraining = true
+        queue()
+
+        expire!!.invoke()
+        runCurrent()
+        finish.complete(null)
+        advanceTimeBy(1.minutes)
+        runCurrent()
+
+        assertEquals(listOf(0L), drains)
+        assertEquals(listOf("begin", "drain", "end"), extraTime)
     }
 }
