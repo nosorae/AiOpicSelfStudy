@@ -42,6 +42,7 @@
     <string name="failed_invalid_key">Gemini 키가 맞지 않습니다. 설정에서 키를 다시 넣고 다시 분석하기를 누르세요.</string>
     <string name="failed_model_unavailable">고른 모델을 쓸 수 없습니다. 설정에서 다른 모델을 고르고 다시 분석하기를 누르세요.</string>
     <string name="failed_rejected">모델의 답을 읽지 못했습니다. 다시 분석하기를 누르면 한 번 더 보냅니다.</string>
+    <string name="failed_canceled">분석을 멈췄습니다. 다시 분석하기를 누르면 다시 보냅니다.</string>
     <string name="retry_analysis">다시 분석하기</string>
     <string name="answer_score">점수</string>
     <string name="answer_score_unit">점</string>

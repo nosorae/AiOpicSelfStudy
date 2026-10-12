@@ -32,4 +32,8 @@ enum class AnalysisError {
     /** 출력 검사(F5.4)를 다시 요청해도 통과하지 못했거나 그 밖의 거절이다. 다시 보내지 않는다. */
     @SerialName("rejected")
     Rejected,
+
+    /** 사용자가 시스템 진행 표시(iOS 26 이상)에서 분석을 멈췄다(#229). 다시 분석하기를 누르면 다시 보낸다. */
+    @SerialName("canceled")
+    Canceled,
 }

@@ -103,8 +103,11 @@ class AnalysisJobs(
         enqueue(JobKind.Grade, sessionId, restart = true)
     }
 
-    /** 음성 전송 동의를 철회하면 부른다(F1.3). 남은 작업을 보내지 않고 동의 없음으로 끝낸다. 답변과 녹음은 남는다. */
-    suspend fun cancelAll() = store.jobs().first().filter { it.state.active }.forEach { fail(it, AnalysisError.NoConsent) }
+    /**
+     * 남은 작업을 보내지 않고 [error] 로 끝낸다. 답변과 녹음은 남는다. 음성 전송 동의를 철회하면(F1.3) 동의 없음,
+     * 사용자가 시스템 진행 표시에서 멈추면(#229) 취소로 끝낸다.
+     */
+    suspend fun cancelAll(error: AnalysisError = AnalysisError.NoConsent) = store.jobs().first().filter { it.state.active }.forEach { fail(it, error) }
 
     /**
      * 앱을 켤 때 한 번 부른다. 진행 중으로 남은 작업(앱이 보내는 중에 죽었다)을 대기로 돌리고,

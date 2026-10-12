@@ -78,6 +78,7 @@ internal val AnalysisError.text: StringResource
         AnalysisError.InvalidKey -> Res.string.failed_invalid_key
         AnalysisError.ModelUnavailable -> Res.string.failed_model_unavailable
         AnalysisError.Rejected -> Res.string.failed_rejected
+        AnalysisError.Canceled -> Res.string.failed_canceled
     }
 
 /** 리포트 두 화면의 다시 분석하기. 누르면 바로 기다림으로 바뀌어 처리 중 표시는 두지 않는다. */

@@ -600,4 +600,16 @@ class AnalysisJobsTest {
         assertEquals(JobState.Failed, job("a2")?.state)
         assertEquals(AnswerAnalysis.Failed(AnalysisError.NoConsent), analysis("a2"))
     }
+
+    @Test
+    fun `229 시스템 진행 표시에서 취소하면 남은 작업을 취소 실패로 끝낸다`() = runTest(dispatcher) {
+        val jobs = jobs()
+        store.save(answer("a1"))
+        jobs.enqueueAnswer("a1")
+
+        jobs.cancelAll(AnalysisError.Canceled)
+
+        assertEquals(JobState.Failed, job("a1")?.state)
+        assertEquals(AnswerAnalysis.Failed(AnalysisError.Canceled), analysis("a1"))
+    }
 }
