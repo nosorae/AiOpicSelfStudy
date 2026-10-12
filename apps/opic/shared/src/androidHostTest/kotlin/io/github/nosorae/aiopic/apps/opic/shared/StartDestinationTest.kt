@@ -100,7 +100,9 @@ class StartDestinationTest {
 
         rule.setContent { OpicApp(graph, graph.startViewModel, opened = AppRoute.ReportDetail("s")) }
 
-        // Android 는 하위 화면에서 탭을 숨긴다. 리포트가 맨 위에 있다.
+        // 없는 회차라 리포트 화면이 찾지 못했다는 문구를 보인다. Android 는 하위 화면에서 탭을 숨긴다.
+        rule.onNodeWithText("회차 리포트").assertIsDisplayed()
+        rule.onNodeWithText("이 회차를 찾을 수 없습니다.").assertIsDisplayed()
         rule.onNodeWithText("기록").assertDoesNotExist()
     }
 

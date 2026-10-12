@@ -59,24 +59,27 @@ fun analysisOutcome(jobs: List<AnalysisJob>, since: Instant, sessionOf: (String)
 }
 
 /** 지금부터 시작하는 비우기의 진행. 작업 표가 바뀔 때마다 새 값을 낸다. */
-fun OpicStore.analysisProgress(since: Instant = Clock.System.now()): Flow<AnalysisProgress?> = jobs().map { analysisProgress(it, since) }.distinctUntilChanged()
+fun OpicStore.analysisProgress(since: Instant = now()): Flow<AnalysisProgress?> = jobs().map { analysisProgress(it, since) }.distinctUntilChanged()
 
 /** 기다리거나 보내는 분석 작업이 있는가. 첫 분석을 시작할 때 알림 권한을 묻는 데 쓴다. */
 fun OpicStore.analyzing(): Flow<Boolean> = jobs().map { jobs -> jobs.any { it.state.active } }.distinctUntilChanged()
 
 /**
- * 분석 작업 표를 한 번 비우고, 그 사이 끝난 작업이 있고 남은 작업이 없을 때 앱이 화면에 없으면([visible] 이 false) [notify] 로 결과를 알린다.
+ * 분석 작업 표를 [drain] 으로 한 번 비우고, 그 사이 끝난 작업이 있고 남은 작업이 없을 때 앱이 화면에 없으면([visible] 이 false) [notify] 로 결과를 알린다.
  * 플랫폼 대기열의 비우기 자리에 넣는다.
  */
-suspend fun AppGraph.drainAndNotify(visible: () -> Boolean, notify: (AnalysisOutcome) -> Unit): Duration? {
-    val since = Clock.System.now()
-    val next = analysisJobs.drain()
+suspend fun OpicStore.drainAndNotify(drain: suspend () -> Duration?, visible: () -> Boolean, notify: (AnalysisOutcome) -> Unit): Duration? {
+    val since = now()
+    val next = drain()
     if (!visible()) {
-        val sessions = opicStore.answers().first().associate { it.id to it.examSessionId }
-        analysisOutcome(opicStore.jobs().first(), since, sessions::get)?.let(notify)
+        val sessions = answers().first().associate { it.id to it.examSessionId }
+        analysisOutcome(jobs().first(), since, sessions::get)?.let(notify)
     }
     return next
 }
+
+/** 작업 표는 시각을 밀리초로 저장한다. 시작 시각도 밀리초로 잘라야 같은 밀리초에 끝난 작업을 놓치지 않는다. */
+private fun now(): Instant = Instant.fromEpochMilliseconds(Clock.System.now().toEpochMilliseconds())
 
 /** 알림에 실어 보낼 경로. 누르면 [routeFromJson] 으로 되읽는다. */
 val AnalysisOutcome.routeJson: String get() = Json.encodeToString(AppRoute.serializer(), route)

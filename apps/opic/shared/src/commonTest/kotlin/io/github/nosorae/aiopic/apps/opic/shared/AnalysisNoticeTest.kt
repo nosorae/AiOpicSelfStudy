@@ -1,11 +1,19 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import io.github.nosorae.aiopic.apps.opic.shared.data.inMemoryDatabase
 import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
+import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.JobKind
 import io.github.nosorae.aiopic.engine.answer.model.JobState
+import io.github.nosorae.aiopic.engine.answer.store.OpicStore
+import io.github.nosorae.aiopic.engine.question.model.Question
+import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.time.Clock
 import kotlin.time.Instant
 
 class AnalysisNoticeTest {
@@ -67,5 +75,36 @@ class AnalysisNoticeTest {
 
         assertEquals(outcome.route, routeFromJson(outcome.routeJson))
         assertNull(routeFromJson("not a route"))
+    }
+
+    private val db = inMemoryDatabase()
+    private val store = OpicStore(db)
+
+    @AfterTest fun close() = db.close()
+
+    /** 모의고사 회차 s1 의 답변 a1 을 분석하는 비우기. 끝나면 작업 표에 성공으로 남긴다. */
+    private suspend fun drainExamAnswer(visible: Boolean): List<AnalysisOutcome> {
+        store.save(Answer("a1", Question("q1", "Tell me.", QuestionType("description"), "home"), "s1", chunkPaths = emptyList()))
+        val notified = mutableListOf<AnalysisOutcome>()
+        val next = store.drainAndNotify(
+            drain = {
+                store.save(AnalysisJob(JobKind.Answer, "a1", JobState.Succeeded, updatedAt = Clock.System.now()))
+                null
+            },
+            visible = { visible },
+            notify = { notified += it },
+        )
+        assertNull(next)
+        return notified
+    }
+
+    @Test
+    fun `229 앱이 화면에 있으면 비우기가 끝나도 끝 알림을 띄우지 않는다`() = runTest {
+        assertEquals(emptyList(), drainExamAnswer(visible = true))
+    }
+
+    @Test
+    fun `229 앱이 화면에 없으면 비우기가 끝난 뒤 그 회차 리포트로 끝 알림을 띄운다`() = runTest {
+        assertEquals(listOf(AnalysisOutcome(AppRoute.ReportDetail("s1"), failed = false)), drainExamAnswer(visible = false))
     }
 }
