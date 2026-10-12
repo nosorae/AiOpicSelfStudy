@@ -159,7 +159,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `#230 시험 진행 안내는 서베이 최소 주제 수, 수준 수, 문항 수 범위, 시간, 재조정 위치를 시험 모양에서 읽는다`() = runTest(dispatcher) {
+    fun `시험 진행 안내는 서베이 최소 주제 수와 수준 수와 문항 수 범위와 시간과 재조정 위치를 시험 모양에서 읽는다`() = runTest(dispatcher) {
         val shaped = ExamSpec(
             timeLimit = 40.minutes,
             levelCount = 6,
