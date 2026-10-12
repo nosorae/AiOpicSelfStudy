@@ -226,8 +226,7 @@ class HomeViewModelTest {
         assertEquals(ExamOverview(minTopics = 12, levelCount = 6, minQuestions = 2, maxQuestions = 3, minutes = 40, recalibrateAfter = 2), viewModel.uiState.value.overview)
     }
 
-    private fun answer(id: String, sessionId: String?, analysis: AnswerAnalysis = AnswerAnalysis.Pending) =
-        Answer(id = id, question = Question("q", "text", QuestionType("t"), "topic"), examSessionId = sessionId, chunkPaths = emptyList(), analysis = analysis)
+    private fun answer(id: String, sessionId: String?, analysis: AnswerAnalysis = AnswerAnalysis.Pending) = Answer(id = id, question = Question("q", "text", QuestionType("t"), "topic"), examSessionId = sessionId, chunkPaths = emptyList(), analysis = analysis)
 
     private fun grade(low: String, high: String) = SessionGrade(checks = listOf(GradeCheck("1", true)), low = low, high = high, reasons = emptyList(), brokeAt = emptyList())
 }
