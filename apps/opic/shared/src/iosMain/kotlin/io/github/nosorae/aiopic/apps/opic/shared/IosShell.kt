@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.window.ComposeUIViewController
 import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
 import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.libs.debug.DebugTools
 import io.github.nosorae.aiopic.libs.debug.install
 import io.github.nosorae.aiopic.libs.haptics.api.iosHaptics
@@ -20,6 +21,7 @@ import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionPortDescription
@@ -27,10 +29,17 @@ import platform.AVFAudio.currentRoute
 import platform.Foundation.NSUserDefaults
 import platform.UIKit.UIAccessibilityIsReduceMotionEnabled
 import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationState
 import platform.UIKit.UIUserInterfaceStyle
 import platform.UIKit.UIViewController
 import platform.UIKit.UIWindow
 import platform.UIKit.UIWindowScene
+import platform.UserNotifications.UNAuthorizationOptionAlert
+import platform.UserNotifications.UNAuthorizationOptionSound
+import platform.UserNotifications.UNMutableNotificationContent
+import platform.UserNotifications.UNNotificationRequest
+import platform.UserNotifications.UNNotificationSound
+import platform.UserNotifications.UNUserNotificationCenter
 
 /**
  * iOS 앱 틀(`ContentView.swift` 의 SwiftUI TabView, NavigationStack)이 목적지마다 Compose 화면을 하나씩 얻어 간다.
@@ -46,7 +55,12 @@ class IosShell {
 
     // 대기열이 그래프보다 먼저 만들어지므로 비우기는 부를 때 그래프에서 찾는다. 대기열은 DB 의 분석 작업 표를 비우기만 하고(#205),
     // 앱이 뒤로 가면 백그라운드 처리 작업으로 이어서 비운다. 앱 틀(iOSApp)이 실행을 마치기 전에 만들어서 등록 시점을 지킨다.
-    private val workQueue = IosWorkQueue(drain = { graph.analysisJobs.drain() }, scope = MainScope(), backgroundTask = ANALYSIS_TASK)
+    // 앱이 화면에 없을 때 비우기가 끝나면 리포트 알림을 띄운다(#229).
+    private val workQueue = IosWorkQueue(
+        drain = { graph.drainAndNotify(visible = { UIApplication.sharedApplication.applicationState == UIApplicationState.UIApplicationStateActive }, notify = ::postOutcome) },
+        scope = MainScope(),
+        backgroundTask = ANALYSIS_TASK,
+    )
 
     // 녹음 분석 요청은 시스템이 맡아 보내서 앱을 내려도 끊기지 않는다(#216). 앱이 꺼진 사이 끝난 전송의 결과는 여기서 다시 받는다.
     private val upload = BackgroundUpload(UPLOAD_SESSION)
@@ -97,6 +111,25 @@ class IosShell {
         }
     }
 
+    /**
+     * 분석 진행을 [onChange] 로 넘긴다(#229). 기다리는 작업이 생길 때마다 0 부터 다시 세고, 다 끝나면 null 을 넘긴다.
+     * 앱 틀(Swift)이 iOS 26 이상에서 시스템 진행 표시에 쓴다. 첫 분석을 시작할 때 알림 권한을 묻는다. 시스템은 한 번만 묻는다.
+     */
+    fun watchProgress(onChange: (AnalysisProgress?) -> Unit) {
+        MainScope().launch {
+            graph.opicStore.analyzing().collectLatest { active ->
+                if (!active) return@collectLatest onChange(null)
+                UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(UNAuthorizationOptionAlert or UNAuthorizationOptionSound) { _, _ -> }
+                graph.opicStore.analysisProgress().collect(onChange)
+            }
+        }
+    }
+
+    /** 사용자가 시스템 진행 표시에서 분석을 멈췄다(#229). 남은 작업을 취소로 끝내고, 리포트는 다시 분석하기를 보인다. */
+    fun cancelAnalysis() {
+        MainScope().launch { graph.analysisJobs.cancelAll(AnalysisError.Canceled) }
+    }
+
     /** 앱 틀이 시스템에서 받은 백그라운드 전송 완료 처리기. 앱이 꺼진 사이 끝난 전송의 결과를 다 받으면 부른다. */
     fun whenUploadsDelivered(done: () -> Unit) = upload.whenEventsDelivered(done)
 
@@ -120,6 +153,20 @@ private const val ANALYSIS_TASK = "io.github.nosorae.aiopic.analysis"
 
 /** 녹음 분석 요청을 보내는 백그라운드 전송 세션의 이름. 앱에 하나다. */
 private const val UPLOAD_SESSION = "io.github.nosorae.aiopic.upload"
+
+/** 끝 알림의 경로를 담는 키. 앱 틀(Swift)이 알림을 누르면 이 값을 [routeFromJson] 으로 읽어 리포트를 연다. */
+const val ROUTE_KEY = "route"
+
+private fun postOutcome(outcome: AnalysisOutcome) {
+    val content = UNMutableNotificationContent().apply {
+        setTitle(outcome.title)
+        setBody(outcome.text)
+        setSound(UNNotificationSound.defaultSound)
+        setUserInfo(mapOf<Any?, Any?>(ROUTE_KEY to outcome.routeJson))
+    }
+    // ponytail: 끝 알림은 하나만 둔다. 새 결과가 앞 알림을 바꾼다. 권한이 없으면 시스템이 띄우지 않는다.
+    UNUserNotificationCenter.currentNotificationCenter().addNotificationRequest(UNNotificationRequest.requestWithIdentifier("analysis-done", content, null), null)
+}
 
 /** 앱 Swift 의 흔들기(`UIWindow.motionEnded`)가 부른다. 릴리스 빌드는 빈 모듈이라 아무 일도 안 한다. */
 fun openDebugTools() = DebugTools.open()
