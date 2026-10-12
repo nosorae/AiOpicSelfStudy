@@ -173,12 +173,15 @@ private fun SessionRow(session: PastSession, onClick: () -> Unit) {
     ) {
         when {
             session.gradeRange != null -> Text(session.gradeRange, style = MontageTheme.typography.headline2.bold, color = MontageTheme.colors.foregroundNeutralStrong)
+
             session.gradeFailed -> Text(
                 stringResource(Res.string.home_grade_failed),
                 style = MontageTheme.typography.label1.regular,
                 color = MontageTheme.colors.foregroundNegativePrimary,
             )
+
             session.noAnswers -> Unit
+
             else -> MontageGatheringDots(stringResource(Res.string.home_grade_pending), Modifier.size(width = MontageSpacing.spacing48, height = MontageSpacing.spacing24))
         }
     }
