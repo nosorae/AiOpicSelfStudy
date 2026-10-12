@@ -13,12 +13,23 @@ import kotlinx.coroutines.flow.map
  */
 @Inject
 class ObserveHomeUseCase(private val examSessionSource: ExamSessionSource, private val spec: ExamSpec) {
+    private val overview = ExamOverview(
+        minTopics = spec.steps.filterIsInstance<ExamStep.Survey>().firstOrNull()?.minTopics ?: 0,
+        levelCount = spec.levelCount,
+        minQuestions = askCount(level = 1),
+        maxQuestions = askCount(level = spec.levelCount),
+        minutes = spec.timeLimit.inWholeMinutes.toInt(),
+        recalibrateAfter = spec.steps.indexOf(ExamStep.Recalibrate).takeIf { it >= 0 }?.let { at -> spec.steps.take(at).count { it is ExamStep.Ask } },
+    )
+
+    private fun askCount(level: Int) = spec.steps.count { it is ExamStep.Ask && it.minLevel <= level }
+
     operator fun invoke(): Flow<HomeUiState> = examSessionSource.sessions().map { sessions ->
         val resume = sessions.lastOrNull { it.status == ExamStatus.InProgress }
         HomeUiState(
             resumeSessionId = resume?.id,
             resumeDone = resume?.answerIds?.size ?: 0,
-            resumeTotal = resume?.let { session -> spec.steps.count { it is ExamStep.Ask && it.minLevel <= (session.level ?: 1) } } ?: 0,
+            resumeTotal = resume?.let { askCount(it.level ?: 1) } ?: 0,
             pastSessions = sessions
                 .mapIndexed { index, session ->
                     PastSession(
@@ -30,6 +41,7 @@ class ObserveHomeUseCase(private val examSessionSource: ExamSessionSource, priva
                 }
                 .filterNotNull()
                 .asReversed(),
+            overview = overview,
         )
     }
 }

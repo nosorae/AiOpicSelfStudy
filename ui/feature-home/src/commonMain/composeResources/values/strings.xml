@@ -8,9 +8,19 @@
     <string name="home_start_new_cancel">취소</string>
     <string name="home_resume_exam">이어 보기</string>
     <string name="home_resume_progress">%1$d문항 중 %2$d문항을 마쳤습니다</string>
-    <string name="home_review">다시 보기</string>
-    <string name="home_review_session">%1$d회차 리포트, %2$s</string>
-    <string name="home_past_sessions_empty">아직 마친 회차가 없습니다. 모의고사를 마치면 여기서 리포트를 다시 볼 수 있습니다.</string>
-    <string name="home_grade_pending">분석 중</string>
+    <string name="home_resume_title">진행 중인 회차</string>
+    <string name="home_overview_title">시험 진행</string>
+    <string name="home_overview_survey">서베이</string>
+    <string name="home_overview_survey_caption">관심 주제를 %1$d개 이상 고릅니다</string>
+    <string name="home_overview_level">난이도 선택</string>
+    <string name="home_overview_level_caption">1~%1$d 가운데 지금 실력에 맞는 단계를 고릅니다</string>
+    <string name="home_overview_questions">%1$d~%2$d문항 답하기</string>
+    <string name="home_overview_questions_fixed">%1$d문항 답하기</string>
+    <string name="home_overview_questions_caption">질문은 소리로만 나옵니다. %1$d분 안에 답합니다</string>
+    <string name="home_overview_questions_recalibrate">질문은 소리로만 나옵니다. %1$d분 안에 답하고, %2$d번을 마치면 난이도를 다시 고릅니다</string>
+    <string name="home_recent_title">최근 회차</string>
+    <string name="home_session">모의고사 %1$d회차</string>
+    <string name="home_grade_pending">예상 등급을 내고 있습니다</string>
     <string name="home_time_up">시간 부족</string>
+    <string name="home_past_sessions_empty">아직 마친 회차가 없습니다. 모의고사를 마치면 예상 등급과 리포트를 여기서 다시 볼 수 있습니다.</string>
 </resources>

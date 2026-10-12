@@ -8,7 +8,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** 상태마다 라이트 한 장, 지난 회차가 있는 상태는 다크와 글자 200% 도 찍는다. 입력은 미리보기와 같은 [HomeSamples] 다. */
+/**
+ * 세 상태(마친 회차 없음, 진행 중 회차 있음, 마친 회차 있음)를 라이트, 다크, 글자 200% 로 찍는다(#230). 로딩은 라이트 한 장이다.
+ * 입력은 미리보기와 같은 [HomeSamples] 다.
+ */
 @RunWith(AndroidJUnit4::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35], qualifiers = "w360dp-h640dp-xhdpi")
@@ -17,7 +20,19 @@ class HomeScreenshotTest {
 
     @Test fun empty() = shot(HomeSamples.empty)
 
+    @Test fun empty_dark() = shot(HomeSamples.empty, dark = true)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun empty_fontScale200() = shot(HomeSamples.empty)
+
     @Test fun finished() = shot(HomeSamples.finished)
+
+    @Test fun finished_dark() = shot(HomeSamples.finished, dark = true)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun finished_fontScale200() = shot(HomeSamples.finished)
 
     @Test fun history() = shot(HomeSamples.history)
 

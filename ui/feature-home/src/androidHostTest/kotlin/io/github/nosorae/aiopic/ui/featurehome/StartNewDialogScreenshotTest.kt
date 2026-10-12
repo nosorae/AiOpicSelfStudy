@@ -28,9 +28,11 @@ class StartNewDialogScreenshotTest {
     fun startNew_fontScale200() = open()
 
     private fun open(dark: Boolean = false) {
+        // 등급을 기다리는 줄의 물결이 끝없이 돌아서 시계를 손으로 넘긴다.
+        rule.mainClock.autoAdvance = false
         rule.setContent { MontageTheme(darkTheme = dark) { HomeScreen(state = HomeSamples.history, onExamClick = {}, onSessionClick = {}) } }
         rule.onNodeWithTag("exam-start").performClick()
-        rule.waitForIdle()
+        rule.mainClock.advanceTimeBy(1_000L)
         captureScreenRoboImage()
     }
 }
