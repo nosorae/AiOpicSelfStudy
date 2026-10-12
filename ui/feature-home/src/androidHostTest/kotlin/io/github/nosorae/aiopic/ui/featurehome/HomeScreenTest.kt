@@ -130,6 +130,22 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `등급을 못 낸 회차와 답 없이 끝난 회차에는 기다림 물결이 없다`() {
+        show(
+            HomeUiState(
+                pastSessions = listOf(
+                    PastSession(id = "b", number = 2, gradeRange = null, timeUp = false, gradeFailed = true),
+                    PastSession(id = "a", number = 1, gradeRange = null, timeUp = false, noAnswers = true),
+                ),
+            ),
+        )
+
+        rule.onNodeWithText("등급 실패").assertExists()
+        rule.onNodeWithContentDescription("예상 등급을 내고 있습니다").assertDoesNotExist()
+        rule.onNodeWithText("예상 등급을 내고 있습니다").assertDoesNotExist()
+    }
+
+    @Test
     fun `F3 이어 볼 회차가 있으면 몇 문항을 마쳤는지 보인다`() {
         show(HomeSamples.history)
 

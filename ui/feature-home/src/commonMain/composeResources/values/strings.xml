@@ -22,5 +22,6 @@
     <string name="home_session">모의고사 %1$d회차</string>
     <string name="home_grade_pending">예상 등급을 내고 있습니다</string>
     <string name="home_time_up">시간 부족</string>
+    <string name="home_grade_failed">등급 실패</string>
     <string name="home_past_sessions_empty">아직 마친 회차가 없습니다. 모의고사를 마치면 예상 등급과 리포트를 여기서 다시 볼 수 있습니다.</string>
 </resources>

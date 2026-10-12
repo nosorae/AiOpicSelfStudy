@@ -26,6 +26,10 @@ data class PastSession(
     val gradeRange: String?,
     /** 시간이 다 돼 끝났다(F2.6). */
     val timeUp: Boolean,
+    /** 등급을 요청했지만 받지 못했다(#203). 기다릴 것이 없어 물결 대신 실패를 보인다. */
+    val gradeFailed: Boolean = false,
+    /** 답한 문항 없이 끝났다. 낼 등급이 없어 오른쪽을 비운다. */
+    val noAnswers: Boolean = false,
 )
 
 /** 시험이 어떻게 진행되는지. 화면은 시험 팩을 모르므로 시험 모양([io.github.nosorae.aiopic.engine.session.model.ExamSpec])에서 숫자만 옮겨 온다. */

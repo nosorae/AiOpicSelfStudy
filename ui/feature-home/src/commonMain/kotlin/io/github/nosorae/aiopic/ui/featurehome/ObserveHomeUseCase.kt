@@ -37,6 +37,8 @@ class ObserveHomeUseCase(private val examSessionSource: ExamSessionSource, priva
                         number = index + 1,
                         gradeRange = session.grade?.let { if (it.low == it.high) it.low else "${it.low}~${it.high}" },
                         timeUp = session.status == ExamStatus.TimeUp,
+                        gradeFailed = session.gradeError != null,
+                        noAnswers = session.answerIds.isEmpty(),
                     ).takeIf { session.status == ExamStatus.Finished || session.status == ExamStatus.TimeUp }
                 }
                 .filterNotNull()

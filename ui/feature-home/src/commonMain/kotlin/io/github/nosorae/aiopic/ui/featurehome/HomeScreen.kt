@@ -153,10 +153,13 @@ private fun Overview(overview: ExamOverview) {
     )
 }
 
-/** 기록 탭의 회차 줄과 같은 모양이다. 등급이 나왔으면 오른쪽에 크게, 기다리는 중이면 작은 물결과 무엇이 나오는지를 보인다. */
+/**
+ * 기록 탭의 회차 줄과 같은 모양이다. 등급이 나왔으면 오른쪽에 크게, 등급을 못 냈으면 실패를, 답 없이 끝났으면 아무것도 보이지 않는다.
+ * 실제로 등급을 기다리는 회차만 작은 물결과 무엇이 나오는지를 보인다.
+ */
 @Composable
 private fun SessionRow(session: PastSession, onClick: () -> Unit) {
-    val pending = session.gradeRange == null
+    val pending = session.gradeRange == null && !session.gradeFailed && !session.noAnswers
     MontageListCell(
         title = stringResource(Res.string.home_session, session.number),
         caption = when {
@@ -168,10 +171,15 @@ private fun SessionRow(session: PastSession, onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.testTag("exam-review"),
     ) {
-        if (pending) {
-            MontageGatheringDots(stringResource(Res.string.home_grade_pending), Modifier.size(width = MontageSpacing.spacing48, height = MontageSpacing.spacing24))
-        } else {
-            Text(session.gradeRange.orEmpty(), style = MontageTheme.typography.headline2.bold, color = MontageTheme.colors.foregroundNeutralStrong)
+        when {
+            session.gradeRange != null -> Text(session.gradeRange, style = MontageTheme.typography.headline2.bold, color = MontageTheme.colors.foregroundNeutralStrong)
+            session.gradeFailed -> Text(
+                stringResource(Res.string.home_grade_failed),
+                style = MontageTheme.typography.label1.regular,
+                color = MontageTheme.colors.foregroundNegativePrimary,
+            )
+            session.noAnswers -> Unit
+            else -> MontageGatheringDots(stringResource(Res.string.home_grade_pending), Modifier.size(width = MontageSpacing.spacing48, height = MontageSpacing.spacing24))
         }
     }
 }

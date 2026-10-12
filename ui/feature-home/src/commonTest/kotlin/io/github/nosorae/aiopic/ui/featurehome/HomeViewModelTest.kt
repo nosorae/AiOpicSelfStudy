@@ -1,6 +1,7 @@
 package io.github.nosorae.aiopic.ui.featurehome
 
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
@@ -106,6 +107,22 @@ class HomeViewModelTest {
         val viewModel = loadedViewModel()
 
         assertEquals("IM2~IH", viewModel.uiState.value.pastSessions?.single()?.gradeRange)
+    }
+
+    @Test
+    fun `등급을 못 낸 회차와 답 없이 끝난 회차는 기다리는 회차와 구분된다`() = runTest(dispatcher) {
+        sessions.value = listOf(
+            ExamSession(id = "a", status = ExamStatus.Finished, answerIds = listOf("x"), gradeError = AnalysisError.InvalidKey),
+            ExamSession(id = "b", status = ExamStatus.TimeUp),
+            ExamSession(id = "c", status = ExamStatus.Finished, answerIds = listOf("y")),
+        )
+
+        val viewModel = loadedViewModel()
+
+        assertEquals(
+            listOf(Triple("c", false, false), Triple("b", false, true), Triple("a", true, false)),
+            viewModel.uiState.value.pastSessions?.map { Triple(it.id, it.gradeFailed, it.noAnswers) },
+        )
     }
 
     @Test
