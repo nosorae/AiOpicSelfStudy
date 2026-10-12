@@ -60,4 +60,12 @@ class AnalysisNoticeTest {
         assertNull(analysisOutcome(listOf(job("a1", JobState.Succeeded, at = 1_001), job("a2", JobState.RetryScheduled, at = 1_002)), start) { null })
         assertNull(analysisOutcome(listOf(job("a1", JobState.Succeeded, at = 10)), start) { null })
     }
+
+    @Test
+    fun `229 알림에 실은 경로를 되읽고 읽지 못하는 값은 버린다`() {
+        val outcome = AnalysisOutcome(AppRoute.ReportDetail("s1"), failed = false)
+
+        assertEquals(outcome.route, routeFromJson(outcome.routeJson))
+        assertNull(routeFromJson("not a route"))
+    }
 }

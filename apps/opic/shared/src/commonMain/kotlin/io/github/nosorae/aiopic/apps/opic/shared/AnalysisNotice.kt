@@ -3,6 +3,14 @@ package io.github.nosorae.aiopic.apps.opic.shared
 import io.github.nosorae.aiopic.engine.answer.model.AnalysisJob
 import io.github.nosorae.aiopic.engine.answer.model.JobKind
 import io.github.nosorae.aiopic.engine.answer.model.JobState
+import io.github.nosorae.aiopic.engine.answer.store.OpicStore
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
+import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Instant
 
 /**
@@ -49,3 +57,29 @@ fun analysisOutcome(jobs: List<AnalysisJob>, since: Instant, sessionOf: (String)
     }
     return AnalysisOutcome(route, failed = job.state == JobState.Failed)
 }
+
+/** 지금부터 시작하는 비우기의 진행. 작업 표가 바뀔 때마다 새 값을 낸다. */
+fun OpicStore.analysisProgress(since: Instant = Clock.System.now()): Flow<AnalysisProgress?> = jobs().map { analysisProgress(it, since) }.distinctUntilChanged()
+
+/** 기다리거나 보내는 분석 작업이 있는가. 첫 분석을 시작할 때 알림 권한을 묻는 데 쓴다. */
+fun OpicStore.analyzing(): Flow<Boolean> = jobs().map { jobs -> jobs.any { it.state.active } }.distinctUntilChanged()
+
+/**
+ * 분석 작업 표를 한 번 비우고, 그 사이 끝난 작업이 있고 남은 작업이 없을 때 앱이 화면에 없으면([visible] 이 false) [notify] 로 결과를 알린다.
+ * 플랫폼 대기열의 비우기 자리에 넣는다.
+ */
+suspend fun AppGraph.drainAndNotify(visible: () -> Boolean, notify: (AnalysisOutcome) -> Unit): Duration? {
+    val since = Clock.System.now()
+    val next = analysisJobs.drain()
+    if (!visible()) {
+        val sessions = opicStore.answers().first().associate { it.id to it.examSessionId }
+        analysisOutcome(opicStore.jobs().first(), since, sessions::get)?.let(notify)
+    }
+    return next
+}
+
+/** 알림에 실어 보낼 경로. 누르면 [routeFromJson] 으로 되읽는다. */
+val AnalysisOutcome.routeJson: String get() = Json.encodeToString(AppRoute.serializer(), route)
+
+/** 알림에서 받은 경로. 앱 밖에서 온 값이라 읽지 못하면 null 이다. */
+fun routeFromJson(json: String): AppRoute? = runCatching { Json.decodeFromString(AppRoute.serializer(), json) }.getOrNull()

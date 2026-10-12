@@ -1,13 +1,18 @@
 package io.github.nosorae.aiopic.apps.opic.shared
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -46,8 +51,10 @@ import io.github.nosorae.aiopic.ui.design.icon_normal_calendar
 import io.github.nosorae.aiopic.ui.design.icon_normal_document_text
 import io.github.nosorae.aiopic.ui.design.icon_normal_microphone
 import io.github.nosorae.aiopic.ui.design.icon_normal_setting
+import io.github.nosorae.aiopic.ui.featureonboarding.start.StartDestination
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartUiState
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.painterResource
 
@@ -55,14 +62,30 @@ import org.jetbrains.compose.resources.painterResource
  * 시작 분기(S0, F1.0)를 마친 Android 앱. [start] 가 첫 화면을 정하기 전에는 아무것도 그리지 않는다.
  * 그동안 MainActivity 가 같은 [start] 의 [StartUiState.keepSplash] 로 시스템 스플래시를 잡아 둔다.
  * 화면이 쓰는 진동은 이 화면의 View 로 내고, 설정에서 끄면 내지 않는다.
+ * [opened] 는 분석 끝 알림을 눌러 연 리포트다(#229). 모의고사 탭에서 시작할 때만 그 위에 쌓는다.
  */
 @Composable
-fun OpicApp(graph: AppGraph, start: StartViewModel) {
+fun OpicApp(graph: AppGraph, start: StartViewModel, opened: AppRoute? = null) {
     val state by start.uiState.collectAsState()
     val view = LocalView.current
     val haptics = remember(view) { graph.settings.haptics(androidHaptics(view)) }
+    AskNotificationsOnFirstAnalysis(graph)
     CompositionLocalProvider(LocalHaptics provides haptics) {
-        state.destination?.let { AppShell(graph, startStack = listOf(AppRoute.start(it))) }
+        state.destination?.let { AppShell(graph, startStack = listOfNotNull(AppRoute.start(it), opened.takeIf { _ -> it == StartDestination.Home })) }
+    }
+}
+
+/** Android 13 이상에서 첫 분석을 시작할 때 알림 권한을 한 번 묻는다(#229). 거절해도 분석은 그대로 돌고 다시 묻지 않는다. */
+@Composable
+private fun AskNotificationsOnFirstAnalysis(graph: AppGraph) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+    val context = LocalContext.current
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
+    LaunchedEffect(graph) {
+        if (graph.settings.notificationsAsked) return@LaunchedEffect
+        graph.opicStore.analyzing().first { it }
+        graph.settings.notificationsAsked = true
+        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) ask.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 }
 

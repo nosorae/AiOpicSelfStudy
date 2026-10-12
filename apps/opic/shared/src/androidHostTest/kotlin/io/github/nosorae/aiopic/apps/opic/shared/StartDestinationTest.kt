@@ -92,4 +92,24 @@ class StartDestinationTest {
         assertFalse(startViewModel.uiState.value.keepSplash)
         rule.onNodeWithText("키 확인하고 저장").assertIsDisplayed()
     }
+
+    @Test
+    fun `229 끝 알림으로 열면 모의고사 탭 위에 그 리포트를 쌓는다`() {
+        runBlocking { settings.give() }
+        val graph = testAppGraph(settings, savedKey())
+
+        rule.setContent { OpicApp(graph, graph.startViewModel, opened = AppRoute.ReportDetail("s")) }
+
+        // Android 는 하위 화면에서 탭을 숨긴다. 리포트가 맨 위에 있다.
+        rule.onNodeWithText("기록").assertDoesNotExist()
+    }
+
+    @Test
+    fun `229 키가 없으면 끝 알림으로 열어도 키 입력에서 시작한다`() {
+        val graph = testAppGraph(settings, FakeKeyVault())
+
+        rule.setContent { OpicApp(graph, graph.startViewModel, opened = AppRoute.ReportDetail("s")) }
+
+        rule.onNodeWithText("키 확인하고 저장").assertIsDisplayed()
+    }
 }
