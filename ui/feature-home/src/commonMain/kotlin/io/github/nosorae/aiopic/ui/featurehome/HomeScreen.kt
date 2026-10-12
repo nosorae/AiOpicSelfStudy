@@ -2,6 +2,7 @@ package io.github.nosorae.aiopic.ui.featurehome
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,6 +15,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
@@ -154,12 +156,12 @@ private fun Overview(overview: ExamOverview) {
 }
 
 /**
- * 기록 탭의 회차 줄과 같은 모양이다. 등급이 나왔으면 오른쪽에 크게, 등급을 못 냈으면 실패를, 답 없이 끝났으면 아무것도 보이지 않는다.
- * 실제로 등급을 기다리는 회차만 작은 물결과 무엇이 나오는지를 보인다.
+ * 기록 탭의 회차 줄과 같은 분기다. 등급이 나왔으면 오른쪽에 크게, 등급을 못 냈으면 실패를, 답 없이 끝났으면 아무것도 보이지 않는다.
+ * 등급을 기다리는 회차는 기록 탭과 같은 진행 글자("분석 4/7", 다 끝났으면 "등급 내는 중") 옆에 작은 물결을 두고, 아래에 무엇이 나오는지를 보인다.
  */
 @Composable
 private fun SessionRow(session: PastSession, onClick: () -> Unit) {
-    val pending = session.gradeRange == null && !session.gradeFailed && !session.noAnswers
+    val pending = session.gradeRange == null && !session.gradeFailed && session.answered > 0
     MontageListCell(
         title = stringResource(Res.string.home_session, session.number),
         caption = when {
@@ -180,9 +182,20 @@ private fun SessionRow(session: PastSession, onClick: () -> Unit) {
                 color = MontageTheme.colors.foregroundNegativePrimary,
             )
 
-            session.noAnswers -> Unit
+            session.answered == 0 -> Unit
 
-            else -> MontageGatheringDots(stringResource(Res.string.home_grade_pending), Modifier.size(width = MontageSpacing.spacing48, height = MontageSpacing.spacing24))
+            else -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MontageSpacing.spacing8)) {
+                MontageGatheringDots(stringResource(Res.string.home_grade_pending), Modifier.size(width = MontageSpacing.spacing48, height = MontageSpacing.spacing24))
+                Text(
+                    if (session.analyzed < session.answered) {
+                        stringResource(Res.string.home_grade_waiting, session.analyzed, session.answered)
+                    } else {
+                        stringResource(Res.string.home_grade_grading)
+                    },
+                    style = MontageTheme.typography.label1.regular,
+                    color = MontageTheme.colors.foregroundNeutralSecondary,
+                )
+            }
         }
     }
 }
@@ -222,7 +235,7 @@ internal object HomeSamples {
         resumeDone = 4,
         resumeTotal = 15,
         pastSessions = listOf(
-            PastSession(id = "c", number = 4, gradeRange = null, timeUp = false),
+            PastSession(id = "c", number = 4, gradeRange = null, timeUp = false, answered = 7, analyzed = 4),
             PastSession(id = "b", number = 3, gradeRange = "IM2~IH", timeUp = true),
             PastSession(id = "a", number = 2, gradeRange = "IM1", timeUp = false),
             PastSession(id = "z", number = 1, gradeRange = "IL", timeUp = false),

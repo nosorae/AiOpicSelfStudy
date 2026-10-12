@@ -28,8 +28,9 @@ data class PastSession(
     val timeUp: Boolean,
     /** 등급을 요청했지만 받지 못했다(#203). 기다릴 것이 없어 물결 대신 실패를 보인다. */
     val gradeFailed: Boolean = false,
-    /** 답한 문항 없이 끝났다. 낼 등급이 없어 오른쪽을 비운다. */
-    val noAnswers: Boolean = false,
+    /** 이 회차에서 답한 문항 수와 그중 분석이 끝난 수. 등급을 기다리는 동안 기록 탭처럼 "분석 4/7" 로 보이고, 답한 문항이 없으면 낼 등급이 없어 오른쪽을 비운다. */
+    val answered: Int = 0,
+    val analyzed: Int = 0,
 )
 
 /** 시험이 어떻게 진행되는지. 화면은 시험 팩을 모르므로 시험 모양([io.github.nosorae.aiopic.engine.session.model.ExamSpec])에서 숫자만 옮겨 온다. */

@@ -134,8 +134,8 @@ class HomeScreenTest {
         show(
             HomeUiState(
                 pastSessions = listOf(
-                    PastSession(id = "b", number = 2, gradeRange = null, timeUp = false, gradeFailed = true),
-                    PastSession(id = "a", number = 1, gradeRange = null, timeUp = false, noAnswers = true),
+                    PastSession(id = "b", number = 2, gradeRange = null, timeUp = false, gradeFailed = true, answered = 3),
+                    PastSession(id = "a", number = 1, gradeRange = null, timeUp = false),
                 ),
             ),
         )
@@ -143,6 +143,22 @@ class HomeScreenTest {
         rule.onNodeWithText("등급 실패").assertExists()
         rule.onNodeWithContentDescription("예상 등급을 내고 있습니다").assertDoesNotExist()
         rule.onNodeWithText("예상 등급을 내고 있습니다").assertDoesNotExist()
+    }
+
+    @Test
+    fun `등급을 기다리는 회차는 기록 탭과 같이 분석이 몇 개 끝났는지 보이고 다 끝나면 등급을 내는 중이라고 보인다`() {
+        show(
+            HomeUiState(
+                pastSessions = listOf(
+                    PastSession(id = "b", number = 2, gradeRange = null, timeUp = false, answered = 7, analyzed = 4),
+                    PastSession(id = "a", number = 1, gradeRange = null, timeUp = false, answered = 5, analyzed = 5),
+                ),
+            ),
+        )
+
+        rule.onNodeWithText("분석 4/7").assertExists()
+        rule.onNodeWithText("등급 내는 중").assertExists()
+        assertEquals(2, rule.onAllNodesWithText("예상 등급을 내고 있습니다", substring = true).fetchSemanticsNodes().size)
     }
 
     @Test
