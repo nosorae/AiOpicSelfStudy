@@ -43,6 +43,8 @@ import kotlin.time.DurationUnit
  *
  * 비우는 동안은 [extraTime] 으로 앱이 뒤로 가도 끝낼 시간을 받아 둔다(#216). 보내던 요청이 앱을 내리자마자 끊기지 않는다.
  * 받은 시간이 끝나면 비우기를 멈추고 [RETRY_AFTER_ERROR] 뒤에 다시 비운다. 보내던 작업은 DB 에서 대기로 돌아간다.
+ * 다만 [keepDraining] 이 true 면(시스템 진행 표시가 앱을 깨워 두는 동안, #229) 받은 시간만 돌려주고 비우기는 그대로 둔다.
+ * 진행 표시는 계속 도는데 비우기만 멈췄다 다시 도는 일이 없게 한다.
  */
 public class IosWorkQueue(
     private val drain: Drain,
@@ -51,6 +53,8 @@ public class IosWorkQueue(
     private val backgroundTask: String? = null,
     /** 앱이 뒤로 가도 끝낼 시간을 받는다. 시간이 끝나면 받은 함수를 부르고, 돌려준 함수로 시간을 돌려준다. */
     private val extraTime: (onExpire: () -> Unit) -> (() -> Unit) = ::backgroundTime,
+    /** 받은 시간이 끝나도 비우기를 이어 가도 되는가. 앱이 다른 방법으로 깨어 있는 동안 true 다. */
+    private val keepDraining: () -> Boolean = { false },
 ) : WorkQueue {
     private val wakes = Channel<Unit>(Channel.CONFLATED)
     override var online: Boolean = false
@@ -88,7 +92,7 @@ public class IosWorkQueue(
                 RETRY_AFTER_ERROR
             }
         }
-        val end = extraTime { work.cancel() }
+        val end = extraTime { if (!keepDraining()) work.cancel() }
         try {
             work.await()
         } catch (e: CancellationException) {

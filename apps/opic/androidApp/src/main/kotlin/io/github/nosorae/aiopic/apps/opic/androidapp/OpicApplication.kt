@@ -4,10 +4,12 @@ import android.app.Application
 import android.media.AudioManager
 import io.github.nosorae.aiopic.apps.opic.shared.AppGraph
 import io.github.nosorae.aiopic.apps.opic.shared.AppSettings
+import io.github.nosorae.aiopic.apps.opic.shared.analysisProgress
 import io.github.nosorae.aiopic.apps.opic.shared.createAppGraph
 import io.github.nosorae.aiopic.apps.opic.shared.data.opicDatabase
 import io.github.nosorae.aiopic.apps.opic.shared.data.recordingsRoot
 import io.github.nosorae.aiopic.apps.opic.shared.debugGeminiClient
+import io.github.nosorae.aiopic.apps.opic.shared.drainAndNotify
 import io.github.nosorae.aiopic.apps.opic.shared.registerDebugPanels
 import io.github.nosorae.aiopic.apps.opic.shared.withDebugTools
 import io.github.nosorae.aiopic.libs.debug.DebugTools
@@ -18,6 +20,7 @@ import io.github.nosorae.aiopic.libs.recorder.api.AndroidRecorder
 import io.github.nosorae.aiopic.libs.tts.AndroidTts
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkManagerWorkQueue
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -34,7 +37,13 @@ open class OpicApplication : Application() {
         DebugTools.install(this)
         val prefs = getSharedPreferences("settings", MODE_PRIVATE)
         // 대기열이 그래프보다 먼저 만들어지므로 비우기는 부를 때 그래프에서 찾는다. 대기열은 DB 의 분석 작업 표를 비우기만 한다(#205).
-        val workQueue = WorkManagerWorkQueue(this) { graph.analysisJobs.drain() }
+        // 비우는 동안은 진행 알림을 달고, 앱이 화면에 없을 때 끝나면 리포트 알림을 띄운다(#229).
+        AnalysisNotifications.createChannels(this)
+        val workQueue = WorkManagerWorkQueue(
+            context = this,
+            drain = { graph.opicStore.drainAndNotify(graph.clock, graph.analysisJobs::drain, AnalysisNotifications::appVisible) { AnalysisNotifications.notify(this, it) } },
+            progress = { graph.opicStore.analysisProgress(graph.clock).map { progress -> progress?.let { AnalysisNotifications.progress(this, it) } } },
+        )
         graph = createAppGraph(
             settings = AppSettings(read = { prefs.getString(it, null) }, write = { key, value -> prefs.edit().putString(key, value).apply() }),
             keyVault = KeystoreKeyVault(this),

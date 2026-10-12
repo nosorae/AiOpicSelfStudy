@@ -92,4 +92,26 @@ class StartDestinationTest {
         assertFalse(startViewModel.uiState.value.keepSplash)
         rule.onNodeWithText("키 확인하고 저장").assertIsDisplayed()
     }
+
+    @Test
+    fun `229 끝 알림으로 열면 모의고사 탭 위에 그 리포트를 쌓는다`() {
+        runBlocking { settings.give() }
+        val graph = testAppGraph(settings, savedKey())
+
+        rule.setContent { OpicApp(graph, graph.startViewModel, opened = AppRoute.ReportDetail("s")) }
+
+        // 없는 회차라 리포트 화면이 찾지 못했다는 문구를 보인다. Android 는 하위 화면에서 탭을 숨긴다.
+        rule.onNodeWithText("회차 리포트").assertIsDisplayed()
+        rule.onNodeWithText("이 회차를 찾을 수 없습니다.").assertIsDisplayed()
+        rule.onNodeWithText("기록").assertDoesNotExist()
+    }
+
+    @Test
+    fun `229 키가 없으면 끝 알림으로 열어도 키 입력에서 시작한다`() {
+        val graph = testAppGraph(settings, FakeKeyVault())
+
+        rule.setContent { OpicApp(graph, graph.startViewModel, opened = AppRoute.ReportDetail("s")) }
+
+        rule.onNodeWithText("키 확인하고 저장").assertIsDisplayed()
+    }
 }

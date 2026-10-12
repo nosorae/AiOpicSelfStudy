@@ -5,6 +5,7 @@
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>io.github.nosorae.aiopic.analysis</string>
+		<string>io.github.nosorae.aiopic.progress.*</string>
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>

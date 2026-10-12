@@ -1,16 +1,22 @@
 package io.github.nosorae.aiopic.libs.workqueue.api
 
+import android.app.Notification
 import android.content.Context
+import android.os.Looper
 import androidx.work.Configuration
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.impl.foreground.SystemForegroundService
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
 import kotlin.time.Duration
@@ -94,5 +100,27 @@ class WorkManagerWorkQueueTest {
         // 깨운 두 번이 차례로 돌고, 뒤 작업이 있던 첫 번째는 다시 비우기를 넣지 않는다.
         assertEquals(2, drains)
         assertEquals(1, works().size)
+    }
+
+    @Test
+    fun `229 비우는 동안 진행 알림을 주면 포그라운드 서비스로 돌린다`() {
+        val notification = Notification.Builder(context, "test").setSmallIcon(android.R.drawable.ic_popup_sync).build()
+        // 비우기가 알림을 다는 동안 끝나지 않게 잠깐 걸린다.
+        WorkManagerWorkQueue(context, {
+            delay(500).also { drains++ }
+            null
+        }) { flowOf(notification) }.wake()
+
+        runPending()
+        // 이 비우기는 다른 스레드에서 끝난다. 메인 스레드로 넘어온 서비스 시작을 처리하며 기다린다.
+        repeat(100) {
+            if (drains == 0) {
+                Thread.sleep(20)
+                shadowOf(Looper.getMainLooper()).idle()
+            }
+        }
+
+        assertEquals(1, drains)
+        assertEquals(SystemForegroundService::class.java.name, shadowOf(RuntimeEnvironment.getApplication()).nextStartedService?.component?.className)
     }
 }

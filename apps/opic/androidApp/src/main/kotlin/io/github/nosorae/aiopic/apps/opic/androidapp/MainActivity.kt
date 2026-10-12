@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.nosorae.aiopic.apps.opic.shared.OpicApp
+import io.github.nosorae.aiopic.apps.opic.shared.routeFromJson
 import io.github.nosorae.aiopic.ui.featureonboarding.start.StartViewModel
 
 class MainActivity : ComponentActivity() {
@@ -22,6 +23,8 @@ class MainActivity : ComponentActivity() {
         // 화면을 돌려도 분기를 다시 하지 않게 Activity 의 ViewModel 로 둔다.
         val start = ViewModelProvider(this, viewModelFactory { initializer { graph.startViewModel } })[StartViewModel::class]
         splash.setKeepOnScreenCondition { start.uiState.value.keepSplash }
-        setContent { OpicApp(graph, start) }
+        // 분석 끝 알림을 눌러 열었으면 그 리포트를 시작 화면 위에 쌓는다(#229).
+        val opened = intent.getStringExtra(AnalysisNotifications.ROUTE)?.let(::routeFromJson)
+        setContent { OpicApp(graph, start, opened) }
     }
 }

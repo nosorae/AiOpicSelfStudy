@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 기기가 지금 연결돼 있는지 읽으려면 네트워크 상태 권한이 있어야 한다. 이 라이브러리를 쓰는 앱 매니페스트에 합쳐진다. -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 기기가 인터넷에 닿는지 읽는다(WorkQueue.online). -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 분석 작업을 비우는 동안 진행 알림을 단 데이터 동기화 포그라운드 서비스로 돈다(#229). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <application>
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
+    </application>
 </manifest>

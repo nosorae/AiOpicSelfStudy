@@ -153,6 +153,11 @@ interface AppGraph {
     /** 디버깅 화면의 DB 패널이 읽는다. */
     val opicStore: OpicStore
 
+    /** 분석 작업 표와 앱 밖 진행, 끝 알림이 같은 시계로 시각을 잰다(#229). */
+    val clock: Clock
+
+    @Provides fun clock(): Clock = Clock.System
+
     @Provides fun voiceConsent(settings: AppSettings): VoiceConsent = settings
 
     @Provides fun provideThemeModeStore(settings: AppSettings): ThemeModeStore = settings
@@ -282,7 +287,7 @@ interface AppGraph {
 
     @SingleIn(AppScope::class)
     @Provides
-    fun analysisJobs(store: OpicStore, queue: WorkQueue, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder): AnalysisJobs = analysisJobs(
+    fun analysisJobs(store: OpicStore, queue: WorkQueue, client: GeminiClient, keyVault: KeyVault, settings: AppSettings, recorder: Recorder, clock: Clock): AnalysisJobs = analysisJobs(
         store = store,
         queue = queue,
         client = client,
@@ -290,6 +295,7 @@ interface AppGraph {
         settings = settings,
         answerRequest = { answer, model -> analysisRequest(answer, model, recorder) },
         gradeRequest = { answers, model -> gradeRequest(answers, model, recorder) },
+        clock = clock,
     )
 
     @DependencyGraph.Factory

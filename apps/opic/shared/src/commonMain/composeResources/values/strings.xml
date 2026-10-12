@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 앱 밖 분석 진행과 끝 알림(#229) -->
+    <string name="analysis_progress_title">답변을 분석하고 있어요</string>
+    <string name="analysis_progress_text">%1$d개 중 %2$d개 끝. 문법 교정과 한 단계 위 표현이 곧 나와요</string>
+    <string name="analysis_ready_title">리포트가 준비됐어요</string>
+    <string name="analysis_ready_text">문법 교정과 한 단계 위 표현을 볼 수 있어요</string>
+    <string name="analysis_failed_title">분석하지 못했어요</string>
+    <string name="analysis_failed_text">리포트에서 이유를 보고 다시 분석할 수 있어요</string>
+</resources>

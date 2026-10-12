@@ -55,6 +55,8 @@ dependencies {
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation(libs.compose.uiTestJunit4)
     androidTestImplementation(libs.ktor.client.mock)
+    // 알림창을 열고 알림을 누르는 시나리오 테스트(#229). 앱 밖 화면이라 Compose 테스트로는 닿지 않는다.
+    androidTestImplementation(libs.androidx.test.uiautomator)
     androidTestUtil(libs.androidx.test.orchestrator)
 }
 

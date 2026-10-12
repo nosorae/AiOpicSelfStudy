@@ -154,4 +154,4 @@ sealed interface DomainResult<out T> {
 
 녹음, 키 보관, 음성 합성, 진동, 대기열은 commonMain 인터페이스 + 플랫폼 구현 클래스로 둔다. `expect class` 를 쓰지 않는다. Activity 가 필요한 기능은 `@Composable rememberXxx()` 로 노출한다.
 
-분석 작업의 상태는 Room 의 `analysis_job` 표 한 곳에 있다(ADR 0032). 플랫폼 대기열(`WorkQueue`)은 상태를 들지 않고 표를 비우라는 신호만 준다. Android 는 WorkManager 가 연결 조건으로 비우기를 부르고, iOS 는 앱이 앞에 있을 때 비우며 뒤로 가면 이어 돌 시간을 받아 두고 BGProcessingTask 를 예약한다. iOS 의 녹음을 실은 요청(답변 분석, 회차 등급)은 백그라운드 `URLSession` 업로드로 보내 앱을 내려도 끊기지 않는다(#216).
+분석 작업의 상태는 Room 의 `analysis_job` 표 한 곳에 있다(ADR 0032). 플랫폼 대기열(`WorkQueue`)은 상태를 들지 않고 표를 비우라는 신호만 준다. Android 는 WorkManager 가 연결 조건으로 비우기를 부르고, iOS 는 앱이 앞에 있을 때 비우며 뒤로 가면 이어 돌 시간을 받아 두고 BGProcessingTask 를 예약한다. iOS 의 녹음을 실은 요청(답변 분석, 회차 등급)은 백그라운드 `URLSession` 업로드로 보내 앱을 내려도 끊기지 않는다(#216). 앱 밖 진행 표시와 끝 알림도 이 표에서 계산하고 플랫폼은 띄우기만 한다(ADR 0035).

@@ -15,6 +15,12 @@ val queue = WorkManagerWorkQueue(context) {
 queue.wake() // DB 에 일을 넣은 뒤 부른다
 ```
 
+Android 는 세 번째 인자로 진행 알림을 주면 비우는 동안 데이터 동기화 포그라운드 서비스로 돈다. 비우기를 시작할 때 한 번 불러 구독하고, 알림이 바뀔 때마다 바꿔 단다. 앱이 화면에 없을 때 깨어나 서비스를 시작하지 못하면 알림 없이 비운다.
+
+```kotlin
+WorkManagerWorkQueue(context, drain) { progressFlow.map { it?.let(::buildNotification) } }
+```
+
 `drain` 이 시간을 돌려주면 그만큼 뒤에 다시 부른다. 예외를 내면 30초 뒤에 다시 부른다. 재시도 횟수와 실패는 앱이 DB 에서 정한다. `queue.online` 은 기기가 지금 연결돼 있는지 알려 준다. 앱은 연결 실패가 기기 탓인지 받는 쪽 탓인지 가를 때 읽는다.
 
 iOS 백그라운드 작업은 식별자를 `Info.plist` 의 `BGTaskSchedulerPermittedIdentifiers` 에 넣고 `UIBackgroundModes` 에 `processing` 을 더해야 한다. `IosWorkQueue` 는 앱이 실행을 마치기 전에 만든다.
