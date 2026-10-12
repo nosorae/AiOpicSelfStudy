@@ -1,8 +1,10 @@
 package io.github.nosorae.aiopic.ui.featurehome
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import io.github.nosorae.aiopic.ui.design.MontageTheme
@@ -28,9 +30,12 @@ class StartNewDialogScreenshotTest {
     fun startNew_fontScale200() = open()
 
     private fun open(dark: Boolean = false) {
-        rule.setContent { MontageTheme(darkTheme = dark) { HomeScreen(state = HomeSamples.history, onExamClick = {}, onSessionClick = {}) } }
-        rule.onNodeWithTag("exam-start").performClick()
+        // 등급을 기다리는 줄의 물결은 끝없이 돌아 화면이 쉬지 않는다. 동작 줄이기로 멈춰 두어야 시계가 스스로 흘러 창이 다 그려진다.
+        rule.setContent { MontageTheme(darkTheme = dark, reduceMotion = true) { HomeScreen(state = HomeSamples.history, onExamClick = {}, onSessionClick = {}) } }
+        // 글자 200% 면 버튼이 화면 아래로 밀려 손가락 누름은 화면 밖을 누른다. 눌림 동작을 바로 부른다.
+        rule.onNodeWithTag("exam-start").performSemanticsAction(SemanticsActions.OnClick)
         rule.waitForIdle()
+        rule.onNodeWithText("새 모의고사를 시작할까요?").assertExists()
         captureScreenRoboImage()
     }
 }

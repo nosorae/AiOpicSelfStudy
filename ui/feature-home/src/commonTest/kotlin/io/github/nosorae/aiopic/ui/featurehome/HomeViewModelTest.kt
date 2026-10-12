@@ -1,6 +1,12 @@
 package io.github.nosorae.aiopic.ui.featurehome
 
+import io.github.nosorae.aiopic.engine.answer.model.AnalyzedBy
+import io.github.nosorae.aiopic.engine.answer.model.Answer
+import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
+import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
+import io.github.nosorae.aiopic.engine.question.model.Question
 import io.github.nosorae.aiopic.engine.question.model.QuestionType
+import io.github.nosorae.aiopic.engine.session.model.AnalysisError
 import io.github.nosorae.aiopic.engine.session.model.ExamSession
 import io.github.nosorae.aiopic.engine.session.model.ExamSpec
 import io.github.nosorae.aiopic.engine.session.model.ExamStatus
@@ -28,8 +34,11 @@ import kotlin.time.Duration.Companion.minutes
 class HomeViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val sessions = MutableStateFlow<List<ExamSession>>(emptyList())
+    private val answers = MutableStateFlow<List<Answer>>(emptyList())
     private val source = object : ExamSessionSource {
         override fun sessions() = sessions
+
+        override fun answers() = answers
 
         override suspend fun save(session: ExamSession) = sessions.update { all -> all.map { if (it.id == session.id) session else it } }
     }
@@ -109,6 +118,50 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `등급을 못 낸 회차와 답 없이 끝난 회차는 기다리는 회차와 구분된다`() = runTest(dispatcher) {
+        sessions.value = listOf(
+            ExamSession(id = "a", status = ExamStatus.Finished, answerIds = listOf("x"), gradeError = AnalysisError.InvalidKey),
+            ExamSession(id = "b", status = ExamStatus.TimeUp),
+            ExamSession(id = "c", status = ExamStatus.Finished, answerIds = listOf("y")),
+        )
+        answers.value = listOf(answer("x", "a"), answer("y", "c"))
+
+        val viewModel = loadedViewModel()
+
+        assertEquals(
+            listOf(Triple("c", false, 1), Triple("b", false, 0), Triple("a", true, 1)),
+            viewModel.uiState.value.pastSessions?.map { Triple(it.id, it.gradeFailed, it.answered) },
+        )
+    }
+
+    @Test
+    fun `등급을 기다리는 회차는 기록 탭처럼 답한 수 중 분석이 끝난 수를 센다`() = runTest(dispatcher) {
+        sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished, answerIds = listOf("x", "y", "z")))
+        answers.value = listOf(
+            answer("x", "a", AnswerAnalysis.Unscorable(AnalyzedBy("p", "m", "v1"), UnscorableReason.Silent)),
+            answer("y", "a"),
+            answer("z", "a", AnswerAnalysis.Unscorable(AnalyzedBy("p", "m", "v1"), UnscorableReason.Silent)),
+            answer("w", null, AnswerAnalysis.Unscorable(AnalyzedBy("p", "m", "v1"), UnscorableReason.Silent)),
+        )
+
+        val viewModel = loadedViewModel()
+
+        assertEquals(2 to 3, viewModel.uiState.value.pastSessions!!.single().let { it.analyzed to it.answered })
+    }
+
+    @Test
+    fun `답변 분석이 끝나면 회차의 분석 수가 바로 오른다`() = runTest(dispatcher) {
+        sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished, answerIds = listOf("x")))
+        answers.value = listOf(answer("x", "a"))
+        val viewModel = loadedViewModel()
+
+        answers.value = listOf(answer("x", "a", AnswerAnalysis.Unscorable(AnalyzedBy("p", "m", "v1"), UnscorableReason.Silent)))
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.pastSessions!!.single().analyzed)
+    }
+
+    @Test
     fun `등급 범위의 위아래가 같으면 등급 하나만 보인다`() = runTest(dispatcher) {
         sessions.value = listOf(ExamSession(id = "a", status = ExamStatus.Finished, grade = grade("IH", "IH")))
 
@@ -157,6 +210,23 @@ class HomeViewModelTest {
 
         assertEquals(listOf("a"), viewModel.uiState.value.pastSessions?.map { it.id })
     }
+
+    @Test
+    fun `시험 진행 안내는 서베이 최소 주제 수와 수준 수와 문항 수 범위와 시간과 재조정 위치를 시험 모양에서 읽는다`() = runTest(dispatcher) {
+        val shaped = ExamSpec(
+            timeLimit = 40.minutes,
+            levelCount = 6,
+            steps = listOf(ExamStep.Survey(minTopics = 12), ExamStep.LevelSelect, ExamStep.Check) +
+                List(2) { ExamStep.Ask(QuestionType("t")) } + ExamStep.Recalibrate + ExamStep.Ask(QuestionType("t"), minLevel = 3),
+        )
+
+        val viewModel = HomeViewModel(ObserveHomeUseCase(source, shaped), StartNewExamUseCase(source))
+        advanceUntilIdle()
+
+        assertEquals(ExamOverview(minTopics = 12, levelCount = 6, minQuestions = 2, maxQuestions = 3, minutes = 40, recalibrateAfter = 2), viewModel.uiState.value.overview)
+    }
+
+    private fun answer(id: String, sessionId: String?, analysis: AnswerAnalysis = AnswerAnalysis.Pending) = Answer(id = id, question = Question("q", "text", QuestionType("t"), "topic"), examSessionId = sessionId, chunkPaths = emptyList(), analysis = analysis)
 
     private fun grade(low: String, high: String) = SessionGrade(checks = listOf(GradeCheck("1", true)), low = low, high = high, reasons = emptyList(), brokeAt = emptyList())
 }
