@@ -23,6 +23,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 시나리오 테스트가 앱을 [E2eApplication] 으로 띄운다. Gemini 만 가짜이고 DB, 녹음기, 기기 음성, 대기열은 실제다.
  * 계측 인자 `recordFail true` 를 주면 디버깅 스위치 "녹음 실패"를 켜서 녹음기가 멈출 때마다 조각 쓰기에 실패했다고 알린다([RecordingFailureTest]).
+ * 계측 인자 `answerDelay 초` 를 주면 답변 분석 응답을 그만큼 늦게 준다. 분석하는 동안 앱을 내리는 테스트가 쓴다([AnalysisNoticeE2eTest]).
  */
 class E2eRunner : AndroidJUnitRunner() {
     override fun onCreate(arguments: Bundle?) {
@@ -74,11 +75,17 @@ class E2eApplication : OpicApplication() {
             MockEngine {
                 val body = it.body.toByteArray().decodeToString()
                 if (QUESTION_PROMPT in body) delay(QUESTION_DELAY)
+                if (AUDIO in body && GRADE_PROMPT !in body) delay(answerDelay())
                 respond(if (GRADE_PROMPT in body) GRADE_RESPONSE else ANSWER_RESPONSE, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             },
         ) { installDebugTools() },
     )
 }
+
+private fun answerDelay() = (InstrumentationRegistry.getArguments().getString("answerDelay")?.toIntOrNull() ?: 0).seconds
+
+/** 녹음을 실은 요청에만 있는 필드. 답변 분석과 회차 등급 요청이 싣는다. */
+private const val AUDIO = "inlineData"
 
 fun recordFailRequested() = InstrumentationRegistry.getArguments().getString("recordFail") == "true"
 
