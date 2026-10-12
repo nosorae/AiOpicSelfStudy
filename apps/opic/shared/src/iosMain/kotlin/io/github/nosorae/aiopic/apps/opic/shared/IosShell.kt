@@ -57,7 +57,7 @@ class IosShell {
     // 앱이 뒤로 가면 백그라운드 처리 작업으로 이어서 비운다. 앱 틀(iOSApp)이 실행을 마치기 전에 만들어서 등록 시점을 지킨다.
     // 앱이 화면에 없을 때 비우기가 끝나면 리포트 알림을 띄운다(#229).
     private val workQueue = IosWorkQueue(
-        drain = { graph.opicStore.drainAndNotify(graph.analysisJobs::drain, visible = { UIApplication.sharedApplication.applicationState == UIApplicationState.UIApplicationStateActive }, notify = ::postOutcome) },
+        drain = { graph.opicStore.drainAndNotify(graph.clock, graph.analysisJobs::drain, visible = { UIApplication.sharedApplication.applicationState == UIApplicationState.UIApplicationStateActive }, notify = ::postOutcome) },
         scope = MainScope(),
         backgroundTask = ANALYSIS_TASK,
         keepDraining = { continuing },
@@ -122,12 +122,12 @@ class IosShell {
      * 분석 진행을 [onChange] 로 넘긴다(#229). 기다리는 작업이 생길 때마다 0 부터 다시 세고, 다 끝나면 null 을 넘긴다.
      * 앱 틀(Swift)이 iOS 26 이상에서 시스템 진행 표시에 쓴다. 첫 분석을 시작할 때 알림 권한을 묻는다. 시스템은 한 번만 묻는다.
      */
-    fun watchProgress(onChange: (AnalysisProgress?) -> Unit) {
+    fun watchProgress(onChange: (ProgressNotice?) -> Unit) {
         MainScope().launch {
             graph.opicStore.analyzing().collectLatest { active ->
                 if (!active) return@collectLatest onChange(null)
                 UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(UNAuthorizationOptionAlert or UNAuthorizationOptionSound) { _, _ -> }
-                graph.opicStore.analysisProgress().collect(onChange)
+                graph.opicStore.analysisProgress(graph.clock).collect(onChange)
             }
         }
     }
@@ -164,10 +164,12 @@ private const val UPLOAD_SESSION = "io.github.nosorae.aiopic.upload"
 /** 끝 알림의 경로를 담는 키. 앱 틀(Swift)이 알림을 누르면 이 값을 [routeFromJson] 으로 읽어 리포트를 연다. */
 const val ROUTE_KEY = "route"
 
-private fun postOutcome(outcome: AnalysisOutcome) {
+private suspend fun postOutcome(outcome: AnalysisOutcome) {
+    val title = outcome.title()
+    val body = outcome.text()
     val content = UNMutableNotificationContent().apply {
-        setTitle(outcome.title)
-        setBody(outcome.text)
+        setTitle(title)
+        setBody(body)
         setSound(UNNotificationSound.defaultSound)
         setUserInfo(mapOf<Any?, Any?>(ROUTE_KEY to outcome.routeJson))
     }

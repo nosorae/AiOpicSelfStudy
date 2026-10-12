@@ -82,13 +82,22 @@ class AnalysisNoticeTest {
 
     @AfterTest fun close() = db.close()
 
-    /** 모의고사 회차 s1 의 답변 a1 을 분석하는 비우기. 끝나면 작업 표에 성공으로 남긴다. */
-    private suspend fun drainExamAnswer(visible: Boolean): List<AnalysisOutcome> {
+    /** 비우기를 시작한 시각. 밀리초 아래 자리가 있어야 시작 시각을 밀리초로 자르는지 드러난다. */
+    private val clock = object : Clock {
+        override fun now() = Instant.fromEpochSeconds(2_000, nanosecondAdjustment = 999_999)
+    }
+
+    /**
+     * 모의고사 회차 s1 의 답변 a1 을 분석하는 비우기. 끝나면 작업 표에 [finishedAt] 에 성공으로 남긴다.
+     * 작업 표는 밀리초로 저장하므로 시작과 같은 밀리초에 끝난 작업은 시작 시각보다 앞선 값으로 읽힌다.
+     */
+    private suspend fun drainExamAnswer(visible: Boolean, finishedAt: Instant = clock.now()): List<AnalysisOutcome> {
         store.save(Answer("a1", Question("q1", "Tell me.", QuestionType("description"), "home"), "s1", chunkPaths = emptyList()))
         val notified = mutableListOf<AnalysisOutcome>()
         val next = store.drainAndNotify(
+            clock = clock,
             drain = {
-                store.save(AnalysisJob(JobKind.Answer, "a1", JobState.Succeeded, updatedAt = Clock.System.now()))
+                store.save(AnalysisJob(JobKind.Answer, "a1", JobState.Succeeded, updatedAt = finishedAt))
                 null
             },
             visible = { visible },
@@ -104,7 +113,12 @@ class AnalysisNoticeTest {
     }
 
     @Test
-    fun `229 앱이 화면에 없으면 비우기가 끝난 뒤 그 회차 리포트로 끝 알림을 띄운다`() = runTest {
+    fun `229 앱이 화면에 없으면 비우기를 시작한 밀리초에 끝난 작업도 그 회차 리포트로 알린다`() = runTest {
         assertEquals(listOf(AnalysisOutcome(AppRoute.ReportDetail("s1"), failed = false)), drainExamAnswer(visible = false))
+    }
+
+    @Test
+    fun `229 비우기를 시작하기 전 밀리초에 끝난 작업은 이번 비우기의 결과로 알리지 않는다`() = runTest {
+        assertEquals(emptyList(), drainExamAnswer(visible = false, finishedAt = Instant.fromEpochMilliseconds(1_999_999)))
     }
 }

@@ -69,14 +69,14 @@ final class ContinuedAnalysis {
         // 진행 표시가 떠 있는 동안은 뒤로 간 앱의 30초가 끝나도 비우기를 끊지 않는다.
         didSet { shell.continuing = task != nil }
     }
-    private var latest: AnalysisProgress?
+    private var latest: ProgressNotice?
     private var submitted = false
 
     init(shell: IosShell) {
         self.shell = shell
     }
 
-    func update(_ progress: AnalysisProgress?) {
+    func update(_ progress: ProgressNotice?) {
         latest = progress
         guard let progress else {
             task?.setTaskCompleted(success: true)
@@ -111,7 +111,7 @@ final class ContinuedAnalysis {
         submitted = (try? BGTaskScheduler.shared.submit(request)) != nil
     }
 
-    private func show(_ progress: AnalysisProgress, on task: BGContinuedProcessingTask) {
+    private func show(_ progress: ProgressNotice, on task: BGContinuedProcessingTask) {
         task.progress.totalUnitCount = Int64(progress.total)
         task.progress.completedUnitCount = Int64(progress.done)
         task.updateTitle(progress.title, subtitle: progress.text)

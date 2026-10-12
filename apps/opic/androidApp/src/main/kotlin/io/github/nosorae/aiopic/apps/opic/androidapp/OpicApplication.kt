@@ -41,8 +41,8 @@ open class OpicApplication : Application() {
         AnalysisNotifications.createChannels(this)
         val workQueue = WorkManagerWorkQueue(
             context = this,
-            drain = { graph.opicStore.drainAndNotify(graph.analysisJobs::drain, AnalysisNotifications::appVisible) { AnalysisNotifications.notify(this, it) } },
-            progress = { graph.opicStore.analysisProgress().map { progress -> progress?.let { AnalysisNotifications.progress(this, it) } } },
+            drain = { graph.opicStore.drainAndNotify(graph.clock, graph.analysisJobs::drain, AnalysisNotifications::appVisible) { AnalysisNotifications.notify(this, it) } },
+            progress = { graph.opicStore.analysisProgress(graph.clock).map { progress -> progress?.let { AnalysisNotifications.progress(this, it) } } },
         )
         graph = createAppGraph(
             settings = AppSettings(read = { prefs.getString(it, null) }, write = { key, value -> prefs.edit().putString(key, value).apply() }),

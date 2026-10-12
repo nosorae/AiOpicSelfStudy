@@ -8,7 +8,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import io.github.nosorae.aiopic.apps.opic.shared.AnalysisOutcome
-import io.github.nosorae.aiopic.apps.opic.shared.AnalysisProgress
+import io.github.nosorae.aiopic.apps.opic.shared.ProgressNotice
 import io.github.nosorae.aiopic.apps.opic.shared.routeJson
 
 /**
@@ -30,7 +30,7 @@ internal object AnalysisNotifications {
         ),
     )
 
-    fun progress(context: Context, progress: AnalysisProgress): Notification = Notification.Builder(context, PROGRESS)
+    fun progress(context: Context, progress: ProgressNotice): Notification = Notification.Builder(context, PROGRESS)
         .setSmallIcon(android.R.drawable.stat_sys_upload)
         .setContentTitle(progress.title)
         .setContentText(progress.text)
@@ -39,13 +39,13 @@ internal object AnalysisNotifications {
         .setOngoing(true)
         .build()
 
-    fun notify(context: Context, outcome: AnalysisOutcome) {
+    suspend fun notify(context: Context, outcome: AnalysisOutcome) {
         val manager = context.getSystemService(NotificationManager::class.java)
         if (!manager.areNotificationsEnabled()) return
         val notification = Notification.Builder(context, DONE)
             .setSmallIcon(if (outcome.failed) android.R.drawable.stat_notify_error else android.R.drawable.stat_sys_upload_done)
-            .setContentTitle(outcome.title)
-            .setContentText(outcome.text)
+            .setContentTitle(outcome.title())
+            .setContentText(outcome.text())
             .setContentIntent(open(context, outcome.routeJson))
             .setAutoCancel(true)
             .build()

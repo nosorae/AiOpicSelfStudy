@@ -16,6 +16,7 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import io.github.nosorae.aiopic.apps.opic.shared.AnalysisOutcome
 import io.github.nosorae.aiopic.apps.opic.shared.AppRoute
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -74,7 +75,7 @@ class AnalysisNoticeE2eTest {
 
         // 모의고사 답변의 끝 알림은 회차 리포트를 연다. 같은 알림 경로에 회차 경로를 실어 띄우고 알림창에서 누른다.
         device.pressHome()
-        AnalysisNotifications.notify(app, AnalysisOutcome(AppRoute.ReportDetail("e2e-session"), failed = false))
+        runBlocking { AnalysisNotifications.notify(app, AnalysisOutcome(AppRoute.ReportDetail("e2e-session"), failed = false)) }
         device.openNotification()
         device.wait(Until.findObject(By.text("리포트가 준비됐어요")), SCREEN_TIMEOUT).click()
         await("회차 리포트")
