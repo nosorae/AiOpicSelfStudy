@@ -1,5 +1,6 @@
 package io.github.nosorae.aiopic.ui.featurehome
 
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -8,7 +9,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import org.junit.Assert.assertEquals
@@ -102,7 +103,8 @@ class HomeScreenTest {
     fun `#230 최근 회차는 셋까지 보이고 누른 회차의 리포트를 연다`() {
         show(HomeSamples.history)
 
-        rule.onNodeWithText("모의고사 3회차").performScrollTo().performClick()
+        // 화면 아래에 있어 눌림 동작을 바로 부른다. 시계를 멈춰 둬서 스크롤은 끝나지 않는다.
+        rule.onNodeWithText("모의고사 3회차").performSemanticsAction(SemanticsActions.OnClick)
 
         assertEquals(listOf("b"), reviewed)
         rule.onNodeWithText("모의고사 1회차").assertDoesNotExist()
