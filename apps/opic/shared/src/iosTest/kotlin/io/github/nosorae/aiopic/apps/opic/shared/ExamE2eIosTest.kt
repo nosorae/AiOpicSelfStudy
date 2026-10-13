@@ -42,6 +42,7 @@ import io.ktor.http.headersOf
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -157,7 +158,7 @@ class ExamE2eIosTest {
             assertEquals(12, resumed.uiState.first { it.step != null }.questionCount)
             assertEquals(2, resumed.uiState.value.questionNumber)
             resumed.onIntent(ExamIntent.PlayQuestion)
-            assertTrue(resumed.uiState.first { it.phase == QuestionPhase.Recording }.replayUsed)
+            assertTrue(resumed.uiState.first { it.phase == QuestionPhase.Recording && it.voiceLevel > 0f }.replayUsed)
             now += 11.seconds
             resumed.onIntent(ExamIntent.SubmitAnswer)
             while (resumed.uiState.first { it.navigation != null || it.phase == QuestionPhase.Ready }.navigation == null) {
@@ -188,7 +189,7 @@ class ExamE2eIosTest {
             val practice = second.viewModel { practiceViewModelFactory.create("p1") }
             practice.uiState.first { it.canPlay }
             practice.onIntent(PracticeIntent.PlayQuestion)
-            practice.uiState.first { it.phase == PracticePhase.Recording }
+            practice.uiState.first { it.phase == PracticePhase.Recording && it.voiceLevel > 0f }
             now += 11.seconds
             practice.onIntent(PracticeIntent.SubmitAnswer)
             assertEquals(PracticeDestination.Feedback("p1"), practice.uiState.first { it.navigation != null }.navigation)
@@ -200,18 +201,23 @@ class ExamE2eIosTest {
         }
     }
 
-    /** 질문을 듣고 녹음을 시작한 뒤 10초를 넘겨 낸다. 다음 단계로 넘어가거나 시험이 끝날 때까지 기다린다. */
+    /** 질문을 듣고 녹음을 시작해 목소리가 들어간 뒤 10초를 넘겨 낸다. 다음 단계로 넘어가거나 시험이 끝날 때까지 기다린다. */
     private suspend fun ExamViewModel.answer() {
         onIntent(ExamIntent.PlayQuestion)
-        uiState.first { it.phase == QuestionPhase.Recording }
+        uiState.first { it.phase == QuestionPhase.Recording && it.voiceLevel > 0f }
         now += 11.seconds
         onIntent(ExamIntent.SubmitAnswer)
         uiState.first { it.phase != QuestionPhase.Recording || it.navigation != null }
     }
 }
 
-/** 녹음한 폴더를 기기 디스크처럼 그래프 밖에 남긴다. 조각 파일은 만들지 않아서 분석에는 빈 녹음이 간다. */
+/**
+ * 녹음한 폴더를 기기 디스크처럼 그래프 밖에 남긴다. 조각 파일은 만들지 않아서 분석에는 빈 녹음이 간다.
+ * 음량은 보통 말소리 크기를 한 번 내서 답변이 무음으로 걸러지지 않게 한다(#241).
+ */
 private class DiskRecorder(private val directories: MutableSet<String>) : Recorder {
+    override val levels = flowOf(0.5f)
+
     override suspend fun start(directory: String): RecordingFailure? = directories.add(directory).let { null }
 
     override suspend fun stop() = StoppedRecording(emptyList())

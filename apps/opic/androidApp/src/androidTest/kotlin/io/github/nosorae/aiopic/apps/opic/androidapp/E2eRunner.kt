@@ -10,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnitRunner
 import io.github.nosorae.aiopic.libs.debug.network.installDebugTools
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
+import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -18,6 +19,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -70,6 +73,19 @@ class E2eApplication : OpicApplication() {
         super.onCreate()
     }
 
+    /**
+     * 녹음은 실제로 하고 음량만 보통 말소리 크기로 낸다. 에뮬레이터 마이크는 조용해서 그대로 두면 답이 무음으로 걸러져
+     * 저장한 응답의 점수가 리포트에 나오지 않는다(#241).
+     */
+    override fun recorder(): Recorder = object : Recorder by super.recorder() {
+        override val levels = flow {
+            while (true) {
+                emit(SPEECH_LEVEL)
+                delay(LEVEL_INTERVAL)
+            }
+        }
+    }
+
     override fun gemini() = GeminiClient(
         HttpClient(
             MockEngine {
@@ -96,6 +112,10 @@ private const val QUESTION_PROMPT = "You write questions for an OPIc English spe
 private const val GRADE_PROMPT = "You grade one full OPIc English speaking test session"
 
 private val QUESTION_DELAY = 3.seconds
+
+private const val SPEECH_LEVEL = 0.5f
+
+private val LEVEL_INTERVAL = 80.milliseconds
 
 private const val NETWORK_TIMEOUT_MS = 30_000L
 
