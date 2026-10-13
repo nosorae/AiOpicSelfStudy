@@ -193,9 +193,13 @@ private fun gradeStatus(report: SessionReport): String = when (report.gradeJob?.
 private fun AnswerRow(number: Int, answer: Answer, job: AnalysisJob?, names: ReportNames, broke: Boolean, onClick: () -> Unit) {
     val status = when (val analysis = answer.analysis) {
         AnswerAnalysis.Pending -> jobStatus(job)
+
         is AnswerAnalysis.Failed -> stringResource(Res.string.status_failed)
+
         is AnswerAnalysis.Done -> stringResource(Res.string.status_score, analysis.feedback.score, names.model(analysis.analyzedBy))
-        is AnswerAnalysis.Unscorable -> stringResource(Res.string.status_unscorable, stringResource(analysis.reason.text), names.model(analysis.analyzedBy))
+
+        is AnswerAnalysis.Unscorable -> analysis.analyzedBy?.let { stringResource(Res.string.status_unscorable, stringResource(analysis.reason.text), names.model(it)) }
+            ?: stringResource(Res.string.status_unscorable_unsent, stringResource(analysis.reason.text))
     }
     val caption = if (broke) "${stringResource(Res.string.session_broke)}, $status" else status
     MontageListCell(

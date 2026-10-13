@@ -165,6 +165,9 @@ internal object ReportSamples {
 
     val answerUnscorable = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(flash, UnscorableReason.WrongLanguage)), names = names)
 
+    /** 녹음 내내 말소리가 없어 보내지 않고 끝낸 답(#241). */
+    val answerSilent = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(null, UnscorableReason.Silent)), names = names)
+
     val answerPending = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Pending), names = names)
 
     /** 연결이 끊겨 결과를 받지 못했다(#203). */
