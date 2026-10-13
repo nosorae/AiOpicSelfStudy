@@ -20,7 +20,6 @@ APP_STORE_SHOTS = ROOT / "fastlane/screenshots/ios/ko"
 
 ANDROID = "{http://schemas.android.com/apk/res/android}"
 SVG = "{http://www.w3.org/2000/svg}"
-LEGACY_SIZES = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
 IPHONE_69 = (1320, 2868)
 
 
@@ -61,12 +60,6 @@ class AppIconTest(unittest.TestCase):
         for name in ("ic_launcher_foreground.xml", "ic_launcher_monochrome.xml"):
             with self.subTest(name):
                 self.assertEqual(source, path_data(RES / "drawable" / name, f"{ANDROID}pathData"))
-
-    def test_legacy_mipmaps_match_density(self):
-        for density, size in LEGACY_SIZES.items():
-            for name in ("ic_launcher.png", "ic_launcher_round.png"):
-                with self.subTest(f"{density}/{name}"):
-                    self.assertEqual((size, size), png_info(RES / f"mipmap-{density}" / name)[:2])
 
     def test_ios_icon_has_light_dark_and_tinted_1024(self):
         images = json.loads((APP_ICON_SET / "Contents.json").read_text())["images"]

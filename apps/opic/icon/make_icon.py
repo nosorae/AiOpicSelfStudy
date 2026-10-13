@@ -11,15 +11,13 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent.parent.parent
-RES = ROOT / "apps/opic/androidApp/src/main/res"
 APP_ICON_SET = ROOT / "apps/opic/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset"
 PLAY_ICON = ROOT / "fastlane/metadata/android/ko-KR/images/icon.png"
 
-LEGACY_SIZES = {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}
 NEUTRAL, DARK_PRIMARY = "#171719", "#FF8A62"
 BACKGROUND = '<rect width="1024" height="1024" fill="url(#g)"/>'
 
@@ -30,19 +28,6 @@ def render(svg_text, size=1024):
         src.write_text(svg_text)
         subprocess.run(["rsvg-convert", "-w", str(size), "-h", str(size), str(src), "-o", str(out)], check=True)
         return Image.open(out).convert("RGBA")
-
-
-def masked(image, size, circle):
-    image = image.resize((size, size), Image.LANCZOS)
-    mask = Image.new("L", (size, size), 0)
-    draw = ImageDraw.Draw(mask)
-    if circle:
-        draw.ellipse((0, 0, size - 1, size - 1), fill=255)
-    else:
-        draw.rounded_rectangle((0, 0, size - 1, size - 1), radius=round(size * 0.18), fill=255)
-    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    out.paste(image, (0, 0), mask)
-    return out
 
 
 def main():
@@ -59,11 +44,6 @@ def main():
 
     PLAY_ICON.parent.mkdir(parents=True, exist_ok=True)
     light.resize((512, 512), Image.LANCZOS).convert("RGB").save(PLAY_ICON)
-
-    # ponytail: minSdk 28 이라 적응형 아이콘만 쓰인다. 레거시 PNG 는 적응형을 못 읽는 런처를 위한 것이다
-    for density, size in LEGACY_SIZES.items():
-        masked(light, size, circle=False).save(RES / f"mipmap-{density}/ic_launcher.png")
-        masked(light, size, circle=True).save(RES / f"mipmap-{density}/ic_launcher_round.png")
 
 
 if __name__ == "__main__":
