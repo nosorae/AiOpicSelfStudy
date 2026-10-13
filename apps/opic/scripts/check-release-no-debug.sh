@@ -12,7 +12,8 @@ count_mock_apk() { unzip -p "$1" 'classes*.dex' | grep -a -c 'io/ktor/client/eng
 count_mock_lib() { nm "$1" 2>/dev/null | grep -c 'kclass:io\.ktor\.client\.engine\.mock\.MockEngine$' || true; }
 
 ./gradlew -q :apps:opic:androidApp:assembleRelease :apps:opic:androidApp:assembleDebug
-release_apk_file=apps/opic/androidApp/build/outputs/apk/release/androidApp-release-unsigned.apk
+# 서명 정보가 있으면 androidApp-release.apk, 없으면 androidApp-release-unsigned.apk 가 나온다. 앞서 만든 다른 쪽이 남아 있을 수 있어 새것을 고른다.
+release_apk_file=$(ls -t apps/opic/androidApp/build/outputs/apk/release/androidApp-release*.apk | head -1)
 debug_apk_file=apps/opic/androidApp/build/outputs/apk/debug/androidApp-debug.apk
 release_apk=$(count_apk $release_apk_file)
 debug_apk=$(count_apk $debug_apk_file)

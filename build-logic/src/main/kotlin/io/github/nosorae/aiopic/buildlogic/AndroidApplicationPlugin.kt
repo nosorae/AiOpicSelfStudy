@@ -35,9 +35,27 @@ class AndroidApplicationPlugin : Plugin<Project> {
                 abortOnError = true
                 warningsAsErrors = false
             }
+            // 업로드 키는 저장소 밖에 두고 경로만 받는다. 없으면 서명 없이 빌드하고 이유를 찍는다(README 「배포용 빌드」).
+            readReleaseSigning(localProperty(RELEASE_SIGNING_KEY) ?: System.getenv(RELEASE_SIGNING_KEY))
+                .onSuccess { signing ->
+                    val release = signingConfigs.create("release") {
+                        storeFile = signing.storeFile
+                        storePassword = signing.storePassword
+                        keyAlias = signing.keyAlias
+                        keyPassword = signing.keyPassword
+                    }
+                    buildTypes.getByName("release").signingConfig = release
+                }
+                .onFailure { logger.lifecycle("릴리스 빌드를 서명 없이 만든다: ${it.message}") }
         }
         tasks.withType<KotlinCompile>().configureEach {
             compilerOptions.jvmTarget.set(JvmTarget.fromTarget(jvm))
         }
     }
+}
+
+private fun Project.localProperty(key: String): String? {
+    val file = rootProject.file("local.properties")
+    if (!file.isFile) return null
+    return java.util.Properties().apply { file.inputStream().use(::load) }.getProperty(key)
 }
