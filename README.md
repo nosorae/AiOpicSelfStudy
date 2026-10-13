@@ -160,6 +160,13 @@ chmod 600 upload.jks signing.properties
 
 iOS 서명 팀은 `Local.xcconfig` 의 `TEAM_ID` 에서 온다. App Store 용 ipa 를 내보내려면 그 팀 계정이 Xcode 설정의 계정에 로그인돼 있어야 배포 프로파일이 자동으로 만들어진다.
 
+App Store Connect 는 같은 빌드 번호를 두 번 받지 않는다. 새 빌드를 올릴 때마다 `apps/opic/iosApp/Configuration/Config.xcconfig` 의 `CURRENT_PROJECT_VERSION` 을 1 올리고(버전 1.0 의 첫 빌드가 1 이다), 사용자에게 보이는 버전이 바뀌면 `MARKETING_VERSION` 도 올린 뒤 커밋한다. 그다음 위 두 명령으로 ipa 를 만들고 TestFlight 로 올린다. 수출 규정 답은 `Info.plist` 의 `ITSAppUsesNonExemptEncryption`(HTTPS 만 써서 `false`)이 대신해서 업로드 뒤에 콘솔에서 따로 답하지 않는다.
+
+```sh
+export ASC_API_KEY_PATH=<App Store Connect API 키 JSON 경로>
+fastlane ios_build   # build/release/ipa/iosApp.ipa 를 올린다. 처리 완료는 기다리지 않는다
+```
+
 ### 스토어 문구 올리기
 
 스토어 등록 문구, App Store 심사 메모, 스크린샷은 `fastlane/` 에 있고 [fastlane](https://docs.fastlane.tools) 으로 올린다. 앱 바이너리는 올리지 않고 심사 제출도 하지 않는다. 계정 키는 저장소 밖에 두고 경로만 환경 변수로 넘긴다.
