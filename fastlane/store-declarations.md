@@ -86,7 +86,7 @@ Play Console 과 App Store Connect 에 옮겨 넣을 답이다. 스토어 계정
 
 > 이 앱은 서버가 없다. 사용자가 자기 Google Gemini API 키를 넣고, 앱이 그 키로 Gemini 에 답변 녹음을 보내 분석한다. 녹음을 보내기 전에 전송 동의 화면을 보여 주고 동의 버튼을 눌러야 보낸다. 심사용 키는 심사 정보의 메모 칸에 따로 넣는다.
 
-심사용 키는 저장소에 두지 않는다. 사람이 콘솔의 심사 정보 칸에 직접 넣는다.
+App Store 에 올리는 메모 전문은 `metadata/ios/review_information/notes.txt` 다. 심사용 키는 저장소에 두지 않고, 올릴 때 환경 변수 `REVIEW_GEMINI_KEY` 로 넘기거나 사람이 콘솔의 심사 정보 칸에 직접 넣는다.
 
 ## 5. 스토어에 올리기 전에 남은 것
 
