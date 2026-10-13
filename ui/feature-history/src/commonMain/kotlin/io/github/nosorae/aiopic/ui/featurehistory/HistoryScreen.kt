@@ -228,7 +228,8 @@ private fun PracticeRow(row: HistoryPractice, onClick: () -> Unit, modifier: Mod
 
             is AnswerAnalysis.Failed -> stringResource(Res.string.history_practice_failed_caption)
 
-            is AnswerAnalysis.Done, is AnswerAnalysis.Unscorable -> stringResource(Res.string.history_models, row.model.orEmpty())
+            // 말소리가 없어 보내지 않은 답은 분석한 모델이 없다(#241).
+            is AnswerAnalysis.Done, is AnswerAnalysis.Unscorable -> row.model?.let { stringResource(Res.string.history_models, it) } ?: stringResource(Res.string.history_practice_silent)
         },
         chevron = true,
         onClick = onClick,

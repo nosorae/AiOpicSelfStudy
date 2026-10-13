@@ -22,6 +22,7 @@ import io.github.nosorae.aiopic.engine.answer.model.Answer
 import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.Feedback
 import io.github.nosorae.aiopic.engine.answer.model.Pronunciation
+import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.ui.design.MontageCelebration
 import io.github.nosorae.aiopic.ui.design.MontageCelebrationSize
 import io.github.nosorae.aiopic.ui.design.MontageCountUp
@@ -121,7 +122,9 @@ private fun LazyListScope.answerContent(
         is AnswerAnalysis.Unscorable -> item {
             SectionTitle(stringResource(Res.string.answer_unscorable))
             Paragraph(stringResource(analysis.reason.text))
-            Paragraph(stringResource(Res.string.answer_unscorable_help), secondary = true)
+            // 말소리가 없던 답은 녹음을 다시 해야 하니 마이크와 거리를 먼저 안내한다(#241).
+            // 앱이 보내지 않은 답과 모델이 무음으로 돌려준 답이 모두 여기 오니 문구는 보냈는지를 말하지 않는다.
+            Paragraph(stringResource(if (analysis.reason == UnscorableReason.Silent) Res.string.answer_silent_help else Res.string.answer_unscorable_help), secondary = true)
         }
 
         // 기다림을 끝내고 이유와 다시 분석하기를 보인다(#203). 다시 누르면 기다림으로 돌아가 모이는 점이 다시 보인다.

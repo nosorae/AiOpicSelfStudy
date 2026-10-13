@@ -195,6 +195,15 @@ class GeminiAnalyzerTest {
     }
 
     @Test
+    fun `241 받아쓴 말이 없는데 이유 코드를 빠뜨려도 점수를 보이지 않고 무음이다`() = runTest {
+        val empty = envelope(
+            """{"transcript":" ","corrections":[],"upgrades":[],"tenseConsistent":true,"sentenceCount":0,"wordsPerMinute":0,"pauses":[],"pronunciation":"","score":45}""",
+        )
+
+        assertEquals(AnalysisResult.Unscorable(UnscorableReason.Silent), analyzer(ok(empty)).analyze(model, prompt, question, recording))
+    }
+
+    @Test
     fun `F5_8 고른 모델이 없다는 응답이면 ModelUnavailable 이다`() = runTest {
         val result = analyzer(HttpStatusCode.NotFound to """{"error":{"code":404,"status":"NOT_FOUND"}}""").analyze(model, prompt, question, recording)
 

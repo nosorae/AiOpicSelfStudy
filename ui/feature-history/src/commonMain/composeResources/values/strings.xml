@@ -17,6 +17,7 @@
     <string name="history_practice_failed">분석 실패</string>
     <string name="history_practice_failed_caption">눌러서 이유를 보고 다시 분석할 수 있습니다</string>
     <string name="history_practice_unscorable">평가할 수 없음</string>
+    <string name="history_practice_silent">말소리가 들리지 않아 보내지 않았습니다</string>
     <string name="history_grade_failed">등급 실패</string>
     <string name="history_models">분석 모델 %1$s</string>
     <string name="history_models_mixed">분석 모델 섞임, %1$s</string>

@@ -56,6 +56,9 @@ class ExamViewModel(
     /** 녹음하는 동안만 마이크 음량을 모은다. */
     private var listening: Job? = null
 
+    /** 이 문항 녹음에서 들은 가장 큰 음량. 이 화면이 녹음을 처음부터 듣지 못했으면(앱이 꺼졌다 이어 녹음) null 이다(#241). */
+    private var loudest: Float? = null
+
     /** 시계와 버튼이 같은 회차에서 각자 다음 회차를 계산해 한쪽 저장을 덮어쓰지 않게 한 번에 하나씩 바꾼다. */
     private val sessionLock = Mutex()
 
@@ -166,9 +169,16 @@ class ExamViewModel(
             is PlayResult.Recording -> {
                 // 이어 녹음하며 질문을 다시 들었으면 그 문항의 다시 듣기를 쓴 것이다(F3.3).
                 if (result.resumed) commit { if (it.replayUsed) it else applyExamEventUseCase(it, ExamEvent.Replay) }
+                // 다시 듣기와 실패 뒤 이어 녹음은 이 화면이 앞부분을 들었다. 앱이 꺼졌다 이어 녹음하면 처음부터 null 이라 그대로 둔다.
+                if (!result.resumed) loudest = 0f
                 recordingStartedAt = timer.elapsed()
                 _uiState.update { it.copy(phase = QuestionPhase.Recording, recorded = Duration.ZERO) }
-                listening = viewModelScope.launch { observeVoiceLevelUseCase().collect { level -> _uiState.update { it.copy(voiceLevel = level) } } }
+                listening = viewModelScope.launch {
+                    observeVoiceLevelUseCase().collect { level ->
+                        loudest = loudest?.coerceAtLeast(level)
+                        _uiState.update { it.copy(voiceLevel = level) }
+                    }
+                }
                 // 시계를 녹음 시작에 맞춰 다시 돌려 5초, 10초 경계에서 버튼이 바로 바뀌게 한다.
                 startClock(restart = true)
             }
@@ -183,7 +193,7 @@ class ExamViewModel(
         val scored = _uiState.value.step is ExamStep.Ask
         save {
             sessionLock.withLock {
-                when (val result = submitAnswerUseCase(session, scored)) {
+                when (val result = submitAnswerUseCase(session, scored, loudest)) {
                     is SubmitResult.Moved -> changed(result.session)
 
                     // 같은 문항에 남는다. Play 를 다시 누르면 남은 조각 뒤에 이어 녹음한다(F3.3).
@@ -220,6 +230,7 @@ class ExamViewModel(
     /** 바뀐 회차를 화면에 옮긴다. 단계가 바뀌면 문항 진행을 처음으로 돌리고, 회차가 끝났으면 녹음을 멈추고 끝으로 간다. */
     private suspend fun changed(next: ExamSession) {
         val stepChanged = !::session.isInitialized || session.stepIndex != next.stepIndex
+        if (stepChanged) loudest = null
         // 점검 녹음 때부터 돌던 시계가 1번 문항 전의 시간을 40분에 넣지 않게 40분이 켜지는 때부터 센다(F2.5).
         if (::session.isInitialized && session.remaining == null && next.remaining != null) lastTick = timer.elapsed()
         session = next

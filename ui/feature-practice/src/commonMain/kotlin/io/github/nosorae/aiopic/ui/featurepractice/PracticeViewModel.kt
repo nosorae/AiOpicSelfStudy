@@ -44,6 +44,9 @@ class PracticeViewModel(
     /** 녹음하는 동안만 마이크 음량을 모은다. */
     private var listening: Job? = null
 
+    /** 이 답변 녹음에서 들은 가장 큰 음량. 연습은 앱이 꺼지면 녹음을 버려서 이 화면이 늘 처음부터 듣는다(#241). */
+    private var loudest = 0f
+
     init {
         viewModelScope.launch {
             val pick = pickPracticeQuestionUseCase()
@@ -76,7 +79,12 @@ class PracticeViewModel(
             val startedAt = timer.elapsed()
             recordingStartedAt = startedAt
             _uiState.update { it.copy(phase = PracticePhase.Recording, recorded = Duration.ZERO) }
-            listening = launch { observeVoiceLevelUseCase().collect { level -> _uiState.update { it.copy(voiceLevel = level) } } }
+            listening = launch {
+                observeVoiceLevelUseCase().collect { level ->
+                    loudest = loudest.coerceAtLeast(level)
+                    _uiState.update { it.copy(voiceLevel = level) }
+                }
+            }
             clock = launch {
                 while (true) {
                     delay(TICK)
@@ -101,7 +109,7 @@ class PracticeViewModel(
         if (timer.elapsed() - startedAt < NextDelay) return
         recordingEnded()
         save(submitting = true) {
-            when (val error = submitPracticeAnswerUseCase(question, answerId)) {
+            when (val error = submitPracticeAnswerUseCase(question, answerId, loudest)) {
                 // ponytail: 다시 녹음은 남은 조각 뒤에 이어 쓴다. 앞 답변이 겹쳐 들리는 게 문제가 되면 녹음 폴더를 비우고 시작한다.
                 null -> _uiState.update { it.copy(navigation = PracticeDestination.Feedback(answerId)) }
 

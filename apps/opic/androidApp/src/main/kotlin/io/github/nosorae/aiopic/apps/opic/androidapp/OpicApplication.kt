@@ -17,6 +17,7 @@ import io.github.nosorae.aiopic.libs.debug.install
 import io.github.nosorae.aiopic.libs.keyvault.api.KeystoreKeyVault
 import io.github.nosorae.aiopic.libs.llmgemini.GeminiClient
 import io.github.nosorae.aiopic.libs.recorder.api.AndroidRecorder
+import io.github.nosorae.aiopic.libs.recorder.api.Recorder
 import io.github.nosorae.aiopic.libs.tts.AndroidTts
 import io.github.nosorae.aiopic.libs.workqueue.api.WorkManagerWorkQueue
 import kotlinx.coroutines.MainScope
@@ -49,7 +50,7 @@ open class OpicApplication : Application() {
             keyVault = KeystoreKeyVault(this),
             database = opicDatabase(this),
             recordingsRoot = recordingsRoot(this),
-            recorder = AndroidRecorder(this).withDebugTools(),
+            recorder = recorder(),
             tts = AndroidTts(this),
             workQueue = workQueue,
             gemini = gemini(),
@@ -61,6 +62,9 @@ open class OpicApplication : Application() {
 
     /** 시나리오 테스트가 저장해 둔 응답을 돌려주는 클라이언트로 바꾼다. */
     protected open fun gemini(): GeminiClient = debugGeminiClient()
+
+    /** 시나리오 테스트가 에뮬레이터의 조용한 마이크 대신 말소리 음량을 내게 바꾼다(#241). */
+    protected open fun recorder(): Recorder = AndroidRecorder(this).withDebugTools()
 
     private fun audioRows(): List<Pair<String, String>> {
         val audio = getSystemService(AudioManager::class.java)

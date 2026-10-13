@@ -114,6 +114,16 @@ class ReportScreenshotTest {
     @Test
     fun answer_unscorable_fontScale200() = answer(ReportSamples.answerUnscorable)
 
+    @Test fun answer_silent() = answer(ReportSamples.answerSilent)
+
+    @Test fun answer_silent_sent() = answer(ReportSamples.answerSilentSent)
+
+    @Test fun answer_silent_dark() = answer(ReportSamples.answerSilent, dark = true)
+
+    @Config(fontScale = 2f)
+    @Test
+    fun answer_silent_fontScale200() = answer(ReportSamples.answerSilent)
+
     @Config(qualifiers = "w360dp-h2000dp-xhdpi")
     @Test
     fun answer_scripted() = answer(ReportSamples.answerScripted)

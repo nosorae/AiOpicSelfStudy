@@ -39,4 +39,13 @@ class OpicPromptFileTest {
 
         assertEquals((1..10).map { "C$it" }, ids)
     }
+
+    @Test
+    fun `241 답변 분석 프롬프트는 들리지 않는 말을 받아쓰지 말고 무음 표시를 돌려주라고 한다`() = runTest {
+        val prompt = OpicPrompt.Answer.load()
+
+        assertEquals("opic-en-answer-v5", prompt.version)
+        assertTrue("Never invent" in prompt.body, prompt.body)
+        assertTrue("\"silent\"" in prompt.body, prompt.body)
+    }
 }
