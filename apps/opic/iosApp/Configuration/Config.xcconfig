@@ -3,7 +3,7 @@ TEAM_ID=
 PRODUCT_NAME=AiOpicSelfStudy
 PRODUCT_BUNDLE_IDENTIFIER=io.github.nosorae.aiopic
 
-CURRENT_PROJECT_VERSION=2
+CURRENT_PROJECT_VERSION=3
 MARKETING_VERSION=1.0
 
 // 서명 팀처럼 기기마다 다른 값은 커밋하지 않는 Local.xcconfig 에 둔다.
