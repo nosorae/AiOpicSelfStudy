@@ -612,4 +612,31 @@ class AnalysisJobsTest {
         assertEquals(JobState.Failed, job("a1")?.state)
         assertEquals(AnswerAnalysis.Failed(AnalysisError.Canceled), analysis("a1"))
     }
+
+    @Test
+    fun `241 녹음 내내 말소리가 없던 답변은 보내지 않고 무음으로 끝낸다`() = runTest(dispatcher) {
+        val jobs = jobs()
+        listOf("silent" to 0f, "tiny" to 0.1f, "spoken" to 0.5f).forEach { (id, loudest) -> store.save(answer(id).copy(loudest = loudest)) }
+        listOf("silent", "tiny", "spoken").forEach { jobs.enqueueAnswer(it) }
+
+        jobs.drain()
+
+        assertEquals(1, analyzed)
+        assertEquals(AnswerAnalysis.Unscorable(null, UnscorableReason.Silent), analysis("silent"))
+        assertEquals(AnswerAnalysis.Unscorable(null, UnscorableReason.Silent), analysis("tiny"))
+        assertEquals(AnswerAnalysis.Done::class, analysis("spoken")::class)
+        assertEquals(JobState.Succeeded, job("silent")?.state)
+    }
+
+    @Test
+    fun `241 음량을 모르는 답변은 무음으로 치지 않고 보낸다`() = runTest(dispatcher) {
+        val jobs = jobs()
+        store.save(answer())
+        jobs.enqueueAnswer("a1")
+
+        jobs.drain()
+
+        assertEquals(1, analyzed)
+        assertEquals(AnswerAnalysis.Done::class, analysis()::class)
+    }
 }

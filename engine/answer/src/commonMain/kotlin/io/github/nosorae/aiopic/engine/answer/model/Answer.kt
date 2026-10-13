@@ -18,7 +18,21 @@ data class Answer(
     /** 이어 녹음을 시작한 위치(이어 붙인 녹음 기준). 분석이 이 구간을 말 멈춤으로 세지 않게 요청에 표시한다(F3.3, F3.4). */
     val resumedAt: List<Duration> = emptyList(),
     val analysis: AnswerAnalysis = AnswerAnalysis.Pending,
-)
+    /**
+     * 녹음하는 동안 들은 가장 큰 소리(0~1, 녹음 화면의 음량 값). 녹음 처음부터 끝까지 듣지 못했으면(앱이 꺼졌다 이어 녹음) null 이다.
+     * 말소리가 없던 답을 분석에 보내지 않으려고 남긴다(#241).
+     */
+    val loudest: Float? = null,
+) {
+    /** 녹음 내내 말소리 크기에 닿은 적이 없다. 보내면 모델이 받아쓰기를 지어낼 수 있어 보내지 않고 무음으로 끝낸다(#241). */
+    val silent: Boolean get() = loudest != null && loudest < SPEECH_LEVEL
+}
+
+/**
+ * 말소리로 치는 가장 작은 음량. 음량 0~1 은 -50dB~0dB 라서 0.2 는 -40dB 다. 보통 말소리는 0.5 안팎이고
+ * 조용한 방 잡음과 멀리서 나는 소리는 이보다 작다.
+ */
+private const val SPEECH_LEVEL = 0.2f
 
 /** 답변 분석 결과. 분석이 끝나지 않은 답변도 녹음은 남는다(F5.6). */
 @Serializable
@@ -40,10 +54,13 @@ sealed interface AnswerAnalysis {
     @SerialName("failed")
     data class Failed(val error: AnalysisError) : AnswerAnalysis
 
-    /** 모델이 평가할 수 없다고 이유 코드를 돌려줬다. 화면에는 "평가할 수 없음"으로 보인다(F5.5). */
+    /**
+     * 모델이 평가할 수 없다고 이유 코드를 돌려줬다. 화면에는 "평가할 수 없음"으로 보인다(F5.5).
+     * 녹음에 말소리가 없어 보내지 않고 끝냈으면 [analyzedBy] 가 null 이다(#241).
+     */
     @Serializable
     @SerialName("unscorable")
-    data class Unscorable(val analyzedBy: AnalyzedBy, val reason: UnscorableReason) : AnswerAnalysis
+    data class Unscorable(val analyzedBy: AnalyzedBy?, val reason: UnscorableReason) : AnswerAnalysis
 }
 
 /**

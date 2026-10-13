@@ -6,6 +6,7 @@ import io.github.nosorae.aiopic.engine.answer.model.AnswerAnalysis
 import io.github.nosorae.aiopic.engine.answer.model.JobKind
 import io.github.nosorae.aiopic.engine.answer.model.JobState
 import io.github.nosorae.aiopic.engine.answer.model.ModelInfo
+import io.github.nosorae.aiopic.engine.answer.model.UnscorableReason
 import io.github.nosorae.aiopic.engine.answer.port.AnalysisResult
 import io.github.nosorae.aiopic.engine.answer.port.Prompt
 import io.github.nosorae.aiopic.engine.answer.port.Recording
@@ -213,6 +214,8 @@ class AnalysisJobs(
         // ponytail: 답변 하나를 찾으려고 전체를 읽는다. 답변이 수천 개로 늘면 저장소에 id 로 읽는 쿼리를 더한다.
         val answer = store.answers().first().firstOrNull { it.id == answerId }
         if (answer == null || answer.analysis !is AnswerAnalysis.Pending) return null
+        // 말소리가 없던 답은 보내지 않는다. 보내면 모델이 질문에 맞는 답을 지어내 점수를 낼 수 있다(#241).
+        if (answer.silent) return null.also { store.save(answer.copy(analysis = AnswerAnalysis.Unscorable(null, UnscorableReason.Silent))) }
         val (model, prompt, recording) = answerRequest(answer)
         // 시간 제한은 포트 호출만 감싼다. 앞뒤 DB 읽기, 쓰기가 제한에 걸려 중간에 끊기지 않게 한다. 포트 안의 원문 저장은 SavedResponses 가 제한 밖에서 끝낸다(#211).
         return when (val result = withTimeout(timeout) { router.analyze(answer, model, prompt, recording) }) {

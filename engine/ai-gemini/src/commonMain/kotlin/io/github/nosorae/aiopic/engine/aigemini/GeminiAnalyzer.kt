@@ -137,7 +137,8 @@ private class AnswerWire(
     val contentFixes: List<ContentFix> = emptyList(),
     val finalScript: String? = null,
 ) {
-    fun toResult(): AnalysisResult<Feedback> = unscorableReason?.let { AnalysisResult.Unscorable(it) } ?: AnalysisResult.Success(
+    // 받아쓴 말이 없는데 점수가 오면 지어낸 값이다. 이유 코드를 빠뜨렸어도 무음으로 친다(#241).
+    fun toResult(): AnalysisResult<Feedback> = (unscorableReason ?: UnscorableReason.Silent.takeIf { transcript.isBlank() })?.let { AnalysisResult.Unscorable(it) } ?: AnalysisResult.Success(
         Feedback(
             transcript = transcript,
             corrections = corrections,
