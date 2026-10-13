@@ -179,6 +179,16 @@ fastlane store                                              # 한 스토어만: 
 | Play 스크린샷, 아이콘 | `fastlane/metadata/android/ko-KR/images/` (`phoneScreenshots/` 등) |
 | App Store 스크린샷 | `fastlane/screenshots/ios/ko/` |
 
+스크린샷은 지어낸 예시 기록(`StoreDemo.kt`)을 넣은 앱을 찍는다. Play 폰 다섯 장(1080x2160)은 `StoreScreenshotTest` 가 `./gradlew recordRoborazziAndroidHostTest` 로 다시 찍고 `check` 가 비교한다. App Store 다섯 장(6.9형, 1320x2868)은 iPhone 17 Pro Max 시뮬레이터에서 XCUITest 로 찍는다.
+
+```sh
+xcrun simctl status_bar 'iPhone 17 Pro Max' override --time 9:41 --batteryState charged --batteryLevel 100
+TEST_RUNNER_STORE_SCREENSHOTS_DIR="$PWD/fastlane/screenshots/ios/ko" xcodebuild test -project apps/opic/iosApp/iosApp.xcodeproj \
+  -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' -only-testing:iosAppUITests/StoreScreenshotsUITests
+```
+
+앱 아이콘 원본은 `apps/opic/icon/app-icon.svg` 이고 `python3 apps/opic/icon/make_icon.py` 가 PNG(레거시 mipmap, iOS 기본·다크·틴트, Play 512)를 다시 만든다. 규격과 원본 일치는 `python3 -m unittest scripts/test_store_assets.py` 가 본다.
+
 스크린샷 폴더가 비어 있으면 문구만 올리고 콘솔에 있는 이미지는 건드리지 않는다. 글자 수 제한은 `python3 -m unittest scripts/test_store_metadata.py` 가 키 없이 미리 확인한다. Data safety, 포그라운드 서비스 신고처럼 콘솔에서 직접 넣는 답은 `fastlane/store-declarations.md` 에 있다.
 
 ## 문서
