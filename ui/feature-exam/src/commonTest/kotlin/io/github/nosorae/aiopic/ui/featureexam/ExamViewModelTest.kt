@@ -253,6 +253,50 @@ class ExamViewModelTest {
     }
 
     @Test
+    fun `241 답변에 녹음 내내 들은 가장 큰 음량을 남긴다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        recorder.level.value = 0.6f
+        runCurrent()
+        recorder.level.value = 0f
+        advance(NextDelay)
+
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+
+        assertEquals(0.6f, repository.answers.single().loudest)
+    }
+
+    @Test
+    fun `241 말소리 없이 낸 답변은 음량 0 으로 남는다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        val viewModel = viewModel()
+        playUntilRecording(viewModel)
+        advance(NextDelay)
+
+        viewModel.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+
+        assertEquals(0f, repository.answers.single().loudest)
+    }
+
+    @Test
+    fun `241 앱이 꺼졌다 이어 녹음한 답변은 앞부분 음량을 몰라 음량을 남기지 않는다`() = runTest(dispatcher) {
+        atFirstQuestion()
+        recorder.start("rec/s1/3")
+        recorder.stop()
+        val restarted = viewModel()
+        playUntilRecording(restarted)
+        advance(NextDelay)
+
+        restarted.onIntent(ExamIntent.SubmitAnswer)
+        runCurrent()
+
+        assertNull(repository.answers.single().loudest)
+    }
+
+    @Test
     fun `F2_3 Play 를 누르면 질문을 읽고 다 읽은 뒤에 녹음이 시작된다`() = runTest(dispatcher) {
         atFirstQuestion()
         val viewModel = viewModel()

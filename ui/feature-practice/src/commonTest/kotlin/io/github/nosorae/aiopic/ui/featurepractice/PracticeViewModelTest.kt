@@ -87,6 +87,26 @@ class PracticeViewModelTest {
     }
 
     @Test
+    fun `241 답변에 녹음 내내 들은 가장 큰 음량을 남기고 말이 없었으면 0 이다`() = practiceTest {
+        val spoken = viewModel()
+        playUntilRecording(spoken)
+        recorder.level.value = 0.4f
+        runCurrent()
+        recorder.level.value = 0f
+        advance(NextDelay)
+        spoken.onIntent(PracticeIntent.SubmitAnswer)
+        runCurrent()
+        assertEquals(0.4f, repository.answers.last().loudest)
+
+        val silent = viewModel()
+        playUntilRecording(silent)
+        advance(NextDelay)
+        silent.onIntent(PracticeIntent.SubmitAnswer)
+        runCurrent()
+        assertEquals(0f, repository.answers.last().loudest)
+    }
+
+    @Test
     fun `F4_1 질문을 고르면 Play 를 누를 수 있다`() = practiceTest {
         val viewModel = viewModel()
         assertFalse(viewModel.uiState.value.canPlay)
