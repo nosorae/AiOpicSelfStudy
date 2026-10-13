@@ -55,6 +55,8 @@ kotlin {
     sourceSets.getByName("androidHostTest").dependencies {
         implementation(libs.compose.uiTestJunit4)
         implementation(libs.compose.uiTestManifest)
+        // 스토어 스크린샷이 데이터가 그려진 뒤 테스트 시계를 넘겨 찍는다(노드 찍기는 코어에 있다).
+        implementation(libs.roborazzi.core)
     }
 }
 
