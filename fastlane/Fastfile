@@ -7,7 +7,9 @@ APP_ID = "io.github.nosorae.aiopic"
 DIR = FastlaneCore::FastlaneFolder.path
 
 # 스크린샷은 #236 이 넣는다. 아직 없으면 문구만 올리고 콘솔의 기존 이미지는 그대로 둔다.
-def images?(dir) = Dir.glob(File.join(dir, "**", "*.{png,jpg,jpeg}")).any?
+def images?(dir)
+  Dir.glob(File.join(dir, "**", "*.{png,jpg,jpeg}")).any?
+end
 
 desc "Play 와 App Store 에 문구와 스크린샷을 올린다"
 lane :store do
