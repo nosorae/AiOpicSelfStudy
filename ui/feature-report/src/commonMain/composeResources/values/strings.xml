@@ -35,7 +35,7 @@
     <string name="answer_pending">답변을 분석하고 있습니다. 표현 교정, 내용 교정, 다듬은 최종 스크립트, 말 속도가 곧 나옵니다.</string>
     <string name="answer_unscorable">평가할 수 없음</string>
     <string name="status_unscorable_unsent">평가할 수 없음, %1$s</string>
-    <string name="answer_silent_help">이 답은 분석에 보내지 않아 점수와 교정이 없습니다. 마이크 구멍을 손이나 케이스가 막고 있지 않은지 보고, 휴대폰을 입에서 한 뼘 거리에 두고 같은 질문을 소리 내어 다시 녹음해 보세요.</string>
+    <string name="answer_silent_help">그래서 점수와 교정이 없습니다. 마이크 구멍을 손이나 케이스가 막고 있지 않은지 보고, 휴대폰을 입에서 한 뼘 거리에 두고 같은 질문을 소리 내어 다시 녹음해 보세요.</string>
     <string name="answer_unscorable_help">녹음은 남아 있습니다. 같은 문항을 시험 언어로 5초 넘게 다시 답해 보세요.</string>
     <string name="answer_failed">분석하지 못했습니다</string>
     <string name="failed_retryable">요청이 몰리거나 답이 늦어 몇 번 더 보냈지만 결과를 받지 못했습니다. 잠시 뒤 다시 분석하기를 누르세요.</string>

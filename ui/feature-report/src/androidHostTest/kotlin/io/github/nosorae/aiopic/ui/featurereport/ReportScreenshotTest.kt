@@ -116,6 +116,8 @@ class ReportScreenshotTest {
 
     @Test fun answer_silent() = answer(ReportSamples.answerSilent)
 
+    @Test fun answer_silent_sent() = answer(ReportSamples.answerSilentSent)
+
     @Test fun answer_silent_dark() = answer(ReportSamples.answerSilent, dark = true)
 
     @Config(fontScale = 2f)

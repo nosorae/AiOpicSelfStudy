@@ -168,6 +168,9 @@ internal object ReportSamples {
     /** 녹음 내내 말소리가 없어 보내지 않고 끝낸 답(#241). */
     val answerSilent = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(null, UnscorableReason.Silent)), names = names)
 
+    /** 보냈지만 모델이 말소리를 못 찾아 무음으로 돌려준 답(#241). 분석 모델 줄과 안내 문구가 함께 보인다. */
+    val answerSilentSent = AnswerReportUiState(loading = false, answer = answer(2, AnswerAnalysis.Unscorable(flash, UnscorableReason.Silent)), names = names)
+
     val answerPending = AnswerReportUiState(loading = false, answer = answer(3, AnswerAnalysis.Pending), names = names)
 
     /** 연결이 끊겨 결과를 받지 못했다(#203). */

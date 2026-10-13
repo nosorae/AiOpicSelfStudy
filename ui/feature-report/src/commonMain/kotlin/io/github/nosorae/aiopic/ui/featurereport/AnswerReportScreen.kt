@@ -123,6 +123,7 @@ private fun LazyListScope.answerContent(
             SectionTitle(stringResource(Res.string.answer_unscorable))
             Paragraph(stringResource(analysis.reason.text))
             // 말소리가 없던 답은 녹음을 다시 해야 하니 마이크와 거리를 먼저 안내한다(#241).
+            // 앱이 보내지 않은 답과 모델이 무음으로 돌려준 답이 모두 여기 오니 문구는 보냈는지를 말하지 않는다.
             Paragraph(stringResource(if (analysis.reason == UnscorableReason.Silent) Res.string.answer_silent_help else Res.string.answer_unscorable_help), secondary = true)
         }
 
