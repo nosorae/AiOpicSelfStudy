@@ -1,0 +1,53 @@
+# 스토어 등록 문구, 심사 메모, 스크린샷을 올린다. 앱 바이너리와 심사 제출은 하지 않는다.
+# 계정 키는 저장소 밖 파일 경로를 환경 변수로 받는다. 사용법은 README 의 "스토어 문구 올리기".
+
+skip_docs # 실행할 때마다 fastlane/README.md 를 새로 쓰지 않게 한다
+
+APP_ID = "io.github.nosorae.aiopic"
+DIR = FastlaneCore::FastlaneFolder.path
+
+# 스크린샷은 #236 이 넣는다. 아직 없으면 문구만 올리고 콘솔의 기존 이미지는 그대로 둔다.
+def images?(dir)
+  Dir.glob(File.join(dir, "**", "*.{png,jpg,jpeg}")).any?
+end
+
+desc "Play 와 App Store 에 문구와 스크린샷을 올린다"
+lane :store do
+  play
+  app_store
+end
+
+desc "Play 스토어 등록정보를 올린다. PLAY_JSON_KEY_PATH: 서비스 계정 JSON 경로"
+lane :play do
+  metadata = File.join(DIR, "metadata/android")
+  supply(
+    package_name: APP_ID,
+    json_key: ENV.fetch("PLAY_JSON_KEY_PATH"),
+    metadata_path: metadata,
+    skip_upload_apk: true,
+    skip_upload_aab: true,
+    skip_upload_changelogs: true,
+    skip_upload_images: !images?(metadata),
+    skip_upload_screenshots: !images?(metadata)
+  )
+end
+
+desc "App Store 등록정보와 심사 메모를 올린다. ASC_API_KEY_PATH: API 키 JSON 경로, REVIEW_GEMINI_KEY: 심사용 키"
+lane :app_store do
+  metadata = File.join(DIR, "metadata/ios")
+  screenshots = File.join(DIR, "screenshots/ios")
+  notes = File.read(File.join(metadata, "review_information/notes.txt"))
+  deliver(
+    app_identifier: APP_ID,
+    api_key_path: ENV.fetch("ASC_API_KEY_PATH"),
+    metadata_path: metadata,
+    screenshots_path: screenshots,
+    skip_binary_upload: true,
+    skip_screenshots: !images?(screenshots),
+    overwrite_screenshots: true,
+    submit_for_review: false,
+    run_precheck_before_submit: false,
+    force: true,
+    app_review_information: { notes: notes.sub("{{REVIEW_GEMINI_KEY}}", ENV.fetch("REVIEW_GEMINI_KEY")) }
+  )
+end

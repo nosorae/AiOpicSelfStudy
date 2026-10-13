@@ -27,3 +27,6 @@ apps/opic/iosApp/Configuration/Local.xcconfig
 
 # 파이썬 바이트코드
 __pycache__/
+
+# fastlane 실행 결과 보고서
+fastlane/report.xml
