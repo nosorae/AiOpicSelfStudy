@@ -1,10 +1,12 @@
-# 스토어 등록 문구, 심사 메모, 스크린샷을 올린다. 앱 바이너리와 심사 제출은 하지 않는다.
-# 계정 키는 저장소 밖 파일 경로를 환경 변수로 받는다. 사용법은 README 의 "스토어 문구 올리기".
+# 스토어 등록 문구, 심사 메모, 스크린샷, iOS 빌드를 올린다. 심사 제출은 하지 않는다.
+# 계정 키는 저장소 밖 파일 경로를 환경 변수로 받는다. 사용법은 README 의 "배포용 빌드"와 "스토어 문구 올리기".
 
 skip_docs # 실행할 때마다 fastlane/README.md 를 새로 쓰지 않게 한다
 
 APP_ID = "io.github.nosorae.aiopic"
-DIR = FastlaneCore::FastlaneFolder.path
+# 절대 경로로 둔다. fastlane 은 lane 본문을 fastlane/ 에서, 액션을 그 위 폴더에서 돌려서
+# 상대 경로를 넘기면 deliver 가 없는 폴더를 읽고 스크린샷 0장을 성공으로 끝낸다.
+DIR = File.expand_path(FastlaneCore::FastlaneFolder.path)
 
 # 스크린샷이 없으면 문구만 올리고 콘솔의 기존 이미지는 그대로 둔다. 스크린샷 찍는 법은 README 의 "스토어 문구 올리기".
 def images?(dir)
@@ -49,5 +51,15 @@ lane :app_store do
     run_precheck_before_submit: false,
     force: true,
     app_review_information: { notes: notes.sub("{{REVIEW_GEMINI_KEY}}", ENV.fetch("REVIEW_GEMINI_KEY")) }
+  )
+end
+
+desc "App Store 용 ipa 를 TestFlight 에 올린다. 빌드 번호는 Config.xcconfig 의 CURRENT_PROJECT_VERSION. ASC_API_KEY_PATH: API 키 JSON 경로"
+# ipa 이름은 xcodebuild -exportArchive 가 앱 번들 이름(Config.xcconfig 의 PRODUCT_NAME)에서 따온다
+lane :ios_build do
+  upload_to_testflight(
+    api_key_path: ENV.fetch("ASC_API_KEY_PATH"),
+    ipa: File.expand_path("../build/release/ipa/AiOpicSelfStudy.ipa", DIR),
+    skip_waiting_for_build_processing: true
   )
 end

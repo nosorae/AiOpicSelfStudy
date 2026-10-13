@@ -9,6 +9,8 @@
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>시험 답변을 녹음해서 발음과 문법을 분석하는 데 씁니다. 녹음은 기기에 남고, 분석할 때만 Google Gemini 로 보냅니다.</string>
 	<key>UIBackgroundModes</key>
