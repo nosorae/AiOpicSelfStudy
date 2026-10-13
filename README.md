@@ -137,6 +137,29 @@ JDK 17, Android SDK, Xcode 가 필요하다.
 
 iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 
+### 배포용 빌드
+
+키와 비밀번호는 저장소에 넣지 않는다. 업로드 키는 `~/.config/aiopic-release/` 에 두고(폴더 700, 파일 600) 저장소는 서명 정보 파일의 경로만 받는다.
+
+```bash
+mkdir -p ~/.config/aiopic-release && chmod 700 ~/.config/aiopic-release && cd ~/.config/aiopic-release
+keytool -genkeypair -keystore upload.jks -storetype PKCS12 -alias upload -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=AiOpicSelfStudy"
+# 입력한 비밀번호로 서명 정보 파일을 만든다. storeFile 이 상대 경로면 이 파일 옆을 본다.
+printf 'storeFile=upload.jks\nstorePassword=<비밀번호>\nkeyAlias=upload\nkeyPassword=<비밀번호>\n' > signing.properties
+chmod 600 upload.jks signing.properties
+```
+
+경로는 `local.properties` 의 `AIOPIC_RELEASE_SIGNING` 이나 같은 이름의 환경 변수로 넘긴다. 둘 다 없거나 파일이 모자라면 서명 없이 빌드하고 `릴리스 빌드를 서명 없이 만든다: <이유>` 를 찍는다.
+
+| 목적 | 명령 |
+|---|---|
+| 서명된 AAB | `./gradlew :apps:opic:androidApp:bundleRelease` (결과 `apps/opic/androidApp/build/outputs/bundle/release/androidApp-release.aab`) |
+| 서명 확인 | `jarsigner -verify apps/opic/androidApp/build/outputs/bundle/release/androidApp-release.aab` |
+| iOS 아카이브 | `xcodebuild -project apps/opic/iosApp/iosApp.xcodeproj -scheme iosApp -configuration Release -destination 'generic/platform=iOS' -archivePath build/release/iosApp.xcarchive -allowProvisioningUpdates archive` |
+| App Store 용 ipa | `xcodebuild -exportArchive -archivePath build/release/iosApp.xcarchive -exportOptionsPlist apps/opic/iosApp/ExportOptions.plist -exportPath build/release/ipa -allowProvisioningUpdates` |
+
+iOS 서명 팀은 `Local.xcconfig` 의 `TEAM_ID` 에서 온다. App Store 용 ipa 를 내보내려면 그 팀 계정이 Xcode 설정의 계정에 로그인돼 있어야 배포 프로파일이 자동으로 만들어진다.
+
 ### 스토어 문구 올리기
 
 스토어 등록 문구, App Store 심사 메모, 스크린샷은 `fastlane/` 에 있고 [fastlane](https://docs.fastlane.tools) 으로 올린다. 앱 바이너리는 올리지 않고 심사 제출도 하지 않는다. 계정 키는 저장소 밖에 두고 경로만 환경 변수로 넘긴다.
