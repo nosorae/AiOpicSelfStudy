@@ -16,6 +16,9 @@ internal object UiTestLaunch {
     /** 저장된 키, 설정, DB, 녹음을 지우고 첫 실행처럼 시작한다(F1.0). 시뮬레이터는 앱을 다시 설치해도 이것들이 남는다. */
     private val reset = "ui-test-reset" in NSProcessInfo.processInfo.arguments
 
+    /** 스토어 스크린샷용 예시 기록([seedStoreDemo])을 넣는다(#236). reset 과 함께 줘서 빈 DB 에 넣는다. */
+    val storeDemo = "ui-test-store-demo" in NSProcessInfo.processInfo.arguments
+
     /** 그래프가 DB 와 녹음 폴더를 만들기 전에 부른다. */
     fun resetIfAsked(keyVault: KeyVault) {
         if (!reset) return

@@ -17,6 +17,7 @@ import io.github.nosorae.aiopic.libs.llmgemini.BackgroundUpload
 import io.github.nosorae.aiopic.libs.recorder.api.IosRecorder
 import io.github.nosorae.aiopic.libs.tts.IosTts
 import io.github.nosorae.aiopic.libs.workqueue.api.IosWorkQueue
+import io.github.nosorae.aiopic.packs.opicen.OpicEn
 import io.github.nosorae.aiopic.ui.design.LocalHaptics
 import io.github.nosorae.aiopic.ui.design.MontageTheme
 import io.github.nosorae.aiopic.ui.featuresettings.theme.ThemeMode
@@ -88,6 +89,7 @@ class IosShell {
         registerDebugPanels(audio = ::audioSessionRows)
         // 앱이 보내는 중에 죽었으면 진행 중으로 남은 작업을 대기로 돌리고 대기열을 깨운다.
         MainScope().launch { analysisJobs.recover() }
+        if (UiTestLaunch.storeDemo) MainScope().launch { opicStore.seedStoreDemo(OpicEn.questionPool()) }
     }
 
     private val haptics = graph.settings.haptics(iosHaptics())

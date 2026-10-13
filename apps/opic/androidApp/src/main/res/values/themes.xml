@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 시작 분기(F1.0)가 끝날 때까지 보이는 시스템 스플래시. Android 11 이하에서도 같은 모양이 되게 compat 테마를 쓴다. -->
-    <style name="Theme.Opic.Starting" parent="Theme.SplashScreen">
+    <style name="Theme.Opic.Starting" parent="Theme.SplashScreen.IconBackground">
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- 전경이 배경 없는 흰 획이라 밝은 시작 화면에서 안 보인다. 아이콘 원을 주홍(ui/design 라이트 primary)으로 깐다. -->
+        <item name="windowSplashScreenIconBackgroundColor">#C83F1A</item>
         <item name="postSplashScreenTheme">@android:style/Theme.Material.Light.NoActionBar</item>
     </style>
 </resources>

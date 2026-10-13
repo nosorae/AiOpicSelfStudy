@@ -6,7 +6,7 @@ skip_docs # 실행할 때마다 fastlane/README.md 를 새로 쓰지 않게 한�
 APP_ID = "io.github.nosorae.aiopic"
 DIR = FastlaneCore::FastlaneFolder.path
 
-# 스크린샷은 #236 이 넣는다. 아직 없으면 문구만 올리고 콘솔의 기존 이미지는 그대로 둔다.
+# 스크린샷이 없으면 문구만 올리고 콘솔의 기존 이미지는 그대로 둔다. 스크린샷 찍는 법은 README 의 "스토어 문구 올리기".
 def images?(dir)
   Dir.glob(File.join(dir, "**", "*.{png,jpg,jpeg}")).any?
 end
