@@ -164,7 +164,7 @@ App Store Connect 는 같은 빌드 번호를 두 번 받지 않는다. 새 빌�
 
 ```sh
 export ASC_API_KEY_PATH=<App Store Connect API 키 JSON 경로>
-fastlane ios_build   # build/release/ipa/iosApp.ipa 를 올린다. 처리 완료는 기다리지 않는다
+fastlane ios_build   # build/release/ipa/AiOpicSelfStudy.ipa 를 올린다. 처리 완료는 기다리지 않는다
 ```
 
 ### 스토어 문구 올리기

@@ -55,10 +55,11 @@ lane :app_store do
 end
 
 desc "App Store 용 ipa 를 TestFlight 에 올린다. 빌드 번호는 Config.xcconfig 의 CURRENT_PROJECT_VERSION. ASC_API_KEY_PATH: API 키 JSON 경로"
+# ipa 이름은 xcodebuild -exportArchive 가 앱 번들 이름(Config.xcconfig 의 PRODUCT_NAME)에서 따온다
 lane :ios_build do
   upload_to_testflight(
     api_key_path: ENV.fetch("ASC_API_KEY_PATH"),
-    ipa: File.expand_path("../build/release/ipa/iosApp.ipa", DIR),
+    ipa: File.expand_path("../build/release/ipa/AiOpicSelfStudy.ipa", DIR),
     skip_waiting_for_build_processing: true
   )
 end

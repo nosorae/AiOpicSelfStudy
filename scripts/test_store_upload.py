@@ -27,6 +27,15 @@ class StoreUploadTest(unittest.TestCase):
         self.assertRegex(FASTFILE, r"(?m)^lane :ios_build do")
         self.assertIn("upload_to_testflight(", FASTFILE)
 
+    def test_build_upload_ipa_matches_product_name(self):
+        # xcodebuild -exportArchive 는 ipa 이름을 앱 번들 이름(PRODUCT_NAME)에서 따온다.
+        # 스킴 이름(iosApp)으로 적으면 README 두 명령으로 만든 ipa 를 lane 이 못 찾는다
+        config = (ROOT / "apps/opic/iosApp/Configuration/Config.xcconfig").read_text()
+        name = re.search(r"(?m)^PRODUCT_NAME\s*=\s*(\S+)", config).group(1)
+        ipa = f"build/release/ipa/{name}.ipa"
+        self.assertIn(ipa, FASTFILE)
+        self.assertIn(ipa, (ROOT / "README.md").read_text())
+
 
 if __name__ == "__main__":
     unittest.main()
