@@ -137,6 +137,27 @@ JDK 17, Android SDK, Xcode 가 필요하다.
 
 iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
 
+### 스토어 문구 올리기
+
+스토어 등록 문구, App Store 심사 메모, 스크린샷은 `fastlane/` 에 있고 [fastlane](https://docs.fastlane.tools) 으로 올린다. 앱 바이너리는 올리지 않고 심사 제출도 하지 않는다. 계정 키는 저장소 밖에 두고 경로만 환경 변수로 넘긴다.
+
+```sh
+export PLAY_JSON_KEY_PATH=<Play Console 서비스 계정 JSON 경로>
+export ASC_API_KEY_PATH=<App Store Connect API 키 JSON 경로>   # key_id, issuer_id, key 를 담은 fastlane 형식
+export REVIEW_GEMINI_KEY=<심사용 Gemini API 키>               # 심사 메모의 {{REVIEW_GEMINI_KEY}} 에 들어간다
+fastlane store                                              # 한 스토어만: fastlane play, fastlane app_store
+```
+
+| 무엇 | 위치 |
+|---|---|
+| Play 문구 (이름, 짧은 설명, 전체 설명) | `fastlane/metadata/android/ko-KR/` |
+| App Store 문구 (이름, 부제, 홍보 문구, 설명, 키워드, 지원 주소, 개인정보처리방침 주소) | `fastlane/metadata/ios/ko/`. 설명은 Play 전체 설명을 가리킨다 |
+| App Store 심사 메모 | `fastlane/metadata/ios/review_information/notes.txt` |
+| Play 스크린샷, 아이콘 | `fastlane/metadata/android/ko-KR/images/` (`phoneScreenshots/` 등) |
+| App Store 스크린샷 | `fastlane/screenshots/ios/ko/` |
+
+스크린샷 폴더가 비어 있으면 문구만 올리고 콘솔에 있는 이미지는 건드리지 않는다. 글자 수 제한은 `python3 -m unittest scripts/test_store_metadata.py` 가 키 없이 미리 확인한다. Data safety, 포그라운드 서비스 신고처럼 콘솔에서 직접 넣는 답은 `fastlane/store-declarations.md` 에 있다.
+
 ## 문서
 
 | 문서 | 위치 |
