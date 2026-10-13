@@ -14,7 +14,7 @@ PLAY = FASTLANE / "metadata/android/ko-KR"
 IOS = FASTLANE / "metadata/ios/ko"
 REVIEW_NOTES = FASTLANE / "metadata/ios/review_information/notes.txt"
 
-# 파일 이름: 최대 글자 수
+# 파일 이름: 최대 글자 수 (BYTE_LIMITED 는 UTF-8 바이트 수)
 PLAY_LIMITS = {"title.txt": 30, "short_description.txt": 80, "full_description.txt": 4000}
 IOS_LIMITS = {
     "name.txt": 30,
@@ -25,6 +25,8 @@ IOS_LIMITS = {
     "support_url.txt": 255,
     "privacy_url.txt": 255,
 }
+# App Store Connect 키워드 칸은 글자가 아니라 바이트로 잰다. 한글 한 자가 3바이트다
+BYTE_LIMITED = {"keywords.txt"}
 
 
 def text(path):
@@ -37,7 +39,8 @@ class StoreMetadataTest(unittest.TestCase):
             with self.subTest(file=f"{folder.name}/{name}"):
                 value = text(folder / name)
                 self.assertTrue(value, "빈 칸")
-                self.assertLessEqual(len(value), limit)
+                size = len(value.encode()) if name in BYTE_LIMITED else len(value)
+                self.assertLessEqual(size, limit)
 
     def test_play_text_fits_limits(self):
         self.assert_within_limits(PLAY, PLAY_LIMITS)
