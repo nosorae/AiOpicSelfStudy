@@ -232,6 +232,6 @@ class AppShellTest {
 
         rule.onNodeWithText("개인정보처리방침").performScrollTo().performClick()
 
-        assertEquals(listOf("https://github.com/nosorae/AiOpicSelfStudy/blob/main/docs/privacy-policy.md"), opened)
+        assertEquals(listOf("https://github.com/nosorae/malhaebom-opic/blob/main/docs/privacy-policy.md"), opened)
     }
 }
