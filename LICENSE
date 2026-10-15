@@ -1,0 +1,8 @@
+Copyright (c) 2026 nosorae. All rights reserved.
+
+이 저장소의 소스 코드, 문서, 이미지는 읽고 참고하라고 공개한다. 저작권자의 서면 허락 없이 복제, 수정, 배포, 재게시, 앱 스토어 출시를 할 수 없다. GitHub 이용 약관이 허용하는 범위(저장소 보기, fork)는 예외다.
+
+아래는 이 라이선스가 아니라 각자의 라이선스를 따른다.
+
+- .claude/skills/ 아래 외부에서 가져온 스킬: .claude/skills/THIRD_PARTY.md 와 .claude/skills/_licenses/
+- Montage 디자인 자산과 Pretendard 글꼴: THIRD_PARTY_LICENSES.md
