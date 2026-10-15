@@ -250,7 +250,7 @@ fun SettingsScreen(
 }
 
 /** 서버가 없어 방침 문서는 저장소에 둔다. 스토어 등록 화면에도 같은 주소를 넣는다. */
-private const val PRIVACY_POLICY_URL = "https://github.com/nosorae/AiOpicSelfStudy/blob/main/docs/privacy-policy.md"
+private const val PRIVACY_POLICY_URL = "https://github.com/nosorae/malhaebom-opic/blob/main/docs/privacy-policy.md"
 
 @Composable
 private fun SectionLabel(text: StringResource) {

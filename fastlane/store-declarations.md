@@ -4,7 +4,7 @@ Play Console 과 App Store Connect 에 옮겨 넣을 답이다. 스토어 계정
 
 공통으로 넣는 값:
 
-- 개인정보처리방침 주소: `https://github.com/nosorae/AiOpicSelfStudy/blob/main/docs/privacy-policy.md` (앱 설정 화면의 링크와 같다. 저장소가 공개돼야 열린다)
+- 개인정보처리방침 주소: `https://github.com/nosorae/malhaebom-opic/blob/main/docs/privacy-policy.md` (앱 설정 화면의 링크와 같다. 저장소가 공개돼야 열린다)
 - 대상 연령: 만 18세 이상 (Gemini API 이용 조건)
 
 ## 1. Google Play Data safety
