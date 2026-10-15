@@ -1,39 +1,47 @@
-# AiOpicSelfStudy
+# 말해봄 (malhaebom-opic)
 
-오픽(OPIc) 영어 말하기 시험을 실제 순서대로 연습하는 Android, iOS 앱이다. 모의고사 15문항을 실제 시험 규칙(질문 글자 없음, 다시 듣기 한 번, 40분)으로 보고, 답변마다 AI 피드백을, 회차마다 예상 등급 범위를 받는다. 앱을 껐다 켜도 멈춘 문항에서 이어진다.
+[![CI](https://github.com/nosorae/malhaebom-opic/actions/workflows/ci.yml/badge.svg)](https://github.com/nosorae/malhaebom-opic/actions/workflows/ci.yml)
 
-서버는 없다. 사용자가 자기 Gemini API 키를 넣고, 녹음은 기기에만 남는다. Compose Multiplatform 으로 두 플랫폼을 같은 코드로 만든다.
+오픽(OPIc) 영어 말하기 시험을 실제 순서와 규칙대로 연습하는 Android, iOS 앱이다. 모의고사 15문항을 질문 글자 없이, 다시 듣기 한 번, 40분으로 보고, 답변마다 AI 피드백을, 회차마다 예상 등급 범위를 받는다. Compose Multiplatform 한 코드로 두 플랫폼을 만들고, 서버 없이 사용자의 Gemini API 키로 분석한다. 녹음은 기기에만 남는다.
 
-| 키 넣기 | 모의고사 탭 | 연습 탭 | 문항 | 회차 리포트 | 답변 리포트 | 기록 |
-|---|---|---|---|---|---|---|
-| <img src="docs/images/screen-key.png" width="150"> | <img src="docs/images/screen-exam-tab.png" width="150"> | <img src="docs/images/screen-practice-tab.png" width="150"> | <img src="docs/images/screen-question.png" width="150"> | <img src="docs/images/screen-report-session.png" width="150"> | <img src="docs/images/screen-report-answer.png" width="150"> | <img src="docs/images/screen-history.png" width="150"> |
+- **앱이 죽어도 이어진다.** 시험 진행은 순수 함수가 계산해 단계마다 Room 에 통째로 저장하고, 녹음은 약 5초 조각 파일로 바로 쓴다. 녹음 중 강제 종료해도 잃는 것은 쓰던 조각 하나다
+- **LLM 출력을 믿지 않는다.** 교정한 구절이 실제 받아쓰기에 있는지, 점수와 등급이 범위 안인지 앱이 검사해 틀린 항목을 버린다. 같은 대본을 여러 번 채점시켜 등급이 한 단계 후하게 나오는 것을 찾아 프롬프트를 고쳤다
+- **화면이 꺼져도, 앱을 내려도 일이 끝난다.** Android 는 마이크 포그라운드 서비스와 WorkManager, iOS 는 백그라운드 오디오와 백그라운드 `URLSession` 업로드를 쓴다. 재시도 규칙은 두 플랫폼이 공통 코드 하나를 쓴다
+- **규칙은 빌드가 지킨다.** 모듈 26개의 층 의존, 스크린샷 기준 이미지 237장, `@Test` 1,100여 개를 `./gradlew check` 하나가 검사한다
+- **요구사항, 구조 결정, 완료 판정 규칙은 사람이 정했다.** 코딩 에이전트가 이슈 하나씩 구현했고, 작업 노드 55개 중 15개는 판정 명령 실패나 리뷰 반려를 거친 뒤 병합됐다. 자세한 방식은 [개발 방식](#개발-방식)에 있다
 
-## 모의고사 한 회
+| 녹음 중 강제 종료하고 이어 보기 (iOS 시뮬레이터에서 `ExamResumeUITests` 를 돌리며 녹화) |
+|---|
+| <img src="docs/images/resume.gif" width="240"> |
 
-점검과 1번은 내장 문항으로 바로 내고, 2~7번은 1번 Play 때, 8~15번은 6번 Play 때 재조정 선택지마다 Gemini 에 미리 요청해 고른 것을 쓴다. 40분은 1번 문항에 닿을 때부터 시험 화면에 있는 동안만 흐른다. 답변 분석은 시험이 끝나길 기다리지 않고 Next 마다 뒤에서 보낸다.
+| 모의고사 탭 | 문항 | 회차 리포트 | 답변 리포트 |
+|---|---|---|---|
+| <img src="docs/images/screen-exam-tab.png" width="180"> | <img src="docs/images/screen-question.png" width="180"> | <img src="docs/images/screen-report-session.png" width="180"> | <img src="docs/images/screen-report-answer.png" width="180"> |
 
-```mermaid
-flowchart TD
-    survey["서베이<br/>주제 12개 이상"] --> level["수준 선택<br/>1~6"]
-    level --> check["점검<br/>채점 안 하는<br/>연습 문항"]
-    pool[("내장 문항<br/>점검과 1번은<br/>바로 낸다")] -.-> check
-    check --> timer
-    subgraph timer["40분 타이머"]
-        q1["1번 자기소개"] --> q2["2~7번"]
-        q2 --> recal["난이도 재조정"]
-        recal --> q8["8~15번<br/>수준 1~2 는<br/>8~12번"]
-    end
-    q1 -. "1번 Play 때" .-> genA[("2~7번 받기<br/>Gemini")]
-    genA -.-> q2
-    q2 -. "6번 Play 때<br/>선택지 셋 다" .-> genB[("8~15번 받기<br/>쉬운, 비슷한,<br/>어려운")]
-    genB -. "고른 것" .-> q8
-    wait["2번, 8번 Play 때<br/>아직 안 왔으면<br/>만들고 있다고<br/>보이며 기다린다<br/>실패하면 내장 문항"] -.- q8
-    q8 --> report["리포트<br/>예상 등급 범위"]
-    q8 -. "문항마다<br/>Next 때" .-> queue[["분석 대기열"]]
-    queue -. "다 분석되면<br/>회차 등급 한 번" .-> report
-```
+| 키 넣기 | 연습 탭 | 기록 |
+|---|---|---|
+| <img src="docs/images/screen-key.png" width="180"> | <img src="docs/images/screen-practice-tab.png" width="180"> | <img src="docs/images/screen-history.png" width="180"> |
 
-받은 질문은 회차 id 로 저장해서 이어 볼 때 같은 질문이 나온다. 시간이 다 되면 답한 문항만 채점하고 나머지는 "시간 부족"으로 표시한다.
+## LLM 출력을 믿지 않는다
+
+Gemini 는 구조화된 JSON 을 돌려주지만 내용까지 맞다는 보장은 없다. 사용자가 하지 않은 말을 교정하거나, 0~100 밖의 점수를 내거나, 등급 체계에 없는 이름을 쓸 수 있다. 앱은 응답을 화면에 쓰기 전에 검사하고, 하나라도 걸리면 한 번 다시 요청한다([`OutputCheck.kt`](engine/answer/src/commonMain/kotlin/io/github/nosorae/aiopic/engine/answer/check/OutputCheck.kt)).
+
+| 검사 | 다시 받은 응답도 틀리면 |
+|---|---|
+| 교정, 표현 추천, 내용 교정의 원문 구절이 받아쓰기에 있나 | 그 항목을 버린다 |
+| 교정마다 깎은 점수가 0 이상이고 합이 `100 - 점수` 이하인가 | 깎은 점수 표시만 지운다 |
+| 점수 0~100, 문장 수와 말 속도가 0 이상인가 | 분석을 실패로 끝낸다 |
+| 회차 등급 범위가 등급 체계 안에 있고 아래가 위보다 높지 않은가 | 분석을 실패로 끝낸다 |
+| 무너진 문항 번호가 회차 문항 수 안인가 | 그 번호를 버린다 |
+
+분석이 실패로 끝나면 리포트에 이유와 다시 분석하기를 보인다. 받은 응답 원문은 해석하기 전에 DB 에 먼저 저장해서, 해석 코드가 실패하거나 앱이 죽어도 같은 요청을 다시 보내지 않는다(ADR 0032).
+
+앱이 거르지 못하는 오류(맞는 말을 틀렸다고 함, 등급이 후함)는 품질 확인 도구 [`tools/eval`](tools/eval)로 찾는다. 같은 회차를 5번 채점시켜 등급 범위가 몇 번 일치하는지, 일부러 넣은 문법 오류 5개 중 몇 개를 잡는지, 수준이 다른 대본 셋의 등급 순서가 맞는지를 보고서로 남긴다. 지금까지 찾아 고친 것은 둘이다.
+
+1. **등급이 한 단계 후했다.** IM2 수준으로 쓴 대본이 5번씩 두 번 돌린 10번 모두 IM3~IH 를 받았다. 프롬프트가 문장 수준으로 해낸 과거 서술도 Advanced 근거로 셌기 때문이다. Advanced 체크는 문단으로 해낸 것만 세고 등급 아래쪽은 모든 답변에서 유지한 수준으로 정하게 고치자 같은 대본이 5번 모두 IM2~IM3 을 받았다. 오류를 잡은 수(4/5)와 등급 순서는 그대로였다([ADR 0028](docs/adr/0028-회차-등급은-하한으로-정하고-Advanced-체크는-문단으로만-센다.md), [보고서 v1](evals/reports/opic-en-session-grade-v1_opic-en-answer-v2_gemini-3.8-flash.md), [v2](evals/reports/opic-en-session-grade-v2_opic-en-answer-v2_gemini-3.8-flash.md))
+2. **무음 녹음에 받아쓰기를 지어냈다.** 아무 말도 하지 않은 녹음에 "Um, I often visit a park near my house..." 받아쓰기와 45점이 나왔다. 프롬프트에 들리지 않는 말은 쓰지 말라고 적었고, 앱은 녹음 내내 음량이 기준 아래면 보내지 않으며 받아쓰기가 비어 있으면 점수를 버리고 무음으로 친다
+
+사례와 프롬프트 버전별 결과는 [`docs/error-analysis.md`](docs/error-analysis.md) 에 쌓는다. 사용자가 앱에서 틀린 교정을 표시해 내보내면 같은 표에 더한다.
 
 ## 앱을 껐다 켜도 이어지는 이유
 
@@ -55,7 +63,7 @@ sequenceDiagram
         V->>A: 흐른 시간
         V->>R: 남은 시간 저장
     end
-    M->>M: 몇 초마다 조각 파일로 쓴다
+    M->>M: 약 5초마다 조각 파일로 쓴다
     Note over U,M: 앱 강제 종료. 저장된 회차와 녹음 조각이 남고 40분은 멈춘다
     U->>V: 다시 켜서 모의고사 탭의 "이어 보기"
     V->>R: 회차 읽기
@@ -67,11 +75,28 @@ sequenceDiagram
     V->>M: 같은 문항 폴더에 이어 녹음
 ```
 
-진행 계산이 저장, 화면과 떨어져 있어서 "7번에서 껐다 켜면 재조정 화면부터" 같은 경우를 기기 없이 단위 테스트로 확인한다(ADR 0012, 0013).
+진행 계산이 저장, 화면과 떨어져 있어서 "7번에서 껐다 켜면 재조정 화면부터" 같은 경우를 기기 없이 단위 테스트로 확인한다([ADR 0012](docs/adr/0012-시험-진행-상태는-순수-함수와-Room.md)). 녹음은 문항 폴더에 조각으로 쌓고, 다시 켜면 같은 폴더에 다음 번호로 이어 쓴다. 보내기 직전에 조각을 한 파일로 합치면서 이어 녹음한 지점을 함께 넘겨, 모델이 그 틈을 말 멈춤으로 세지 않게 한다([ADR 0013](docs/adr/0013-녹음-조각-저장과-이어-녹음.md)).
+
+실제로 프로세스를 죽이는 테스트도 있다. Android 계측 테스트 `ExamE2eTest` 는 2번 문항 녹음 중에 프로세스를 끝내고 다음 단계에서 PID 가 바뀐 것을 확인한 뒤 이어 보기부터 리포트까지 간다. iOS 는 `ExamResumeUITests` 가 녹음 중 앱을 끝내고 같은 문항으로 돌아오는지 본다(위 영상).
+
+## Android, iOS 에서 한 일
+
+화면과 로직은 공통 코드지만, 시험 중에 화면이 꺼지거나 앱을 내리는 일은 플랫폼마다 다르게 막아야 한다.
+
+| 문제 | Android | iOS |
+|---|---|---|
+| 화면이 꺼져도 녹음이 이어져야 한다 | 마이크 포그라운드 서비스(`foregroundServiceType="microphone"`). 앱이 뒤에 있어 서비스를 못 띄우면 크래시 대신 마이크를 못 쓴다고 알린다 | `UIBackgroundModes` 의 `audio` 와 `AVAudioEngine` 입력 |
+| 앱이 죽으면 녹음을 잃는다 | `MediaRecorder` 의 `setMaxFileSize` 와 `setNextOutputFile` 로 녹음기를 멈추지 않고, 5초 분량 크기(64kbps 기준 40KB)에 닿을 때마다 파일만 바꾼다. 합칠 때는 `MediaExtractor`, `MediaMuxer` | `AVAudioEngine` 은 계속 돌리고 `AVAudioFile` 만 5초마다 닫고 새로 연다 |
+| 전화가 오면 녹음이 끊긴다 | 오디오 포커스를 잃으면 조각을 닫고, 돌아오면 새 조각으로 이어 녹음한다 | `AVAudioSession` 인터럽션 알림으로 같은 일을 한다 |
+| 40분 타이머가 기기 잠자기에 영향받으면 안 된다 | `SystemClock.elapsedRealtimeNanos` | `CLOCK_MONOTONIC` |
+| 분석 요청이 앱을 내려도 끝나야 한다 | WorkManager 고유 작업 사슬 하나가 연결 조건으로 작업 표를 비운다. 분석 중에는 진행 알림을 포그라운드 작업으로 띄운다 | `beginBackgroundTask` 로 시간을 받고, 녹음을 실은 요청은 백그라운드 `URLSession` 업로드로 보낸다. 앱이 멈춰도 시스템이 전송을 끝낸다. 뒤로 가면 `BGProcessingTask` 를 예약한다 |
+| 로그인 페이지에 막힌 Wi-Fi 를 온라인으로 보면 재시도를 헛쓴다 | `NET_CAPABILITY_VALIDATED` 인 네트워크만 온라인으로 본다 | `nw_path_monitor` 의 연결 여부만 본다. 로그인 페이지에 막힌 Wi-Fi 는 온라인으로 보고, 연결 실패를 다시 보낼 실패로 센다 |
+
+녹음기를 조각마다 멈췄다 다시 열지 않는 것은 실측 때문이다. iPhone 에서 조각마다 녹음기를 새로 열면 조각 사이에 약 0.07초가 빠져 8분 녹음 중 1.7% 를 잃었다([설계 문서](docs/specs/design.md)의 미리 확인 표). 두 플랫폼 모두 녹음기는 한 번 열고 쓰는 파일만 바꾼다.
+
+분석 작업의 상태는 플랫폼 대기열이 아니라 Room 의 작업 표 한 곳에 있다. 플랫폼 대기열은 "표를 비워라"는 신호만 주고, 재시도 횟수와 대기 시간은 공통 코드가 정한다. 그래서 WorkManager 의 백오프와 iOS 백그라운드 시간 차이가 결과에 섞이지 않고, 재시도 규칙을 테스트 시계로 확인한다. 이 구조로 바꾸기 전에는 대기열과 결과가 따로 있어서, 앱이 보내는 중에 죽으면 리포트가 끝없이 "분석 대기 중"에 머물렀다([ADR 0032](docs/adr/0032-분석-작업-상태는-DB-한-곳에-두고-플랫폼-대기열은-비우기만-한다.md)).
 
 ## 답변 하나가 분석되는 길
-
-Gemini 응답은 그대로 믿지 않는다. 교정의 원문 구절이 전문에 있는지, 값 범위가 맞는지 앱이 검사하고 통과 못한 항목은 버린다. 분석 작업의 상태는 DB 의 작업 표 한 곳에 있고, 작업은 어떤 경우에도 성공이나 실패로 끝난다. 실패하면 리포트가 이유와 다시 분석하기를 보인다(ADR 0032).
 
 ```mermaid
 flowchart TD
@@ -93,11 +118,11 @@ flowchart TD
     retry -. "다 쓰면" .-> fail["실패<br/>이유와<br/>다시 분석하기"]
 ```
 
-두 단계 경로는 음성을 못 듣는 제공사를 붙일 때 쓰려고 포트만 나눠 둔 것이다(ADR 0019).
+분석 포트는 받아쓰기와 글 분석 두 단계로 나눠 두었다. Gemini 는 음성을 직접 들어 한 번 호출로 끝내고, 음성을 받지 않는 제공사를 붙이면 받아쓴 뒤 글만 보낸다. 엔진 코드에는 제공사 이름이 없고, 두 단계 경로는 음성을 못 듣는 가짜 제공사로 테스트한다([ADR 0019](docs/adr/0019-AI-분석은-받아쓰기와-글-분석-두-단계-포트.md)).
 
 ## 모듈 구조
 
-다섯 층으로 나누고 의존은 위에서 아래로만 간다. 위 층은 아래 층을 건너뛰어 써도 되지만 `ui` 와 `packs` 는 서로 모르고, `libs` 는 프로젝트 모듈을 하나도 쓰지 않는다. `./gradlew check` 가 이 규칙을 어긴 의존을 찾으면 실패한다.
+다섯 층으로 나누고 의존은 위에서 아래로만 간다. 위 층은 아래 층을 건너뛰어 써도 되지만 `ui` 와 `packs` 는 서로 모르고, `libs` 는 프로젝트 모듈을 하나도 쓰지 않는다. 층마다 허용하는 층을 [`LayerRules.kt`](build-logic/src/main/kotlin/io/github/nosorae/aiopic/buildlogic/LayerRules.kt) 표 하나에 두고, `./gradlew check` 가 이 규칙을 어긴 의존을 찾으면 실패한다([ADR 0002](docs/adr/0002-모듈-다섯-층과-의존-검사.md)).
 
 ```mermaid
 flowchart TD
@@ -124,95 +149,48 @@ flowchart TD
 | engine | 시험 진행 계산과 이어 보기, 답변 분석 흐름과 출력 검사, 출제, Gemini 어댑터 |
 | libs | 녹음, Gemini 호출, 대기열, 키 보관, 음성 합성, 타이머, 진동, 디버그 도구 |
 
-## 실행
+시험 내용은 `packs/opic-en` 하나에만 있다. 다른 언어 오픽이나 다른 말하기 시험은 팩과 앱 모듈만 새로 만들면 된다.
 
-JDK 17, Android SDK, Xcode 가 필요하다.
+## 모의고사 한 회
 
-| 목적 | 명령 |
-|---|---|
-| 전체 확인 | `./gradlew check` |
-| Android 앱 빌드 | `./gradlew :apps:opic:androidApp:assembleDebug` |
-| iOS 프레임워크 링크 | `./gradlew :apps:opic:shared:linkDebugFrameworkIosSimulatorArm64` |
-| iOS 앱 빌드 | `xcodebuild -project apps/opic/iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/xcode build` |
+점검과 1번은 내장 문항으로 바로 내고, 2~7번은 1번 Play 때, 8~15번은 6번 Play 때 재조정 선택지마다 Gemini 에 미리 요청해 고른 것을 쓴다. 출제를 기다리느라 첫 Play 가 10초 넘게 걸리던 것을 이렇게 나눠 없앴다([ADR 0030](docs/adr/0030-출제는-세-몫으로-나눠-미리-받는다.md)). 40분은 1번 문항에 닿을 때부터 시험 화면에 있는 동안만 흐른다. 답변 분석은 시험이 끝나길 기다리지 않고 Next 마다 뒤에서 보낸다.
 
-iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다.
-
-### 배포용 빌드
-
-키와 비밀번호는 저장소에 넣지 않는다. 업로드 키는 `~/.config/aiopic-release/` 에 두고(폴더 700, 파일 600) 저장소는 서명 정보 파일의 경로만 받는다.
-
-```bash
-mkdir -p ~/.config/aiopic-release && chmod 700 ~/.config/aiopic-release && cd ~/.config/aiopic-release
-keytool -genkeypair -keystore upload.jks -storetype PKCS12 -alias upload -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=AiOpicSelfStudy"
-# 입력한 비밀번호로 서명 정보 파일을 만든다. storeFile 이 상대 경로면 이 파일 옆을 본다.
-printf 'storeFile=upload.jks\nstorePassword=<비밀번호>\nkeyAlias=upload\nkeyPassword=<비밀번호>\n' > signing.properties
-chmod 600 upload.jks signing.properties
+```mermaid
+flowchart TD
+    survey["서베이<br/>주제 12개 이상"] --> level["수준 선택<br/>1~6"]
+    level --> check["점검<br/>채점 안 하는<br/>연습 문항"]
+    pool[("내장 문항<br/>점검과 1번은<br/>바로 낸다")] -.-> check
+    check --> timer
+    subgraph timer["40분 타이머"]
+        q1["1번 자기소개"] --> q2["2~7번"]
+        q2 --> recal["난이도 재조정"]
+        recal --> q8["8~15번<br/>수준 1~2 는<br/>8~12번"]
+    end
+    q1 -. "1번 Play 때" .-> genA[("2~7번 받기<br/>Gemini")]
+    genA -.-> q2
+    q2 -. "6번 Play 때<br/>선택지 셋 다" .-> genB[("8~15번 받기<br/>쉬운, 비슷한,<br/>어려운")]
+    genB -. "고른 것" .-> q8
+    wait["2번, 8번 Play 때<br/>아직 안 왔으면<br/>만들고 있다고<br/>보이며 기다린다<br/>실패하면 내장 문항"] -.- q8
+    q8 --> report["리포트<br/>예상 등급 범위"]
+    q8 -. "문항마다<br/>Next 때" .-> queue[["분석 대기열"]]
+    queue -. "다 분석되면<br/>회차 등급 한 번" .-> report
 ```
 
-경로는 `local.properties` 의 `AIOPIC_RELEASE_SIGNING` 이나 같은 이름의 환경 변수로 넘긴다. 둘 다 없거나 파일이 모자라면 서명 없이 빌드하고 `릴리스 빌드를 서명 없이 만든다: <이유>` 를 찍는다.
+받은 질문은 회차 id 로 저장해서 이어 볼 때 같은 질문이 나온다. 시간이 다 되면 답한 문항만 채점하고 나머지는 "시간 부족"으로 표시한다.
 
-| 목적 | 명령 |
-|---|---|
-| 서명된 AAB | `./gradlew :apps:opic:androidApp:bundleRelease` (결과 `apps/opic/androidApp/build/outputs/bundle/release/androidApp-release.aab`) |
-| 서명 확인 | `jarsigner -verify apps/opic/androidApp/build/outputs/bundle/release/androidApp-release.aab` |
-| iOS 아카이브 | `xcodebuild -project apps/opic/iosApp/iosApp.xcodeproj -scheme iosApp -configuration Release -destination 'generic/platform=iOS' -archivePath build/release/iosApp.xcarchive -allowProvisioningUpdates archive` |
-| App Store 용 ipa | `xcodebuild -exportArchive -archivePath build/release/iosApp.xcarchive -exportOptionsPlist apps/opic/iosApp/ExportOptions.plist -exportPath build/release/ipa -allowProvisioningUpdates` |
+## 개발 방식
 
-iOS 서명 팀은 `Local.xcconfig` 의 `TEAM_ID` 에서 온다. App Store 용 ipa 를 내보내려면 그 팀 계정이 Xcode 설정의 계정에 로그인돼 있어야 배포 프로파일이 자동으로 만들어진다.
+코드와 문서는 코딩 에이전트(Claude Code)가 이슈 단위로 구현했다. 사람은 무엇을 만들지와 핵심 설계를 정하고, 에이전트가 정한 대로 끝까지 일하게 만드는 규칙과 검사를 만들었다.
 
-App Store Connect 는 같은 빌드 번호를 두 번 받지 않는다. 새 빌드를 올릴 때마다 `apps/opic/iosApp/Configuration/Config.xcconfig` 의 `CURRENT_PROJECT_VERSION` 을 1 올리고(버전 1.0 의 첫 빌드가 1 이다), 사용자에게 보이는 버전이 바뀌면 `MARKETING_VERSION` 도 올린 뒤 커밋한다. 그다음 위 두 명령으로 ipa 를 만들고 TestFlight 로 올린다. 수출 규정 답은 `Info.plist` 의 `ITSAppUsesNonExemptEncryption`(HTTPS 만 써서 `false`)이 대신해서 업로드 뒤에 콘솔에서 따로 답하지 않는다.
+**사람이 정한 것.** 요구사항([`docs/specs/product.md`](docs/specs/product.md))과 설계([`docs/specs/design.md`](docs/specs/design.md))를 쓰고 승인했다. 그중 구조를 정한 결정은 이렇다.
 
-```sh
-export ASC_API_KEY_PATH=<App Store Connect API 키 JSON 경로>
-fastlane ios_build   # build/release/ipa/AiOpicSelfStudy.ipa 를 올린다. 처리 완료는 기다리지 않는다
-```
+- 서버 없이 사용자의 API 키로 분석한다. 녹음이 남의 서버에 쌓이지 않고 운영 비용이 없다([ADR 0001](docs/adr/0001-서버-없이-사용자-API-키.md))
+- 시험 진행은 순수 함수 하나와 Room 통째 저장, 녹음은 조각 저장과 이어 녹음. 시험 한 회가 40분이라 중간에 앱이 죽는 일을 기본 경우로 봤다([ADR 0012](docs/adr/0012-시험-진행-상태는-순수-함수와-Room.md), [0013](docs/adr/0013-녹음-조각-저장과-이어-녹음.md))
+- 분석 모델은 사용자가 고르고, 음성을 못 듣는 제공사도 붙일 수 있게 분석 포트를 두 단계로 나눈다([ADR 0019](docs/adr/0019-AI-분석은-받아쓰기와-글-분석-두-단계-포트.md))
+- 모듈 다섯 층과 빌드가 하는 의존 검사([ADR 0002](docs/adr/0002-모듈-다섯-층과-의존-검사.md)). 사람과 에이전트 모두 문서 규칙은 어기므로 빌드가 막게 했다
+- DI 는 컴파일 타임에 바인딩을 검사하는 Metro([ADR 0004](docs/adr/0004-DI-는-Metro.md)), 일회성 이벤트는 상태 필드와 처리 완료 Intent([ADR 0006](docs/adr/0006-일회성-이벤트는-상태-필드와-처리-완료-Intent.md))
 
-### 스토어 문구 올리기
-
-스토어 등록 문구, App Store 심사 메모, 스크린샷은 `fastlane/` 에 있고 [fastlane](https://docs.fastlane.tools) 으로 올린다. 앱 바이너리는 올리지 않고 심사 제출도 하지 않는다. 계정 키는 저장소 밖에 두고 경로만 환경 변수로 넘긴다.
-
-```sh
-export PLAY_JSON_KEY_PATH=<Play Console 서비스 계정 JSON 경로>
-export ASC_API_KEY_PATH=<App Store Connect API 키 JSON 경로>   # key_id, issuer_id, key 를 담은 fastlane 형식
-export REVIEW_GEMINI_KEY=<심사용 Gemini API 키>               # 심사 메모의 {{REVIEW_GEMINI_KEY}} 에 들어간다
-fastlane store                                              # 한 스토어만: fastlane play, fastlane app_store
-```
-
-| 무엇 | 위치 |
-|---|---|
-| Play 문구 (이름, 짧은 설명, 전체 설명) | `fastlane/metadata/android/ko-KR/` |
-| App Store 문구 (이름, 부제, 홍보 문구, 설명, 키워드, 지원 주소, 개인정보처리방침 주소) | `fastlane/metadata/ios/ko/`. 설명은 Play 전체 설명을 가리킨다 |
-| App Store 심사 메모 | `fastlane/metadata/ios/review_information/notes.txt` |
-| Play 스크린샷, 아이콘 | `fastlane/metadata/android/ko-KR/images/` (`phoneScreenshots/` 등) |
-| App Store 스크린샷 | `fastlane/screenshots/ios/ko/` |
-
-스크린샷은 지어낸 예시 기록(`StoreDemo.kt`)을 넣은 앱을 찍는다. Play 폰 다섯 장(1080x2160)은 `StoreScreenshotTest` 가 `./gradlew recordRoborazziAndroidHostTest` 로 다시 찍고 `check` 가 비교한다. App Store 다섯 장(6.9형, 1320x2868)은 iPhone 17 Pro Max 시뮬레이터에서 XCUITest 로 찍는다.
-
-```sh
-xcrun simctl status_bar 'iPhone 17 Pro Max' override --time 9:41 --batteryState charged --batteryLevel 100
-TEST_RUNNER_STORE_SCREENSHOTS_DIR="$PWD/fastlane/screenshots/ios/ko" xcodebuild test -project apps/opic/iosApp/iosApp.xcodeproj \
-  -scheme iosApp -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' -only-testing:iosAppUITests/StoreScreenshotsUITests
-```
-
-앱 아이콘 원본은 `apps/opic/icon/app-icon.svg` 이고 `python3 apps/opic/icon/make_icon.py` 가 PNG(iOS 기본·다크·틴트, Play 512)를 다시 만든다. 규격과 원본 일치는 `python3 -m unittest scripts/test_store_assets.py` 가 본다.
-
-스크린샷 폴더가 비어 있으면 문구만 올리고 콘솔에 있는 이미지는 건드리지 않는다. 글자 수 제한은 `python3 -m unittest scripts/test_store_metadata.py` 가 키 없이 미리 확인한다. Data safety, 포그라운드 서비스 신고처럼 콘솔에서 직접 넣는 답은 `fastlane/store-declarations.md` 에 있다.
-
-## 문서
-
-| 문서 | 위치 |
-|---|---|
-| 제품 요구사항 (화면 목록, 수락 기준) | `docs/specs/product.md` |
-| 설계 | `docs/specs/design.md` |
-| 설계 결정 기록 | `docs/adr/` |
-| AI 출력 오류 분석 | `docs/error-analysis.md` |
-| 라이브러리 모듈 사용법 | `libs/<모듈>/README.md` |
-| 꼭 지킬 것, 명령 | `CLAUDE.md` |
-| 노드 진행 절차 | `.claude/skills/node-workflow` |
-
-## AI 사용 범위
-
-이 앱의 코드와 문서는 AI 코딩 에이전트(Claude Code)가 이슈 단위로 구현한다. 개발 그래프(`docs/graph/dev-graph.json`)의 노드 하나가 이슈 하나, 브랜치 하나, PR 하나다. 끝났다는 판정은 에이전트의 말이 아니라 명령의 종료 코드로 한다.
+**에이전트에게 맡긴 방식.** 할 일은 개발 그래프([`docs/graph/dev-graph.json`](docs/graph/dev-graph.json))의 노드 55개로 쪼갰다. 노드 하나가 이슈 하나, 브랜치 하나, PR 하나다. 끝났는지를 판정하는 명령은 개발 계획을 짤 때 노드마다 함께 정했고, 사람이 계획을 승인했다. 그래서 에이전트가 "다 됐다"고 말해도 명령이 0으로 끝나지 않으면 끝난 게 아니다. 실기기 확인처럼 명령으로 판정할 수 없는 노드 5개는 사람이 확인한다([ADR 0020](docs/adr/0020-그래프-done-은-실행-명령과-안쪽-루프.md)).
 
 ```mermaid
 stateDiagram-v2
@@ -229,30 +207,47 @@ stateDiagram-v2
     병합 --> [*]
 ```
 
-리뷰는 다른 컨텍스트의 리뷰 에이전트가 diff 만 보고 한다.
+- 리뷰는 구현한 에이전트가 아니라 다른 컨텍스트의 리뷰 에이전트가 diff 만 보고 한다. 지울 수 있는 코드부터 찾는다
+- done 명령이 3번 실패하거나 리뷰가 2번 반려되면 스크립트가 노드를 막고 사람을 부른다. 횟수는 그래프에 남는다. 노드 55개 중 판정 명령이 실패한 노드가 12개(16번), 리뷰가 반려한 노드가 8개(10번)였고, 상한을 넘어 막힌 노드는 없었다
+- `./gradlew check` 는 층 검사, ktlint, Android Lint, 테스트, 스크린샷 비교를 한 번에 돈다. pre-push 훅이 브랜치 push 마다 돌리고, CI 는 PR 마다 돌리면서 추가된 줄에 키나 개인 경로가 있는지도 본다
+- 에이전트가 읽는 규칙은 50줄 이하의 [`CLAUDE.md`](CLAUDE.md), 경로별 규칙 `.claude/rules/`(빌드 파일, commonMain, androidMain, iosMain), 필요할 때 읽는 스킬(`.claude/skills/architecture`, `testing`, `adr`, `ui-quality`, `node-workflow`)이다. 결정을 새로 하면 ADR 로 남긴다
 
-**사람이 하는 일.**
+이 방식으로도 에이전트는 틀린다. 아래 셋은 처음 구현이 테스트를 모두 통과한 뒤에 나왔다.
 
-- 제품 요구사항, 설계, 개발 계획을 승인한다
-- 초기 프로젝트를 만들고 Android, iOS 실행을 확인한다
-- 에이전트가 깐 작업 환경(규칙 파일, 스킬, 템플릿)을 한 번 확인한다
-- 막힌 노드를 판단한다
-- 완성 뒤 실기기(Android, iPhone)로 모의고사 한 회를 끝까지 보고, 중간에 앱을 강제 종료해 이어 보기를 확인한다
+- 등급이 한 단계 후했다. 품질 확인 도구 보고서에서 찾았다([ADR 0028](docs/adr/0028-회차-등급은-하한으로-정하고-Advanced-체크는-문단으로만-센다.md))
+- 무음 녹음에 받아쓰기를 지어냈다. 에뮬레이터에서 아무 말 없이 답해 보다가 찾았다(#241)
+- 녹음을 끝내고 결과를 기다리는 화면의 로딩이 끝나지 않았다. 실기기에서 쓰다가 찾았다(#203). 원인은 대기열과 결과가 따로 있던 구조라서 작업 상태를 DB 한 곳으로 옮겼다([ADR 0032](docs/adr/0032-분석-작업-상태는-DB-한-곳에-두고-플랫폼-대기열은-비우기만-한다.md))
 
-**AI 출력 검사.** 앱 안의 검사는 위 「답변 하나가 분석되는 길」에 있다. 사용자는 틀린 교정을 표시해 내보낼 수 있다. 모인 표시와 품질 확인 도구(`tools/eval`)의 보고서는 `docs/error-analysis.md` 에서 종류별로 세어 다음 프롬프트 버전에 반영한다.
+나올 때마다 원인을 ADR 로 남기고 그 경우를 테스트로 더했다.
 
-**규칙 파일과 스킬.**
+## 실행
 
-| 파일 | 내용 |
+JDK 17, Android SDK, Xcode 가 필요하다.
+
+| 목적 | 명령 |
 |---|---|
-| `CLAUDE.md` | 꼭 지킬 것, 핵심 명령, 어디를 보나. 50줄 이하로 둔다 |
-| `.claude/rules/` | 경로별 규칙(빌드 파일, commonMain, androidMain, iosMain) |
-| `.claude/skills/architecture`, `testing`, `adr`, `ui-quality`, `node-workflow` | 이 프로젝트 전용 스킬 |
-| `.claude/skills/` 의 나머지 | 외부에서 가져온 스킬. 출처와 라이선스는 `.claude/skills/THIRD_PARTY.md` |
-| `.mcp.json` | KMP 라이브러리 검색용 MCP 서버 |
+| 전체 확인 | `./gradlew check` |
+| Android 앱 빌드 | `./gradlew :apps:opic:androidApp:assembleDebug` |
+| iOS 프레임워크 링크 | `./gradlew :apps:opic:shared:linkDebugFrameworkIosSimulatorArm64` |
+| iOS 앱 빌드 | `xcodebuild -project apps/opic/iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' -derivedDataPath build/xcode build` |
+
+iOS 앱은 `apps/opic/iosApp` 을 Xcode 로 열어 실행해도 된다. 서명된 빌드와 스토어 업로드는 [`docs/release.md`](docs/release.md) 에 있다.
+
+## 문서
+
+| 문서 | 위치 |
+|---|---|
+| 제품 요구사항 (화면 목록, 수락 기준) | [`docs/specs/product.md`](docs/specs/product.md) |
+| 설계 | [`docs/specs/design.md`](docs/specs/design.md) |
+| 설계 결정 기록 (35개) | [`docs/adr/`](docs/adr) |
+| AI 출력 오류 분석 | [`docs/error-analysis.md`](docs/error-analysis.md) |
+| 배포 | [`docs/release.md`](docs/release.md) |
+| 라이브러리 모듈 사용법 | `libs/<모듈>/README.md` |
+| 꼭 지킬 것, 명령 | [`CLAUDE.md`](CLAUDE.md) |
+| 노드 진행 절차 | [`.claude/skills/node-workflow`](.claude/skills/node-workflow/SKILL.md) |
 
 ## 라이선스
 
-정하는 중이다. `.claude/skills/` 아래 외부 스킬은 각 원본의 Apache License 2.0 을 따른다.
+Copyright (c) 2026 nosorae. All rights reserved. 코드는 읽고 참고하라고 공개한다. 복제, 수정, 배포는 허락하지 않는다. 자세한 내용은 [`LICENSE`](LICENSE) 에 있다.
 
-디자인 시스템: Montage by Wantedlab (MIT). 글꼴 Pretendard 는 SIL OFL 1.1 이다. 전문은 `THIRD_PARTY_LICENSES.md` 에 있다.
+`.claude/skills/` 아래 외부 스킬은 각 원본의 라이선스(Apache License 2.0, MIT)를 따르고 출처는 [`.claude/skills/THIRD_PARTY.md`](.claude/skills/THIRD_PARTY.md) 에 있다. 디자인 시스템은 Montage by Wantedlab(MIT), 글꼴 Pretendard 는 SIL OFL 1.1 이다. 전문은 [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) 에 있다.

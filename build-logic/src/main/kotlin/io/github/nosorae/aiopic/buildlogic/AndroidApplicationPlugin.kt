@@ -35,7 +35,7 @@ class AndroidApplicationPlugin : Plugin<Project> {
                 abortOnError = true
                 warningsAsErrors = false
             }
-            // 업로드 키는 저장소 밖에 두고 경로만 받는다. 없으면 서명 없이 빌드하고 이유를 찍는다(README 「배포용 빌드」).
+            // 업로드 키는 저장소 밖에 두고 경로만 받는다. 없으면 서명 없이 빌드하고 이유를 찍는다(docs/release.md 「배포용 빌드」).
             readReleaseSigning(localProperty(RELEASE_SIGNING_KEY) ?: System.getenv(RELEASE_SIGNING_KEY))
                 .onSuccess { signing ->
                     val release = signingConfigs.create("release") {
